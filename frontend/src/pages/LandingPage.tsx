@@ -281,13 +281,13 @@ const LandingPage = () => {
             >
               <div style={{ padding: "clamp(1.5rem, 3vw, 2rem)" }}>
                 <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#60a5fa" }}>
-                  Decentralized
-                </h4>
+                Decentralized
+              </h4>
                 <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", fontSize: "clamp(1rem, 1.8vw, 1.15rem)" }}>
-                  Built on blockchain technology for maximum transparency and security. Every vote is
-                  immutable and verifiable.
-                </p>
-              </div>
+                Built on blockchain technology for maximum transparency and security. Every vote is
+                immutable and verifiable.
+              </p>
+            </div>
             </ElectricBorder>
             <ElectricBorder
               color="#3b82f6"
@@ -299,12 +299,12 @@ const LandingPage = () => {
               <div style={{ padding: "clamp(1.5rem, 3vw, 2rem)" }}>
                 <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#60a5fa" }}>
                   Real time Results
-                </h4>
+              </h4>
                 <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", fontSize: "clamp(1rem, 1.8vw, 1.15rem)" }}>
-                  Watch results update in real-time as votes are cast. Track voting trends with
-                  interactive charts and graphs.
-                </p>
-              </div>
+                Watch results update in real-time as votes are cast. Track voting trends with
+                interactive charts and graphs.
+              </p>
+            </div>
             </ElectricBorder>
             <ElectricBorder
               color="#3b82f6"
@@ -315,13 +315,13 @@ const LandingPage = () => {
             >
               <div style={{ padding: "clamp(1.5rem, 3vw, 2rem)" }}>
                 <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#60a5fa" }}>
-                  Easy to Use
-                </h4>
+                Easy to Use
+              </h4>
                 <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", fontSize: "clamp(1rem, 1.8vw, 1.15rem)" }}>
-                  Create polls in seconds. No complicated setup or technical knowledge required.
-                  Start voting immediately.
-                </p>
-              </div>
+                Create polls in seconds. No complicated setup or technical knowledge required.
+                Start voting immediately.
+              </p>
+            </div>
             </ElectricBorder>
           </div>
         </div>

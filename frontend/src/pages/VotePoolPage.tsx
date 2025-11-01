@@ -156,7 +156,69 @@ const VotePoolPage = () => {
       </header>
 
       {/* Main Content */}
-      <main style={{ padding: "clamp(1rem, 3vw, 2rem)", maxWidth: "1400px", margin: "0 auto" }}>
+      <main style={{ padding: "clamp(1rem, 3vw, 2rem)", maxWidth: "1400px", margin: "0 auto", position: "relative" }}>
+        {/* Sol Taraf - Lightning Video */}
+        <div
+          style={{
+            position: "fixed",
+            left: 0,
+            top: "clamp(60px, 8vw, 80px)",
+            bottom: 0,
+            width: "clamp(150px, 15vw, 250px)",
+            zIndex: 1,
+            pointerEvents: "none",
+            overflow: "hidden",
+          }}
+        >
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              opacity: 0.3,
+            }}
+          >
+            <source src="/lightnings .mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+
+        {/* Sağ Taraf - Lightning Video */}
+        <div
+          style={{
+            position: "fixed",
+            right: 0,
+            top: "clamp(60px, 8vw, 80px)",
+            bottom: 0,
+            width: "clamp(150px, 15vw, 250px)",
+            zIndex: 1,
+            pointerEvents: "none",
+            overflow: "hidden",
+          }}
+        >
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              opacity: 0.3,
+            }}
+          >
+            <source src="/lightnings .mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+
+        {/* İçerik - Mevcut yapı */}
+        <div style={{ position: "relative", zIndex: 2 }}>
         <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)", textAlign: "center" }}>
           <h2 
             className="active-pools-animated-text"
@@ -373,7 +435,7 @@ const VotePoolPage = () => {
           ))}
         </div>
         )}
-
+        </div>
       </main>
 
       {/* Create Vote Pool Modal */}
