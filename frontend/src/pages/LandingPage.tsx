@@ -35,7 +35,7 @@ const LandingPage = () => {
             Pollar
           </h1>
         </div>
-        <Link to="/vote-pools" className="button button-primary">
+        <Link to="/login" className="button button-primary">
           Go Voting
         </Link>
       </header>
@@ -80,7 +80,7 @@ const LandingPage = () => {
             of decentralized consensus.
           </p>
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            <Link to="/vote-pools" className="button button-primary" style={{ fontSize: "1.1rem", padding: "1rem 2rem" }}>
+            <Link to="/login" className="button button-primary" style={{ fontSize: "1.1rem", padding: "1rem 2rem" }}>
               Start Voting
             </Link>
             <Link to="/vote-pools" className="button button-secondary" style={{ fontSize: "1.1rem", padding: "1rem 2rem" }}>
