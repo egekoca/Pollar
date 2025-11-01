@@ -1,13 +1,16 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useCurrentAccount, useWallets } from "@mysten/dapp-kit";
+import { useCurrentAccount, useWallets, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
+import { Transaction } from "@mysten/sui/transactions";
 import { getUserProfile, saveUserProfile, UserProfile } from "../utils/userProfile";
+import { contractConfig } from "../config/contractConfig";
 import "../styles/theme.css";
 
 const CreateProfilePage = () => {
   const navigate = useNavigate();
   const account = useCurrentAccount();
   const wallets = useWallets();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [error, setError] = useState("");
@@ -38,20 +41,37 @@ const CreateProfilePage = () => {
       return;
     }
 
-    if (!username.trim()) {
+    // Validate inputs
+    const trimmedUsername = username.trim();
+    const trimmedAvatarUrl = avatarUrl.trim();
+
+    if (!trimmedUsername) {
       setError("Username is required");
       setIsSubmitting(false);
       return;
     }
 
-    if (username.trim().length < 3) {
-      setError("Username must be at least 3 characters");
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 100) {
+      setError("Username must be between 3 and 100 characters");
       setIsSubmitting(false);
       return;
     }
 
-    if (!avatarUrl.trim()) {
+    if (!trimmedAvatarUrl) {
       setError("Avatar URL is required");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (trimmedAvatarUrl.length < 7 || trimmedAvatarUrl.length > 1000) {
+      setError("Avatar URL must be between 7 and 1000 characters");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Check if package ID is configured
+    if (!contractConfig.packageId) {
+      setError("Contract package ID is not configured. Please set VITE_PACKAGE_ID in .env file.");
       setIsSubmitting(false);
       return;
     }
@@ -63,20 +83,84 @@ const CreateProfilePage = () => {
       )
     );
 
-    const newProfile: UserProfile = {
-      walletAddress: account.address,
-      username: username.trim(),
-      avatarUrl: avatarUrl.trim(),
-      authMethod: enokiWallet ? "google" : "wallet",
-    };
-
     try {
-      saveUserProfile(newProfile);
-      // Redirect to vote pools after profile creation
-      navigate("/vote-pools");
+      // Create transaction to call mint_user
+      const tx = new Transaction();
+
+      // Call the mint_user entry function
+      // mint_user(name: String, icon_url: String, ctx: &mut TxContext)
+      tx.moveCall({
+        target: `${contractConfig.packageId}::${contractConfig.moduleName}::${contractConfig.functionNames.mintUser}`,
+        arguments: [
+          tx.pure.string(trimmedUsername),
+          tx.pure.string(trimmedAvatarUrl),
+        ],
+      });
+
+      // Execute the transaction
+      signAndExecute(
+        {
+          transaction: tx,
+          options: {
+            showEffects: true,
+            showEvents: true,
+            showObjectChanges: true,
+          },
+        },
+        {
+          onSuccess: (result) => {
+            console.log("User created successfully:", result);
+            
+            // Find the created User object ID from the result
+            let userObjectId: string | undefined;
+            
+            if (result.objectChanges) {
+              const createdUser = result.objectChanges.find(
+                (change: any) => 
+                  change.type === "created" && 
+                  change.objectType?.includes("::User")
+              );
+              
+              if (createdUser && createdUser.objectId) {
+                userObjectId = createdUser.objectId;
+              }
+            }
+
+            // Save profile to localStorage with the created User object ID
+            const newProfile: UserProfile = {
+              walletAddress: account.address,
+              username: trimmedUsername,
+              avatarUrl: trimmedAvatarUrl,
+              authMethod: enokiWallet ? "google" : "wallet",
+              ...(userObjectId && { userObjectId }),
+            };
+
+            saveUserProfile(newProfile);
+
+            // Redirect to vote pools after successful profile creation
+            navigate("/vote-pools");
+          },
+          onError: (error) => {
+            console.error("Failed to create user on blockchain:", error);
+            
+            // Check for specific error messages from Move contract
+            const errorMessage = error.message || String(error);
+            
+            if (errorMessage.includes("EInvalidNameLength")) {
+              setError("Username must be between 3 and 100 characters");
+            } else if (errorMessage.includes("EInvalidIconUrlLength")) {
+              setError("Avatar URL must be between 7 and 1000 characters");
+            } else {
+              setError(`Failed to create user: ${errorMessage}. Please try again.`);
+            }
+            
+            setIsSubmitting(false);
+          },
+        }
+      );
     } catch (error) {
       console.error("Failed to create profile:", error);
-      setError("Failed to create profile. Please try again.");
+      setError(`Failed to create profile: ${error instanceof Error ? error.message : String(error)}`);
       setIsSubmitting(false);
     }
   };
