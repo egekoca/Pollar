@@ -1,12 +1,17 @@
 
 module pollarapp::pollar;
 
+use sui::package::Publisher;
 use sui::object::{Self, ID, UID}; 
 use sui::event;
 use std::option::{Self, Option};
 use std::string::String;
 use sui::dynamic_field as df;
 use std::vector;
+
+const EInvalidPackageVersion: u64 = 1001;
+const EVersionAlreadyUpdated: u64 = 1002;
+const EInvalidPublisher: u64 = 1003;
 
 // Error codes
 const EInvalidNameLength: u64 = 0;
@@ -17,6 +22,14 @@ const EInvalidPollImageUrlLength: u64 = 4;
 const EInvalidStartDateLength: u64 = 5;
 const EInvalidEndDateLength: u64 = 6;
 const EInvalidOptionsLength: u64 = 7; // Poll option is not in the poll's options list
+
+const VERSION: u64 = 1;
+
+public struct Version has key 
+{
+    id: UID,
+    version: u64
+}
 
 public struct User has key, store 
 {
@@ -66,6 +79,11 @@ public struct UserVoteMinted has copy, drop
 {
     user_vote: ID,
     owner: address
+}
+
+fun init(ctx: &mut TxContext) 
+{
+    transfer::share_object(Version { id: object::new(ctx), version: VERSION })
 }
 
 
@@ -206,4 +224,22 @@ public entry fun delete_user(user: User, ctx: &mut TxContext)
 {
     let User { id, name: _, icon_url: _ } = user;
     object::delete(id);
+}
+
+public fun check_is_valid(self: &Version) 
+{
+    assert!(self.version == VERSION, EInvalidPackageVersion);
+}
+
+public fun migrate(pub: &Publisher, version: &mut Version)
+{
+    assert!(version.version != VERSION, EVersionAlreadyUpdated);
+    assert!(pub.from_package<Version>(), EInvalidPublisher);
+    version.version = VERSION;
+}
+
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) 
+{
+    init(ctx);
 }
