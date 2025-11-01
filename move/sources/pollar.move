@@ -47,8 +47,9 @@ public struct PollRegistry has key
 public struct User has key, store 
 {
     id: UID,
-    icon_url: String,
     name: String,
+    icon_url: String,
+    wallet: address,
 }
 
 public struct UserMinted has copy, drop
@@ -133,8 +134,9 @@ public fun create_user(name: String, icon_url: String, ctx: &mut TxContext): Use
     let user = User 
     {
         id: object::new(ctx), // creates a new UID
+        name,
         icon_url,
-        name
+        wallet: ctx.sender(),
     };
     user
 }
@@ -275,7 +277,7 @@ public entry fun delete_poll(poll: Poll, ctx: &mut TxContext)
 
 public entry fun delete_user(user: User, ctx: &mut TxContext)
 {
-    let User { id, name: _, icon_url: _ } = user;
+    let User { id, name: _, icon_url: _, wallet: _} = user;
     object::delete(id);
 }
 
