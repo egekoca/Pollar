@@ -4,6 +4,7 @@ export interface UserProfile {
   avatarUrl: string;
   email?: string;
   authMethod?: "wallet" | "google";
+  userObjectId?: string; // Blockchain User object ID from mint_user
 }
 
 const STORAGE_KEY = "pollar_user_profiles";
