@@ -128,13 +128,13 @@ const VotePoolPage = () => {
             <>
               <button 
                 onClick={handleCreateVotePool} 
-                className="create-vote-pool-neon"
+                className="create-vote-pool-neon-white"
                 style={{ 
                   fontSize: "clamp(0.8rem, 1.4vw, 0.95rem)", 
                   padding: "clamp(0.5rem, 1.2vw, 0.65rem) clamp(1rem, 2vw, 1.25rem)",
                   background: "transparent",
-                  color: "#60a5fa",
-                  border: "1.5px solid #60a5fa",
+                  color: "#ffffff",
+                  border: "1.5px solid #ffffff",
                   borderRadius: "0.5rem",
                   fontWeight: "600",
                   textDecoration: "none",
@@ -157,9 +157,23 @@ const VotePoolPage = () => {
 
       {/* Main Content */}
       <main style={{ padding: "clamp(1rem, 3vw, 2rem)", maxWidth: "1400px", margin: "0 auto" }}>
-        <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
-          <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.5rem)", marginBottom: "0.5rem", color: "var(--text-primary)" }}>
-            Active Vote Pools
+        <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)", textAlign: "center" }}>
+          <h2 
+            className="active-pools-animated-text"
+            style={{ 
+              fontSize: "clamp(1.75rem, 4vw, 2.5rem)", 
+              marginBottom: "0.5rem",
+              fontWeight: "900",
+              textTransform: "uppercase",
+              background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 15%, #3b82f6 30%, #60a5fa 45%, #87ceeb 60%, #bae6fd 75%, #ffffff 90%, #bae6fd 100%)",
+              backgroundSize: "300% auto",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              animation: "smoothFlowingGradient 5s ease-in-out infinite",
+            }}
+          >
+            ACTIVE VOTE POOLS
           </h2>
           <p style={{ color: "var(--text-muted)", fontSize: "clamp(1rem, 2vw, 1.1rem)" }}>
             Participate in ongoing polls and make your voice heard
