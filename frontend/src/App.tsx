@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import VotePoolPage from "./pages/VotePoolPage";
 import VotingPage from "./pages/VotingPage";
+import MyProfilePage from "./pages/MyProfilePage";
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/vote-pools" element={<VotePoolPage />} />
         <Route path="/voting/:id" element={<VotingPage />} />
+        <Route path="/my-profile" element={<MyProfilePage />} />
       </Routes>
     </Router>
   );
