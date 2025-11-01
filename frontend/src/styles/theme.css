@@ -31,6 +31,19 @@
   --border-color-light: var(--color-gray);
 }
 
+/* Animated Gradient Keyframes - Smooth Version */
+@keyframes smoothFlowingGradient {
+  0% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -74,6 +87,13 @@ body {
   transform: translateY(-2px);
 }
 
+/* Go Voting Button - Özel Parlama Efekti */
+.go-voting-button:hover {
+  transform: none !important;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(59, 130, 246, 0.4);
+  filter: brightness(1.2);
+}
+
 .button-secondary {
   background-color: var(--bg-button-secondary);
   color: var(--color-black);
@@ -88,7 +108,7 @@ body {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 0.75rem;
-  padding: 1.5rem;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
   transition: all 0.3s ease;
 }
 
@@ -96,5 +116,48 @@ body {
   border-color: var(--color-navy-light);
   transform: translateY(-4px);
   box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2);
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+  .card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Responsive Typography */
+h1, h2, h3, h4, h5, h6 {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Responsive Images */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 640px) {
+  body {
+    font-size: 0.95rem;
+  }
+  
+  .button {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .card {
+    border-radius: 0.5rem;
+  }
+}
+
+/* Tablet Optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .container {
+    padding: 0 1.5rem;
+  }
 }
 

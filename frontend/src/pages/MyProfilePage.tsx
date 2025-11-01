@@ -89,46 +89,48 @@ const MyProfilePage = () => {
       {/* Header */}
       <header
         style={{
-          padding: "1.5rem 2rem",
+          padding: "clamp(1rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2rem)",
           borderBottom: "1px solid var(--border-color)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: "1rem",
         }}
       >
         <Link to="/vote-pools" style={{ display: "flex", alignItems: "center", gap: "0.75rem", textDecoration: "none" }}>
           <div
             style={{
-              width: "40px",
-              height: "40px",
+              width: "clamp(32px, 5vw, 40px)",
+              height: "clamp(32px, 5vw, 40px)",
               background: "linear-gradient(135deg, var(--color-navy) 0%, var(--color-light-blue) 100%)",
               borderRadius: "8px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "1.5rem",
+              fontSize: "clamp(1.2rem, 2vw, 1.5rem)",
               fontWeight: "bold",
               color: "var(--color-white)",
             }}
           >
             P
           </div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: "700", color: "var(--text-primary)" }}>
+          <h1 style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", fontWeight: "700", color: "var(--text-primary)" }}>
             Pollar
           </h1>
         </Link>
-        <button onClick={() => navigate("/vote-pools")} className="button button-secondary">
+        <button onClick={() => navigate("/vote-pools")} className="button button-secondary" style={{ fontSize: "clamp(0.85rem, 1.5vw, 1rem)", padding: "clamp(0.6rem, 1.5vw, 0.75rem) clamp(1rem, 2vw, 1.5rem)" }}>
           Back to Pools
         </button>
       </header>
 
       {/* Main Content */}
-      <main style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
-        <div style={{ marginBottom: "2rem" }}>
-          <h2 style={{ fontSize: "2.5rem", marginBottom: "0.5rem", color: "var(--text-primary)" }}>
+      <main style={{ padding: "clamp(1rem, 3vw, 2rem)", maxWidth: "800px", margin: "0 auto" }}>
+        <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
+          <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.5rem)", marginBottom: "0.5rem", color: "var(--text-primary)" }}>
             My Profile
           </h2>
-          <p style={{ color: "var(--text-muted)", fontSize: "1.1rem" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: "clamp(1rem, 2vw, 1.1rem)" }}>
             Manage your profile information
           </p>
         </div>
@@ -150,15 +152,15 @@ const MyProfilePage = () => {
           )}
 
           {/* Avatar Section */}
-          <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+          <div style={{ textAlign: "center", marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
             {isEditing ? (
               <div>
                 <img
                   src={avatarUrl || profile.avatarUrl}
                   alt="Avatar"
                   style={{
-                    width: "120px",
-                    height: "120px",
+                    width: "clamp(100px, 20vw, 120px)",
+                    height: "clamp(100px, 20vw, 120px)",
                     borderRadius: "50%",
                     objectFit: "cover",
                     border: "3px solid var(--color-light-blue)",
@@ -174,8 +176,8 @@ const MyProfilePage = () => {
                 src={profile.avatarUrl}
                 alt={profile.username}
                 style={{
-                  width: "120px",
-                  height: "120px",
+                  width: "clamp(100px, 20vw, 120px)",
+                  height: "clamp(100px, 20vw, 120px)",
                   borderRadius: "50%",
                   objectFit: "cover",
                   border: "3px solid var(--color-light-blue)",
@@ -184,7 +186,7 @@ const MyProfilePage = () => {
               />
             )}
             {!isEditing && (
-              <h3 style={{ fontSize: "1.5rem", fontWeight: "600", color: "var(--text-primary)" }}>
+              <h3 style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", fontWeight: "600", color: "var(--text-primary)" }}>
                 {profile.username}
               </h3>
             )}

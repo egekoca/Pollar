@@ -82,38 +82,40 @@ const VotePoolPage = () => {
       {/* Header */}
       <header
         style={{
-          padding: "1.5rem 2rem",
+          padding: "clamp(1rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2rem)",
           borderBottom: "1px solid var(--border-color)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: "1rem",
         }}
       >
         <Link to="/" style={{ display: "flex", alignItems: "center", gap: "0.75rem", textDecoration: "none" }}>
           <div
             style={{
-              width: "40px",
-              height: "40px",
+              width: "clamp(32px, 5vw, 40px)",
+              height: "clamp(32px, 5vw, 40px)",
               background: "linear-gradient(135deg, var(--color-navy) 0%, var(--color-light-blue) 100%)",
               borderRadius: "8px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "1.5rem",
+              fontSize: "clamp(1.2rem, 2vw, 1.5rem)",
               fontWeight: "bold",
               color: "var(--color-white)",
             }}
           >
             P
           </div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: "700", color: "var(--text-primary)" }}>
+          <h1 style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", fontWeight: "700", color: "var(--text-primary)" }}>
             Pollar
           </h1>
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "clamp(0.5rem, 1.5vw, 1rem)", flexWrap: "wrap" }}>
           {account && userProfile ? (
             <>
-              <button onClick={handleCreateVotePool} className="button button-primary">
+              <button onClick={handleCreateVotePool} className="button button-primary" style={{ fontSize: "clamp(0.85rem, 1.5vw, 1rem)", padding: "clamp(0.6rem, 1.5vw, 0.75rem) clamp(1rem, 2vw, 1.5rem)" }}>
                 Create Vote Pool
               </button>
               <UserProfileDropdown profile={userProfile} onLogout={handleLogout} />
@@ -127,12 +129,12 @@ const VotePoolPage = () => {
       </header>
 
       {/* Main Content */}
-      <main style={{ padding: "2rem", maxWidth: "1400px", margin: "0 auto" }}>
-        <div style={{ marginBottom: "2rem" }}>
-          <h2 style={{ fontSize: "2.5rem", marginBottom: "0.5rem", color: "var(--text-primary)" }}>
+      <main style={{ padding: "clamp(1rem, 3vw, 2rem)", maxWidth: "1400px", margin: "0 auto" }}>
+        <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
+          <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.5rem)", marginBottom: "0.5rem", color: "var(--text-primary)" }}>
             Active Vote Pools
           </h2>
-          <p style={{ color: "var(--text-muted)", fontSize: "1.1rem" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: "clamp(1rem, 2vw, 1.1rem)" }}>
             Participate in ongoing polls and make your voice heard
           </p>
         </div>
@@ -141,8 +143,8 @@ const VotePoolPage = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-            gap: "2rem",
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 320px), 1fr))",
+            gap: "clamp(1rem, 3vw, 2rem)",
           }}
         >
           {pools.map((pool) => (
@@ -177,7 +179,7 @@ const VotePoolPage = () => {
                 {/* Pool Info */}
                 <h3
                   style={{
-                    fontSize: "1.5rem",
+                    fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)",
                     fontWeight: "600",
                     marginBottom: "0.75rem",
                     color: "var(--text-primary)",
@@ -190,7 +192,7 @@ const VotePoolPage = () => {
                     color: "var(--text-secondary)",
                     marginBottom: "1rem",
                     lineHeight: "1.6",
-                    fontSize: "0.95rem",
+                    fontSize: "clamp(0.9rem, 1.5vw, 0.95rem)",
                   }}
                 >
                   {pool.description}
