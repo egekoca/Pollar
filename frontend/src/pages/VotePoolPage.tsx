@@ -1,6 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
+import { gsap } from "gsap";
+import PillNav from "../components/PillNav";
 import CreateVotePoolModal from "../components/CreateVotePoolModal";
 import UserProfileDropdown from "../components/UserProfileDropdown";
 import { getUserProfile, UserProfile } from "../utils/userProfile";
@@ -9,10 +11,21 @@ import "../styles/theme.css";
 
 const VotePoolPage = () => {
   const navigate = useNavigate();
+  const logoRef = useRef<HTMLImageElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const account = useCurrentAccount();
   const { mutate: disconnect } = useDisconnectWallet();
+
+  const handleLogoHover = () => {
+    if (logoRef.current) {
+      gsap.to(logoRef.current, {
+        rotate: 360,
+        duration: 0.6,
+        ease: "power3.easeOut",
+      });
+    }
+  };
   
   // Blockchain'den poll'ları oku
   const { data: pools = [], isLoading: isLoadingPools, refetch } = useBlockchainPolls();
@@ -63,40 +76,73 @@ const VotePoolPage = () => {
       {/* Header */}
       <header
         style={{
-          padding: "clamp(1rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2rem)",
-          borderBottom: "1px solid var(--border-color)",
+          padding: "clamp(0.35rem, 0.7vw, 0.5rem) clamp(1rem, 2.5vw, 1.5rem)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "1rem",
+          position: "relative",
         }}
       >
-        <Link to="/" style={{ display: "flex", alignItems: "center", gap: "0.75rem", textDecoration: "none" }}>
-          <div
+        {/* Sol Taraf - Logo + Proje İsmi */}
+        <Link to="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <img 
+            ref={logoRef}
+            src="/pollar-logo.png" 
+            alt="Pollar Logo" 
+            onMouseEnter={handleLogoHover}
             style={{
-              width: "clamp(32px, 5vw, 40px)",
+              width: "clamp(32px, 5vw, 40px)", 
               height: "clamp(32px, 5vw, 40px)",
-              background: "linear-gradient(135deg, var(--color-navy) 0%, var(--color-light-blue) 100%)",
               borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "clamp(1.2rem, 2vw, 1.5rem)",
-              fontWeight: "bold",
-              color: "var(--color-white)",
-            }}
-          >
-            P
-          </div>
-          <h1 style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", fontWeight: "700", color: "var(--text-primary)" }}>
-            Pollar
+              cursor: "pointer",
+            }} 
+          />
+          <h1 style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", fontWeight: "700", color: "var(--text-primary)" }}>
+            POLLAR
           </h1>
         </Link>
+
+        {/* Orta - PillNav */}
+        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <PillNav
+            logo="/pollar-logo.png"
+            logoAlt="Pollar Logo"
+            items={[
+              { label: 'Home', href: '/' },
+              { label: 'Pools', href: '/vote-pools' },
+              { label: 'Pricing', href: '/#pricing' },
+            ]}
+            activeHref="/vote-pools"
+            baseColor="#000000"
+            pillColor="#ffffff"
+            hoveredPillTextColor="#ffffff"
+            pillTextColor="#000000"
+          />
+        </div>
+
+        {/* Sağ Taraf - Create Vote Pool Butonu ve Profil */}
         <div style={{ display: "flex", alignItems: "center", gap: "clamp(0.5rem, 1.5vw, 1rem)", flexWrap: "wrap" }}>
           {account && userProfile ? (
             <>
-              <button onClick={handleCreateVotePool} className="button button-primary" style={{ fontSize: "clamp(0.85rem, 1.5vw, 1rem)", padding: "clamp(0.6rem, 1.5vw, 0.75rem) clamp(1rem, 2vw, 1.5rem)" }}>
+              <button 
+                onClick={handleCreateVotePool} 
+                className="create-vote-pool-neon"
+                style={{ 
+                  fontSize: "clamp(0.8rem, 1.4vw, 0.95rem)", 
+                  padding: "clamp(0.5rem, 1.2vw, 0.65rem) clamp(1rem, 2vw, 1.25rem)",
+                  background: "transparent",
+                  color: "#60a5fa",
+                  border: "1.5px solid #60a5fa",
+                  borderRadius: "0.5rem",
+                  fontWeight: "600",
+                  textDecoration: "none",
+                  display: "inline-block",
+                  transition: "all 0.3s ease",
+                  cursor: "pointer",
+                }}
+              >
                 Create Vote Pool
               </button>
               <UserProfileDropdown profile={userProfile} onLogout={handleLogout} />
