@@ -1,15 +1,29 @@
 import { Link } from "react-router-dom";
+import { useRef } from "react";
+import { gsap } from "gsap";
 import Lightning from "../components/Lightning";
 import PillNav from "../components/PillNav";
 import "../styles/theme.css";
 
 const LandingPage = () => {
+  const logoRef = useRef<HTMLImageElement>(null);
+
+  const handleLogoHover = () => {
+    if (logoRef.current) {
+      gsap.to(logoRef.current, {
+        rotate: 360,
+        duration: 0.6,
+        ease: "power3.easeOut",
+      });
+    }
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
       {/* Header */}
       <header
         style={{
-          padding: "clamp(0.75rem, 1.5vw, 1rem) clamp(1rem, 3vw, 2rem)",
+          padding: "clamp(0.35rem, 0.7vw, 0.5rem) clamp(1rem, 2.5vw, 1.5rem)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -21,12 +35,15 @@ const LandingPage = () => {
         {/* Sol Taraf - Logo + Proje İsmi */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <img 
+            ref={logoRef}
             src="/pollar-logo.png" 
             alt="Pollar Logo" 
+            onMouseEnter={handleLogoHover}
             style={{ 
               width: "clamp(32px, 5vw, 40px)", 
               height: "clamp(32px, 5vw, 40px)",
-              borderRadius: "8px"
+              borderRadius: "8px",
+              cursor: "pointer",
             }} 
           />
           <h1 style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", fontWeight: "700", color: "var(--text-primary)" }}>
@@ -53,7 +70,16 @@ const LandingPage = () => {
         </div>
 
         {/* Sağ Taraf - Go Voting Butonu */}
-        <Link to="/vote-pools" className="button button-primary" style={{ fontSize: "clamp(0.9rem, 1.8vw, 1rem)" }}>
+        <Link 
+          to="/vote-pools" 
+          className="button button-primary go-voting-button" 
+          style={{ 
+            fontSize: "clamp(0.9rem, 1.8vw, 1rem)",
+            transition: "all 0.3s ease",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
           Go Voting
         </Link>
       </header>
@@ -78,6 +104,25 @@ const LandingPage = () => {
           <Lightning hue={220} xOffset={0} speed={1} intensity={1.2} size={1} />
         </div>
         <div style={{ position: "relative", zIndex: 1 }}>
+          <div
+            className="pollar-animated-text"
+            style={{
+              fontSize: "clamp(4rem, 12vw, 7rem)",
+              fontWeight: "900",
+              marginBottom: "1rem",
+              lineHeight: "1",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 15%, #3b82f6 30%, #60a5fa 45%, #87ceeb 60%, #bae6fd 75%, #ffffff 90%, #bae6fd 100%)",
+              backgroundSize: "300% auto",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              animation: "smoothFlowingGradient 5s ease-in-out infinite",
+            }}
+          >
+            POLLAR
+          </div>
           <h2
             className="hero-title"
             style={{
@@ -101,9 +146,7 @@ const LandingPage = () => {
               lineHeight: "1.8",
             }}
           >
-            A transparent, secure, and decentralized voting platform built on blockchain technology.
-            Create polls, participate in decisions, and track results in real-time. Trust the power
-            of decentralized consensus.
+            From trust to truth, redefining how we vote.
           </p>
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
             <Link to="/vote-pools" className="button button-primary" style={{ fontSize: "clamp(0.9rem, 2vw, 1.1rem)", padding: "clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 3vw, 2rem)" }}>
@@ -118,44 +161,34 @@ const LandingPage = () => {
           </p>
         </div>
         <div
-          className="hero-image"
+          className="hero-video-container"
           style={{
-            background: "linear-gradient(135deg, var(--color-navy) 0%, var(--color-black-light) 100%)",
-            borderRadius: "1rem",
-            padding: "2rem",
-            height: "clamp(250px, 50vw, 400px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             position: "relative",
+            borderRadius: "1rem",
             overflow: "hidden",
+            height: "clamp(250px, 50vw, 450px)",
+            width: "100%",
             zIndex: 1,
+            boxShadow: "0 10px 40px rgba(59, 130, 246, 0.3)",
+            border: "2px solid rgba(59, 130, 246, 0.2)",
+            transform: "translate(5rem, -3rem)",
           }}
         >
-          <div
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
             style={{
               width: "100%",
               height: "100%",
-              backgroundImage: "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=600&fit=crop')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              borderRadius: "0.5rem",
-              opacity: 0.3,
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              fontSize: "clamp(2.5rem, 8vw, 4rem)",
-              color: "var(--color-light-blue)",
-              opacity: 0.8,
+              objectFit: "cover",
+              borderRadius: "1rem",
             }}
           >
-            ✓
-          </div>
+            <source src="/pollar-walk.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
         </div>
       </section>
 

@@ -31,6 +31,19 @@
   --border-color-light: var(--color-gray);
 }
 
+/* Animated Gradient Keyframes - Smooth Version */
+@keyframes smoothFlowingGradient {
+  0% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -72,6 +85,13 @@ body {
 .button-primary:hover {
   background-color: var(--bg-button-primary-hover);
   transform: translateY(-2px);
+}
+
+/* Go Voting Button - Özel Parlama Efekti */
+.go-voting-button:hover {
+  transform: none !important;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(59, 130, 246, 0.4);
+  filter: brightness(1.2);
 }
 
 .button-secondary {
