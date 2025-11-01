@@ -7,6 +7,7 @@ use sui::event;
 use std::option::{Self, Option};
 use std::string::String;
 use std::vector;
+use sui::dynamic_field as df;
 
 const EInvalidPackageVersion: u64 = 1001;
 const EVersionAlreadyUpdated: u64 = 1002;
@@ -34,9 +35,13 @@ public struct Version has key
 public struct VoteRegistry has key 
 {
     id: UID,
-    poll: Poll,
     usersVoted: vector<ID>,
     votes: vector<ID>
+}
+
+public struct PollRegistry has key 
+{
+    id: UID,
 }
 
 public struct User has key, store 
@@ -92,6 +97,7 @@ public struct UserVoteMinted has copy, drop
 
 fun init(ctx: &mut TxContext) 
 {
+    transfer::share_object(PollRegistry { id: object::new(ctx)  });
     transfer::share_object(Version { id: object::new(ctx), version: VERSION });
 }
 
@@ -145,7 +151,7 @@ public fun create_user_vote(poll: Poll, poll_option: PollOption, user: User, ctx
     userVote
 }
 
-public entry fun mint_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, options: vector<PollOption>,  ctx: &mut TxContext)
+public entry fun mint_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, options: vector<PollOption>,  pollRegistry: &mut PollRegistry, ctx: &mut TxContext)
 {
     // Validate poll name length (3-250 characters)
     let name_length = name.length();
@@ -167,11 +173,22 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
     let options_length = vector::length(&options);
     assert!(options_length >= 2, EInvalidOptionsLength);
 
+    
+
     let poll = create_poll(name, description, image_url, start_date, end_date, options, ctx);
     let inner_id = object::id(&poll);
     
+    let voteRegistry = VoteRegistry 
+    {
+        id: object::new(ctx),
+        usersVoted: vector::empty(),
+        votes: vector::empty()
+    };
+
+    df::add(&mut pollRegistry.id, inner_id, object::id(&voteRegistry));
     event::emit(PollMinted{ poll: inner_id, owner: ctx.sender() });
     transfer::transfer(poll, ctx.sender());
+    transfer::share_object(voteRegistry);
 }
 
 public entry fun mint_user(name: String, icon_url: String, ctx: &mut TxContext)
