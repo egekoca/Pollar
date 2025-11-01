@@ -471,10 +471,30 @@ const VotingPage = () => {
         {/* Sağ Taraf - Back to Pools Butonu */}
         <button
           onClick={() => navigate("/vote-pools")}
-          className="button button-secondary"
-          style={{ fontSize: "clamp(0.85rem, 1.5vw, 1rem)", padding: "clamp(0.6rem, 1.5vw, 0.75rem) clamp(1rem, 2vw, 1.5rem)" }}
+          style={{ 
+            textDecoration: "none",
+            display: "inline-block",
+            transition: "all 0.3s ease",
+            cursor: "pointer",
+            lineHeight: "0",
+            borderRadius: "0.5rem",
+            overflow: "hidden",
+            border: "none",
+            background: "transparent",
+            padding: "0",
+          }}
         >
-          Back to Pools
+          <img 
+            src="/back-to-pools.png" 
+            alt="Back to Pools" 
+            style={{
+              width: "clamp(90px, 12vw, 140px)",
+              height: "auto",
+              objectFit: "cover",
+              display: "block",
+              borderRadius: "0.5rem",
+            }}
+          />
         </button>
       </header>
 
