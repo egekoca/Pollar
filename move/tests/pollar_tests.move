@@ -5,7 +5,7 @@ module pollarapp::pollar_tests {
     use sui::tx_context::{Self, TxContext};
     use std::string::{Self, String};
     use std::vector;
-    use pollarapp::pollar::{Self, User, Poll, PollOption, PollRegistry, Version, UserVote};
+    use pollarapp::pollar::{Self, User, Poll, PollOption, PollRegistry, Version, UserVote, VoteRegistry};
     use sui::transfer;
 
     const USER_ADDRESS: address = @0x0;
@@ -197,6 +197,41 @@ module pollarapp::pollar_tests {
             pollar::delete_poll(created_poll, ctx);
         };
         test_scenario::end(scenario);
+    }
+
+    // Test create_poll_option function
+    #[test]
+    fun test_create_poll_option() {
+        let sender = USER_ADDRESS;
+        let mut scenario = test_scenario::begin(sender);
+        
+        let option1 = pollar::create_poll_option(
+            string::utf8(b"Option 1"),
+            string::utf8(b"http://example.com/image1.jpg"),
+            scenario.ctx()
+        );
+        let option2 = pollar::create_poll_option(
+            string::utf8(b"Option 2"),
+            string::utf8(b"http://example.com/image2.jpg"),
+            scenario.ctx()
+        );
+        
+        let mut options = vector::empty<PollOption>();
+        vector::push_back(&mut options, option1);
+        vector::push_back(&mut options, option2);
+        
+        let poll = pollar::create_poll(
+            string::utf8(b"Test Poll"),
+            string::utf8(b"Test Description"),
+            string::utf8(b"http://example.com/poll.jpg"),
+            string::utf8(b"2025-11-01"),
+            string::utf8(b"2025-12-01"),
+            options,
+            scenario.ctx()
+        );
+        
+        pollar::delete_poll(poll, scenario.ctx());
+        scenario.end();
     }
 
     // Test create_user_vote function
