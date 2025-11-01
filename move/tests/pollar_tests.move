@@ -5,7 +5,7 @@ module pollarapp::pollar_tests {
     use sui::tx_context::{Self, TxContext};
     use std::string::{Self, String};
     use std::vector;
-    use pollarapp::pollar::{Self, User, Poll, PollOption, PollRegistry};
+    use pollarapp::pollar::{Self, User, Poll, PollOption, PollRegistry, Version};
 
     const USER_ADDRESS: address = @0x0;
     const USER2_ADDRESS: address = @0x1;
@@ -77,47 +77,61 @@ module pollarapp::pollar_tests {
 
 
 
+    // Test init_for_testing function - creates PollRegistry and Version as shared objects
+    #[test]
+    fun test_init() {
+        let sender = USER_ADDRESS;
+        let mut scenario = test_scenario::begin(sender);
+        
+        pollar::init_for_testing(scenario.ctx());
+        
+        scenario.next_tx(sender);
+        let poll_registry = scenario.take_shared<PollRegistry>();
+        test_scenario::return_shared(poll_registry);
+        
+        scenario.next_tx(sender);
+        let version = scenario.take_shared<Version>();
+        test_scenario::return_shared(version);
+        
+        scenario.end();
+    }
+
     // Test for mint_poll function - creates PollRegistry, polls, and options
     #[test]
     fun test_mint_poll() {
-        let mut scenario = test_scenario::begin(USER_ADDRESS);
-        {
-            let ctx = test_scenario::ctx(&mut scenario);
-            pollar::init_for_testing(ctx);
-        };
-        {
-            let _ctx = test_scenario::ctx(&mut scenario);
-        };
-        {
-            let mut poll_registry = test_scenario::take_shared<PollRegistry>(&scenario);
-            let ctx = test_scenario::ctx(&mut scenario);
-            
-            let mut options = vector::empty();
-            vector::push_back(&mut options, pollar::create_poll_option(
-                string::utf8(b"Option 1"),
-                string::utf8(b"http://example.com/image1.jpg"),
-                ctx
-            ));
-            vector::push_back(&mut options, pollar::create_poll_option(
-                string::utf8(b"Option 2"),
-                string::utf8(b"http://example.com/image2.jpg"),
-                ctx
-            ));
-            
-            pollar::mint_poll(
-                (b"Test Poll".to_string()),
-                (b"Test Description".to_string()),
-                (b"http://example.com/poll.jpg".to_string()),
-                (b"2025-11-01".to_string()),
-                (b"2025-12-01".to_string()),
-                options,
-                &mut poll_registry,
-                ctx
-            );
-            
-            test_scenario::return_shared(poll_registry);
-        };
-        test_scenario::end(scenario);
+        let sender = USER_ADDRESS;
+        let mut scenario = test_scenario::begin(sender);
+        
+        pollar::init_for_testing(scenario.ctx());
+        
+        scenario.next_tx(sender);
+        let mut poll_registry = scenario.take_shared<PollRegistry>();
+        
+        let mut options = vector::empty();
+        vector::push_back(&mut options, pollar::create_poll_option(
+            string::utf8(b"Option 1"),
+            string::utf8(b"http://example.com/image1.jpg"),
+            scenario.ctx()
+        ));
+        vector::push_back(&mut options, pollar::create_poll_option(
+            string::utf8(b"Option 2"),
+            string::utf8(b"http://example.com/image2.jpg"),
+            scenario.ctx()
+        ));
+        
+        pollar::mint_poll(
+            string::utf8(b"Test Poll"),
+            string::utf8(b"Test Description"),
+            string::utf8(b"http://example.com/poll.jpg"),
+            string::utf8(b"2025-11-01"),
+            string::utf8(b"2025-12-01"),
+            options,
+            &mut poll_registry,
+            scenario.ctx()
+        );
+        
+        test_scenario::return_shared(poll_registry);
+        scenario.end();
     }
 
     // Test mint_user function
