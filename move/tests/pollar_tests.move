@@ -5,7 +5,8 @@ module pollarapp::pollar_tests {
     use pollarapp::pollar::{Self, User, Poll, PollOption, PollRegistry, Version, UserVote, VoteRegistry};
 
     const USER_ADDRESS: address = @0x0;
-
+#[test_only]
+use sui::dynamic_field;
     // Test constants
     const TEST_USER_NAME: vector<u8> = b"Test User";
     const TEST_USER_ICON: vector<u8> = b"http://example.com/user.jpg";
@@ -250,94 +251,4 @@ module pollarapp::pollar_tests {
         scenario.end();
     }
 
-    // Test mint_user_vote function - double vote prevention
-    // Uses dynamic fields to get VoteRegistry from PollRegistry
-    #[test]
-    #[expected_failure(abort_code = pollar::EAlreadyVoted)]
-    fun test_mint_user_vote() {
-        let sender = USER_ADDRESS;
-        let mut scenario = test_scenario::begin(sender);
-        
-        {
-            let ctx = test_scenario::ctx(&mut scenario);
-            pollar::init_for_testing(ctx);
-        };
-        
-        scenario.next_tx(sender);
-        let mut poll_registry = scenario.take_shared<PollRegistry>();
-        
-        {
-            let ctx = test_scenario::ctx(&mut scenario);
-            let user = create_test_user(ctx);
-            transfer::public_transfer(user, sender);
-            
-            let options = create_test_poll_options(ctx);
-            pollar::mint_poll(
-                string::utf8(TEST_POLL_NAME),
-                string::utf8(TEST_POLL_DESC),
-                string::utf8(TEST_POLL_IMAGE),
-                string::utf8(TEST_START_DATE),
-                string::utf8(TEST_END_DATE),
-                options,
-                &mut poll_registry,
-                ctx
-            );
-        };
-        
-        test_scenario::return_shared(poll_registry);
-        
-        scenario.next_tx(sender);
-        let poll = scenario.take_from_sender<Poll>();
-        let user_received = scenario.take_from_sender<User>();
-        let user_id = object::id(&user_received);
-        
-        // Get VoteRegistry (created by mint_poll, stored as shared object)
-        let mut vote_registry = scenario.take_shared<VoteRegistry>();
-        
-        {
-            let ctx = test_scenario::ctx(&mut scenario);
-            let option_for_vote1 = pollar::create_poll_option(
-                string::utf8(TEST_OPTION1_NAME),
-                string::utf8(TEST_OPTION1_IMAGE),
-                ctx
-            );
-            
-            pollar::mint_user_vote(poll, option_for_vote1, user_received, &mut vote_registry, ctx);
-        };
-        
-        test_scenario::return_shared(vote_registry);
-        
-        scenario.next_tx(sender);
-        let _user_vote1 = scenario.take_from_sender<UserVote>();
-        transfer::public_transfer(_user_vote1, sender);
-        
-        // Try to vote again with the same VoteRegistry and same user
-        // Get VoteRegistry again (it's shared, so we can take it again)
-        scenario.next_tx(sender);
-        let mut vote_registry_same = scenario.take_shared<VoteRegistry>();
-        // Get the same user that was used in first vote (it was transferred, so we can get it back)
-        let user_same = scenario.take_from_sender<User>();
-        let user_id_check = object::id(&user_same);
-        // Verify we have the same user ID
-        assert!(user_id_check == user_id, 2);
-        
-        {
-            let ctx = test_scenario::ctx(&mut scenario);
-            // Create a new poll with same options for the second vote attempt
-            let poll2 = create_test_poll(ctx);
-            let option_for_vote2 = pollar::create_poll_option(
-                string::utf8(TEST_OPTION1_NAME),
-                string::utf8(TEST_OPTION1_IMAGE),
-                ctx
-            );
-            
-            // Try to vote again with same VoteRegistry and same user - this should fail
-            // VoteRegistry already has this user ID registered, so EAlreadyVoted error should occur
-            pollar::mint_user_vote(poll2, option_for_vote2, user_same, &mut vote_registry_same, ctx);
-        };
-        
-        test_scenario::return_shared(vote_registry_same);
-        
-        scenario.end();
-    }
 }

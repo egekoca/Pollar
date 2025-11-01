@@ -55,20 +55,20 @@ const VotingPage = () => {
       setError("");
 
       try {
-        // Önce poll'u oku
+        // Read poll first
         const poll = await getPollById(client, id);
         if (!poll) {
-          setError("Poll bulunamadı");
+          setError("Poll not found");
           setIsLoading(false);
           return;
         }
 
         setPollData(poll);
 
-        // VoteRegistry'yi bul
+        // Find VoteRegistry
         const vrId = await findVoteRegistryByPollId(client, id);
         if (!vrId) {
-          console.warn("VoteRegistry bulunamadı, boş VoteRegistry ile devam ediliyor");
+          console.warn("VoteRegistry not found, continuing with empty VoteRegistry");
           // VoteRegistry bulunamazsa boş VoteRegistry ile devam et
           const options: VoteOption[] = poll.options.map((opt: any) => ({
             id: opt.id,
@@ -105,10 +105,10 @@ const VotingPage = () => {
 
         setVoteRegistryId(vrId);
 
-        // VoteRegistry'den oy bilgilerini oku
+        // Read vote data from VoteRegistry
         const voteData = await getVoteRegistry(client, vrId);
         if (!voteData) {
-          console.warn("Oy bilgileri alınamadı, boş VoteRegistry ile devam ediliyor");
+          console.warn("Vote data could not be retrieved, continuing with empty VoteRegistry");
           // Boş VoteRegistry ile devam et
           const options: VoteOption[] = poll.options.map((opt: any) => ({
             id: opt.id,
@@ -143,7 +143,7 @@ const VotingPage = () => {
           return;
         }
 
-        // Kullanıcının daha önce oy verip vermediğini kontrol et
+        // Check if user has already voted
         const userAddress = account?.address;
         let userHasVoted = false;
         if (userAddress && voteData.usersVoted) {
@@ -151,7 +151,7 @@ const VotingPage = () => {
         }
         setHasVoted(userHasVoted);
 
-        // Pool'u oluştur
+        // Create pool data
         const totalVotes = voteData.option_votes.reduce((sum: number, count: number) => sum + count, 0);
         
         const options: VoteOption[] = poll.options.map((opt: any, index: number) => {
@@ -189,8 +189,8 @@ const VotingPage = () => {
 
         setLocalPool(poolData);
       } catch (err: any) {
-        console.error("Veri yükleme hatası:", err);
-        setError(err.message || "Veri yüklenirken bir hata oluştu");
+        console.error("Data loading error:", err);
+        setError(err.message || "An error occurred while loading data");
       } finally {
         setIsLoading(false);
       }
@@ -201,26 +201,26 @@ const VotingPage = () => {
 
   const handleVote = async (optionIndex: number) => {
     if (!account?.address) {
-      setError("Lütfen cüzdanınızı bağlayın");
+      setError("Please connect your wallet");
       return;
     }
 
     if (!id) {
-      setError("Poll ID bulunamadı");
+      setError("Poll ID not found");
       return;
     }
 
     if (!voteRegistryId) {
-      setError("VoteRegistry bulunamadı. Poll henüz VoteRegistry'ye kayıtlı olmayabilir.");
+      setError("VoteRegistry not found. Poll may not be registered with VoteRegistry yet.");
       return;
     }
 
     if (isVoting) {
-      return; // Zaten bir oy verme işlemi devam ediyor
+      return; // Vote transaction is already in progress
     }
 
     if (hasVoted) {
-      setError("Bu poll'da zaten oy kullanmışsınız. Bir kullanıcı sadece bir kez oy verebilir.");
+      setError("You have already voted in this poll. Each user can only vote once.");
       return;
     }
 
@@ -228,7 +228,7 @@ const VotingPage = () => {
     setSelectedOption(optionIndex);
 
     try {
-      // Transaction oluştur
+      // Create transaction
       const tx = createVoteTransaction(id, optionIndex, voteRegistryId);
 
       // Transaction'ı gönder
@@ -238,41 +238,44 @@ const VotingPage = () => {
         } as any,
         {
           onSuccess: async (result: any) => {
-            console.log("Oy başarıyla verildi!", result);
+            console.log("Vote submitted successfully!", result);
             
-            // Transaction digest'i al ve transaction'ın tamamlanmasını bekle
+            // Get transaction digest and wait for transaction completion
             const transactionDigest = result.digest;
             if (transactionDigest) {
               try {
-                // Transaction'ın tamamlanmasını bekle (maksimum 10 saniye)
+                // Wait for transaction completion (maximum 10 seconds)
                 await client.waitForTransaction({
                   digest: transactionDigest,
                   timeout: 10000,
                   pollInterval: 500,
                 });
-                console.log("Transaction tamamlandı:", transactionDigest);
+                console.log("Transaction completed:", transactionDigest);
               } catch (waitError) {
-                console.warn("Transaction bekleme hatası (devam ediyoruz):", waitError);
+                console.warn("Transaction wait error (continuing):", waitError);
               }
             }
 
-            // VoteRegistry'yi yeniden oku (birkaç deneme yap)
+            // Re-read VoteRegistry (with retries) and refresh poll data
             const refreshVoteData = async (retries = 3): Promise<void> => {
-              if (!voteRegistryId || !pollData) {
+              if (!voteRegistryId || !id) {
                 return;
               }
 
               for (let attempt = 1; attempt <= retries; attempt++) {
                 try {
-                  // Biraz bekle (blockchain'de veri güncellenmesi için)
+                  // Wait a bit (for blockchain data to update)
                   await new Promise(resolve => setTimeout(resolve, attempt * 1000));
 
+                  // Re-fetch poll data to ensure we have the latest image URL
+                  const poll = await getPollById(client, id);
                   const voteData = await getVoteRegistry(client, voteRegistryId);
-                  console.log(`VoteData (deneme ${attempt}):`, voteData);
                   
-                  if (voteData && pollData) {
+                  console.log(`VoteData (attempt ${attempt}):`, voteData);
+                  
+                  if (voteData && poll) {
                     const totalVotes = voteData.option_votes.reduce((sum: number, count: number) => sum + count, 0);
-                    const options: VoteOption[] = pollData.options.map((opt: any, idx: number) => {
+                    const options: VoteOption[] = poll.options.map((opt: any, idx: number) => {
                       const voteCount = voteData.option_votes[idx] || 0;
                       const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
                       return {
@@ -284,22 +287,36 @@ const VotingPage = () => {
                       };
                     });
 
+                    setPollData(poll); // Update pollData with fresh data
                     setLocalPool({
-                      ...pollData,
+                      id: poll.pollId,
+                      name: poll.name,
+                      description: poll.description,
+                      image: poll.image_url,
+                      startTime: poll.start_date,
+                      endTime: poll.end_date,
                       options,
                       totalVotes,
-                      history: localPool?.history || [],
+                      history: localPool?.history || [
+                        {
+                          timestamp: poll.start_date,
+                          options: options.map((opt) => ({
+                            optionId: opt.id,
+                            percentage: opt.percentage,
+                          })),
+                        },
+                      ],
                     });
                     setSelectedOption(null);
-                    setHasVoted(true); // Kullanıcı artık oy vermiş sayılır
-                    console.log("Vote verileri başarıyla güncellendi!");
-                    return; // Başarılı, çık
+                    setHasVoted(true);
+                    console.log("Vote data updated successfully!");
+                    return; // Success, exit
                   }
                 } catch (err) {
-                  console.error(`Yenileme hatası (deneme ${attempt}):`, err);
+                  console.error(`Refresh error (attempt ${attempt}):`, err);
                   if (attempt === retries) {
-                    // Son denemede de başarısız olursa, kullanıcıya bilgi ver
-                    setError("Oy verildi ancak veriler güncellenemedi. Sayfayı yenileyin.");
+                    // If last attempt fails, inform user
+                    setError("Vote submitted but data could not be updated. Please refresh the page.");
                   }
                 }
               }
@@ -308,21 +325,21 @@ const VotingPage = () => {
             await refreshVoteData();
           },
           onError: (error: any) => {
-            console.error("Oy verme hatası:", error);
+            console.error("Vote error:", error);
             
-            // Hata mesajını parse et
-            let errorMessage = "Oy verilirken bir hata oluştu";
+            // Parse error message
+            let errorMessage = "An error occurred while voting";
             const errorStr = error.message || error.toString() || "";
             
             if (errorStr.includes("EAlreadyVoted") || errorStr.includes("8")) {
-              errorMessage = "Bu poll'da zaten oy kullanmışsınız. Bir kullanıcı sadece bir kez oy verebilir.";
-              setHasVoted(true); // Frontend state'ini güncelle
+              errorMessage = "You have already voted in this poll. Each user can only vote once.";
+              setHasVoted(true); // Update frontend state
             } else if (errorStr.includes("EInvalidOptionIndex") || errorStr.includes("14")) {
-              errorMessage = "Geçersiz seçenek index'i";
+              errorMessage = "Invalid option index";
             } else if (errorStr.includes("EInvalidVoteRegistry") || errorStr.includes("9")) {
-              errorMessage = "VoteRegistry bu poll'a ait değil";
+              errorMessage = "VoteRegistry does not belong to this poll";
             } else {
-              errorMessage = error.message || errorStr || "Oy verilirken bir hata oluştu";
+              errorMessage = error.message || errorStr || "An error occurred while voting";
             }
             
             setError(errorMessage);
@@ -331,8 +348,8 @@ const VotingPage = () => {
         }
       );
     } catch (error: any) {
-      console.error("Oy verme hatası:", error);
-      setError(error.message || "Oy verilirken bir hata oluştu");
+      console.error("Vote error:", error);
+      setError(error.message || "An error occurred while voting");
       setSelectedOption(null);
     }
   };
@@ -351,7 +368,7 @@ const VotingPage = () => {
     return (
       <div style={{ minHeight: "100vh", background: "var(--bg-primary)", padding: "2rem" }}>
         <div className="container" style={{ textAlign: "center" }}>
-          <p style={{ color: "var(--text-secondary)", fontSize: "1.2rem" }}>Yükleniyor...</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: "1.2rem" }}>Loading...</p>
           <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginTop: "0.5rem" }}>
             Poll ID: {id}
           </p>
@@ -364,12 +381,12 @@ const VotingPage = () => {
     return (
       <div style={{ minHeight: "100vh", background: "var(--bg-primary)", padding: "2rem" }}>
         <div className="container" style={{ textAlign: "center" }}>
-          <p style={{ color: "#ef4444", fontSize: "1.2rem", marginBottom: "1rem" }}>Hata: {error}</p>
+          <p style={{ color: "#ef4444", fontSize: "1.2rem", marginBottom: "1rem" }}>Error: {error}</p>
           <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
             Poll ID: {id}
           </p>
           <Link to="/vote-pools" className="button button-primary" style={{ marginTop: "1rem" }}>
-            Geri Dön
+            Go Back
           </Link>
         </div>
       </div>
@@ -607,7 +624,7 @@ const VotingPage = () => {
                   fontSize: "0.9rem",
                 }}
               >
-                ⚠️ Oy vermek için cüzdanınızı bağlamanız gerekiyor. Detayları ve sonuçları görebilirsiniz.
+                Please connect your wallet to vote. You can view details and results.
               </div>
             )}
             {hasVoted && account?.address && (
@@ -622,7 +639,7 @@ const VotingPage = () => {
                   fontSize: "0.9rem",
                 }}
               >
-                ✅ Bu poll'da oyunuzu kullandınız. Teşekkürler!
+                You have already voted in this poll. Thank you!
               </div>
             )}
             {error && (
@@ -645,11 +662,11 @@ const VotingPage = () => {
                   key={option.id}
                   onClick={() => {
                     if (!account?.address) {
-                      setError("Oy vermek için lütfen cüzdanınızı bağlayın");
+                      setError("Please connect your wallet to vote");
                       return;
                     }
                     if (hasVoted) {
-                      setError("Bu poll'da zaten oy kullanmışsınız.");
+                      setError("You have already voted in this poll.");
                       return;
                     }
                     if (!isVoting) {
