@@ -101,12 +101,7 @@ const CreateProfilePage = () => {
       signAndExecute(
         {
           transaction: tx,
-          options: {
-            showEffects: true,
-            showEvents: true,
-            showObjectChanges: true,
-          },
-        },
+        } as any, // Options may be supported but types may be outdated
         {
           onSuccess: (result) => {
             console.log("User created successfully:", result);
@@ -114,8 +109,10 @@ const CreateProfilePage = () => {
             // Find the created User object ID from the result
             let userObjectId: string | undefined;
             
-            if (result.objectChanges) {
-              const createdUser = result.objectChanges.find(
+            // Try to get objectChanges from result (may not be available in all SDK versions)
+            const resultAny = result as any;
+            if (resultAny.objectChanges) {
+              const createdUser = resultAny.objectChanges.find(
                 (change: any) => 
                   change.type === "created" && 
                   change.objectType?.includes("::User")
@@ -123,6 +120,14 @@ const CreateProfilePage = () => {
               
               if (createdUser && createdUser.objectId) {
                 userObjectId = createdUser.objectId;
+              }
+            }
+            
+            // Alternative: Try to get from effects or events
+            if (!userObjectId && resultAny.effects?.created) {
+              const created = resultAny.effects.created;
+              if (Array.isArray(created) && created.length > 0) {
+                userObjectId = created[0].reference?.objectId;
               }
             }
 

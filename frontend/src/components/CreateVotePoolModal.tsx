@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { Transaction } from "@mysten/sui/transactions";
+import { contractConfig } from "../config/contractConfig";
+import { findPollRegistry } from "../utils/blockchain";
 import "../styles/theme.css";
 
 interface Option {
@@ -9,7 +13,7 @@ interface Option {
 interface CreateVotePoolModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: {
+  onSubmit?: (data: {
     name: string;
     description: string;
     image: string;
@@ -17,9 +21,14 @@ interface CreateVotePoolModalProps {
     startTime: string;
     endTime: string;
   }) => void;
+  onSuccess?: () => void;
 }
 
-const CreateVotePoolModal = ({ isOpen, onClose, onSubmit }: CreateVotePoolModalProps) => {
+const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVotePoolModalProps) => {
+  const account = useCurrentAccount();
+  const client = useSuiClient();
+  const { mutate: signAndExecute, isPending } = useSignAndExecuteTransaction();
+  
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -35,13 +44,22 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit }: CreateVotePoolModalP
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!account?.address) {
+      setError("Wallet not connected");
+      return;
+    }
 
     // Validation
     if (!formData.name.trim()) {
       setError("Pool name is required");
+      return;
+    }
+    if (formData.name.trim().length < 3 || formData.name.trim().length > 250) {
+      setError("Pool name must be between 3 and 250 characters");
       return;
     }
     if (!formData.description.trim()) {
@@ -50,6 +68,10 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit }: CreateVotePoolModalP
     }
     if (!formData.image.trim()) {
       setError("Pool image URL is required");
+      return;
+    }
+    if (formData.image.trim().length < 7 || formData.image.trim().length > 1000) {
+      setError("Image URL must be between 7 and 1000 characters");
       return;
     }
     const validOptions = options.filter((opt) => opt.name.trim() !== "");
@@ -66,25 +88,130 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit }: CreateVotePoolModalP
       return;
     }
 
-    onSubmit({
-      ...formData,
-      options: validOptions,
-    });
+    // Check if package ID is configured
+    if (!contractConfig.packageId) {
+      setError("Contract package ID is not configured. Please set VITE_PACKAGE_ID in .env file.");
+      return;
+    }
 
-    // Reset form
-    setFormData({
-      name: "",
-      description: "",
-      image: "",
-      startTime: "",
-      endTime: "",
-    });
-    setOptions([
-      { name: "", image: "" },
-      { name: "", image: "" },
-    ]);
-    setError("");
-    onClose();
+    try {
+      // Find PollRegistry
+      const pollRegistryId = await findPollRegistry(client);
+      if (!pollRegistryId) {
+        setError("PollRegistry not found. Please ensure the contract is properly deployed.");
+        return;
+      }
+
+      // Create transaction
+      const tx = new Transaction();
+
+      // Her option için create_poll_option çağrısı yap ve sonuçları bir vector'e topla
+      // Sui Transaction API'de transaction içinde intermediate değerler kullanabiliriz
+      const optionResults: any[] = [];
+      
+      for (const option of validOptions) {
+        const optionCall = tx.moveCall({
+          target: `${contractConfig.packageId}::${contractConfig.moduleName}::create_poll_option`,
+          arguments: [
+            tx.pure.string(option.name.trim()),
+            tx.pure.string(option.image.trim() || ""), // Boşsa boş string
+          ],
+        });
+        optionResults.push(optionCall);
+      }
+
+      // Start ve end date'leri ISO string formatına çevir
+      const startDateISO = new Date(formData.startTime).toISOString();
+      const endDateISO = new Date(formData.endTime).toISOString();
+
+      // Validate date string lengths (Move'da 3-100 karakter)
+      if (startDateISO.length < 3 || startDateISO.length > 100) {
+        setError("Start date format is invalid");
+        return;
+      }
+      if (endDateISO.length < 3 || endDateISO.length > 100) {
+        setError("End date format is invalid");
+        return;
+      }
+
+      // mint_poll çağrısı
+      // Vector oluşturmak için Sui Transaction API'sinde tx.makeMoveVec kullanıyoruz
+      tx.moveCall({
+        target: `${contractConfig.packageId}::${contractConfig.moduleName}::${contractConfig.functionNames.mintPoll}`,
+        arguments: [
+          tx.pure.string(formData.name.trim()),
+          tx.pure.string(formData.description.trim()),
+          tx.pure.string(formData.image.trim()),
+          tx.pure.string(startDateISO),
+          tx.pure.string(endDateISO),
+          tx.makeMoveVec({ 
+            type: `${contractConfig.packageId}::${contractConfig.moduleName}::PollOption`,
+            elements: optionResults 
+          }),
+          tx.object(pollRegistryId), // PollRegistry shared object
+        ],
+      });
+
+      // Execute transaction
+      signAndExecute(
+        {
+          transaction: tx,
+        } as any, // Temporary type assertion - options may be supported but types may be outdated
+        {
+          onSuccess: (result) => {
+            console.log("Poll created successfully:", result);
+            
+            // Callback'leri çağır
+            if (onSubmit) {
+              onSubmit({
+                ...formData,
+                options: validOptions,
+              });
+            }
+            
+            if (onSuccess) {
+              onSuccess();
+            }
+
+            // Reset form
+            setFormData({
+              name: "",
+              description: "",
+              image: "",
+              startTime: "",
+              endTime: "",
+            });
+            setOptions([
+              { name: "", image: "" },
+              { name: "", image: "" },
+            ]);
+            setError("");
+            onClose();
+          },
+          onError: (error) => {
+            console.error("Failed to create poll on blockchain:", error);
+            
+            // Check for specific error messages from Move contract
+            const errorMessage = error.message || String(error);
+            
+            if (errorMessage.includes("EInvalidPollNameLength")) {
+              setError("Pool name must be between 3 and 250 characters");
+            } else if (errorMessage.includes("EInvalidPollImageUrlLength")) {
+              setError("Image URL must be between 7 and 1000 characters");
+            } else if (errorMessage.includes("EInvalidStartDateLength") || errorMessage.includes("EInvalidEndDateLength")) {
+              setError("Date format is invalid");
+            } else if (errorMessage.includes("EInvalidOptionsLength")) {
+              setError("At least 2 options are required");
+            } else {
+              setError(`Failed to create poll: ${errorMessage}. Please try again.`);
+            }
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to create poll:", error);
+      setError(`Failed to create poll: ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
 
   const addOption = () => {
@@ -415,8 +542,13 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit }: CreateVotePoolModalP
             >
               Cancel
             </button>
-            <button type="submit" className="button button-primary">
-              Create Pool
+            <button 
+              type="submit" 
+              className="button button-primary"
+              disabled={isPending}
+              style={{ cursor: isPending ? "not-allowed" : "pointer" }}
+            >
+              {isPending ? "Creating..." : "Create Pool"}
             </button>
           </div>
         </form>

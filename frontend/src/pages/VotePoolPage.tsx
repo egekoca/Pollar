@@ -1,20 +1,21 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useCurrentAccount, useDisconnectWallet, useWallets } from "@mysten/dapp-kit";
-import { mockVotePools, addVotePool } from "../data/mockData";
+import { useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
 import CreateVotePoolModal from "../components/CreateVotePoolModal";
 import UserProfileDropdown from "../components/UserProfileDropdown";
 import { getUserProfile, UserProfile } from "../utils/userProfile";
+import { useBlockchainPolls } from "../utils/pollUtils";
 import "../styles/theme.css";
 
 const VotePoolPage = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [pools, setPools] = useState(mockVotePools);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const account = useCurrentAccount();
   const { mutate: disconnect } = useDisconnectWallet();
-  const wallets = useWallets();
+  
+  // Blockchain'den poll'ları oku
+  const { data: pools = [], isLoading: isLoadingPools, refetch } = useBlockchainPolls();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -46,29 +47,9 @@ const VotePoolPage = () => {
     }
   }, [account?.address, navigate]);
 
-  const handleSubmitPool = (data: {
-    name: string;
-    description: string;
-    image: string;
-    options: { name: string; image: string }[];
-    startTime: string;
-    endTime: string;
-  }) => {
-    // Convert local datetime to ISO string
-    const startTimeISO = new Date(data.startTime).toISOString();
-    const endTimeISO = new Date(data.endTime).toISOString();
-
-    addVotePool(
-      data.name,
-      data.description,
-      data.image,
-      data.options,
-      startTimeISO,
-      endTimeISO
-    );
-
-    // Update local state to trigger re-render
-    setPools([...mockVotePools]);
+  const handlePollCreated = () => {
+    // Poll oluşturulduktan sonra blockchain'den yeniden yükle
+    refetch();
   };
 
 
@@ -139,7 +120,29 @@ const VotePoolPage = () => {
           </p>
         </div>
 
+        {/* Loading State */}
+        {isLoadingPools && (
+          <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
+            Loading polls...
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isLoadingPools && pools.length === 0 && (
+          <div style={{ textAlign: "center", padding: "2rem" }}>
+            <p style={{ color: "var(--text-muted)", fontSize: "1.1rem", marginBottom: "1rem" }}>
+              No polls found. Create the first poll!
+            </p>
+            {account && userProfile && (
+              <button onClick={handleCreateVotePool} className="button button-primary">
+                Create First Poll
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Vote Pool Grid */}
+        {!isLoadingPools && pools.length > 0 && (
         <div
           style={{
             display: "grid",
@@ -260,6 +263,7 @@ const VotePoolPage = () => {
                 </div>
 
                 {/* Top Option */}
+                {pool.options && pool.options.length > 0 && (
                 <div
                   style={{
                     marginTop: "1rem",
@@ -299,17 +303,20 @@ const VotePoolPage = () => {
                     />
                   </div>
                 </div>
+                )}
               </div>
             </Link>
           ))}
         </div>
+        )}
+
       </main>
 
       {/* Create Vote Pool Modal */}
       <CreateVotePoolModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        onSubmit={handleSubmitPool}
+        onSuccess={handlePollCreated}
       />
 
     </div>
