@@ -265,7 +265,7 @@ public entry fun delete_poll(poll: Poll, ctx: &mut TxContext)
     let Poll { id, name: _, description: _, image_url: _, start_date: _, end_date: _, options: mut options } = poll;
     while (!vector::is_empty(&options)) 
     {
-        let mut pollOption = vector::pop_back(&mut options);
+        let pollOption = vector::pop_back(&mut options);
         let PollOption { id: pid, name: _, image_url: _ } = pollOption;
         object::delete(pid);
     };
