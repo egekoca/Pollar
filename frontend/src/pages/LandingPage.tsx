@@ -34,7 +34,7 @@ const LandingPage = () => {
         }}
       >
         {/* Sol Taraf - Logo + Proje İsmi */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <Link to="#" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.75rem" }} onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
           <img 
             ref={logoRef}
             src="/pollar-logo.png" 
@@ -50,7 +50,7 @@ const LandingPage = () => {
           <h1 style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", fontWeight: "700", color: "var(--text-primary)" }}>
             POLLAR
           </h1>
-        </div>
+        </Link>
 
         {/* Orta - PillNav */}
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
@@ -60,7 +60,7 @@ const LandingPage = () => {
             items={[
               { label: 'Home', href: '/' },
               { label: 'Pools', href: '/vote-pools' },
-              { label: 'Profile', href: '/my-profile' },
+              { label: 'Pricing', href: '#pricing' },
             ]}
             activeHref="/"
             baseColor="#000000"
@@ -75,20 +75,26 @@ const LandingPage = () => {
           to="/vote-pools" 
           className="go-voting-button-neon" 
           style={{ 
-            fontSize: "clamp(0.9rem, 1.8vw, 1rem)",
-            padding: "clamp(0.5rem, 1.2vw, 0.65rem) clamp(1.25rem, 2.5vw, 1.75rem)",
-            background: "transparent",
-            color: "#3b82f6",
-            border: "1.5px solid #3b82f6",
-            borderRadius: "0.5rem",
-            fontWeight: "600",
             textDecoration: "none",
             display: "inline-block",
             transition: "all 0.3s ease",
             cursor: "pointer",
+            lineHeight: "0",
+            borderRadius: "0.5rem",
+            overflow: "hidden",
           }}
         >
-          Go Voting
+          <img 
+            src="/go-vote.png" 
+            alt="Go Vote" 
+            style={{
+              width: "clamp(90px, 12vw, 140px)",
+              height: "auto",
+              objectFit: "cover",
+              display: "block",
+              borderRadius: "0.5rem",
+            }}
+          />
         </Link>
       </header>
 
@@ -162,7 +168,23 @@ const LandingPage = () => {
             From trust to truth, redefining how we vote.
           </p>
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            <Link to="/vote-pools" className="button button-primary" style={{ fontSize: "clamp(0.9rem, 2vw, 1.1rem)", padding: "clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 3vw, 2rem)" }}>
+            <Link 
+              to="/vote-pools" 
+              className="hero-button-neon-blue"
+              style={{ 
+                fontSize: "clamp(0.9rem, 2vw, 1.1rem)", 
+                padding: "clamp(0.65rem, 1.8vw, 0.85rem) clamp(1.5rem, 3.5vw, 2.25rem)",
+                background: "transparent",
+                color: "#60a5fa",
+                border: "1.5px solid #60a5fa",
+                borderRadius: "0.5rem",
+                fontWeight: "600",
+                textDecoration: "none",
+                display: "inline-block",
+                transition: "all 0.3s ease",
+                cursor: "pointer",
+              }}
+            >
               Start Voting
             </Link>
             <Link 
@@ -307,6 +329,7 @@ const LandingPage = () => {
 
       {/* Pricing Section */}
       <section
+        id="pricing"
         style={{
           padding: "clamp(4rem, 10vw, 8rem) clamp(1rem, 3vw, 2rem)",
           background: "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)",
@@ -390,14 +413,14 @@ const LandingPage = () => {
               </div>
             </ElectricBorder>
             <ElectricBorder
-              color="#3b82f6"
+              color="#FFD700"
               speed={1}
               chaos={0.5}
               thickness={2}
               style={{ borderRadius: 16 }}
             >
               <div style={{ padding: "clamp(2rem, 4vw, 3rem)", textAlign: "center" }}>
-                <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#60a5fa" }}>
+                <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#FFD700" }}>
                   Pro
                 </h4>
                 <div style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: "bold", color: "#ffffff", marginBottom: "1rem" }}>
