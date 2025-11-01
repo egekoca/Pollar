@@ -39,7 +39,7 @@ const LandingPage = () => {
             src="/pollar-logo.png" 
             alt="Pollar Logo" 
             onMouseEnter={handleLogoHover}
-            style={{ 
+            style={{
               width: "clamp(32px, 5vw, 40px)", 
               height: "clamp(32px, 5vw, 40px)",
               borderRadius: "8px",
@@ -72,12 +72,19 @@ const LandingPage = () => {
         {/* Sağ Taraf - Go Voting Butonu */}
         <Link 
           to="/vote-pools" 
-          className="button button-primary go-voting-button" 
+          className="go-voting-button-neon" 
           style={{ 
             fontSize: "clamp(0.9rem, 1.8vw, 1rem)",
+            padding: "clamp(0.5rem, 1.2vw, 0.65rem) clamp(1.25rem, 2.5vw, 1.75rem)",
+            background: "transparent",
+            color: "#3b82f6",
+            border: "1.5px solid #3b82f6",
+            borderRadius: "0.5rem",
+            fontWeight: "600",
+            textDecoration: "none",
+            display: "inline-block",
             transition: "all 0.3s ease",
-            position: "relative",
-            overflow: "hidden",
+            cursor: "pointer",
           }}
         >
           Go Voting
@@ -103,7 +110,7 @@ const LandingPage = () => {
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, opacity: 1 }}>
           <Lightning hue={220} xOffset={0} speed={1} intensity={1.2} size={1} />
         </div>
-        <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ position: "relative", zIndex: 1, transform: "translateX(-10rem)" }}>
           <div
             className="pollar-animated-text"
             style={{
@@ -119,20 +126,25 @@ const LandingPage = () => {
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
               animation: "smoothFlowingGradient 5s ease-in-out infinite",
+              transform: "translateY(-5rem)",
             }}
           >
             POLLAR
           </div>
           <h2
-            className="hero-title"
+            className="decentralized-animated-text"
             style={{
-              fontSize: "clamp(2rem, 5vw, 3.5rem)",
+              fontSize: "clamp(1.5rem, 3.5vw, 2.5rem)",
               fontWeight: "800",
               marginBottom: "1.5rem",
               lineHeight: "1.2",
-              background: "linear-gradient(135deg, var(--color-white) 0%, var(--color-light-blue) 100%)",
+              whiteSpace: "nowrap",
+              background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 15%, #3b82f6 30%, #60a5fa 45%, #87ceeb 60%, #bae6fd 75%, #ffffff 90%, #bae6fd 100%)",
+              backgroundSize: "300% auto",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              animation: "smoothFlowingGradient 5s ease-in-out infinite",
             }}
           >
             Decentralized Voting System
@@ -149,16 +161,45 @@ const LandingPage = () => {
             From trust to truth, redefining how we vote.
           </p>
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            <Link to="/vote-pools" className="button button-primary" style={{ fontSize: "clamp(0.9rem, 2vw, 1.1rem)", padding: "clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 3vw, 2rem)" }}>
+            <Link 
+              to="/vote-pools" 
+              className="hero-button-neon-blue"
+              style={{ 
+                fontSize: "clamp(0.9rem, 2vw, 1.1rem)", 
+                padding: "clamp(0.65rem, 1.8vw, 0.85rem) clamp(1.5rem, 3.5vw, 2.25rem)",
+                background: "transparent",
+                color: "#60a5fa",
+                border: "1.5px solid #60a5fa",
+                borderRadius: "0.5rem",
+                fontWeight: "600",
+                textDecoration: "none",
+                display: "inline-block",
+                transition: "all 0.3s ease",
+                cursor: "pointer",
+              }}
+            >
               Start Voting
             </Link>
-            <Link to="/vote-pools" className="button button-secondary" style={{ fontSize: "clamp(0.9rem, 2vw, 1.1rem)", padding: "clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 3vw, 2rem)" }}>
+            <Link 
+              to="/vote-pools" 
+              className="hero-button-neon-white"
+              style={{ 
+                fontSize: "clamp(0.9rem, 2vw, 1.1rem)", 
+                padding: "clamp(0.65rem, 1.8vw, 0.85rem) clamp(1.5rem, 3.5vw, 2.25rem)",
+                background: "transparent",
+                color: "#ffffff",
+                border: "1.5px solid #ffffff",
+                borderRadius: "0.5rem",
+                fontWeight: "600",
+                textDecoration: "none",
+                display: "inline-block",
+                transition: "all 0.3s ease",
+                cursor: "pointer",
+              }}
+            >
               Explore Polls
             </Link>
           </div>
-          <p style={{ marginTop: "1.5rem", color: "var(--text-muted)", fontSize: "clamp(0.8rem, 1.5vw, 0.9rem)" }}>
-            No signup required to participate
-          </p>
         </div>
         <div
           className="hero-video-container"
@@ -171,7 +212,7 @@ const LandingPage = () => {
             zIndex: 1,
             boxShadow: "0 10px 40px rgba(59, 130, 246, 0.3)",
             border: "2px solid rgba(59, 130, 246, 0.2)",
-            transform: "translate(5rem, -3rem)",
+            transform: "translate(11rem, -3rem)",
           }}
         >
           <video

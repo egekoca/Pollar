@@ -87,11 +87,37 @@ body {
   transform: translateY(-2px);
 }
 
-/* Go Voting Button - Özel Parlama Efekti */
-.go-voting-button:hover {
+/* Go Voting Button - Neon Navy Blue Glow Effect */
+.go-voting-button-neon:hover {
   transform: none !important;
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(59, 130, 246, 0.4);
-  filter: brightness(1.2);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.6), 
+              0 0 30px rgba(59, 130, 246, 0.4),
+              0 0 45px rgba(59, 130, 246, 0.2),
+              inset 0 0 10px rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+/* Hero Buttons - Neon Glow Effects */
+.hero-button-neon-blue:hover {
+  box-shadow: 0 0 15px rgba(96, 165, 250, 0.6), 
+              0 0 30px rgba(96, 165, 250, 0.4),
+              0 0 45px rgba(96, 165, 250, 0.2),
+              inset 0 0 10px rgba(96, 165, 250, 0.1);
+  border-color: #60a5fa;
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.05);
+}
+
+.hero-button-neon-white:hover {
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.6), 
+              0 0 30px rgba(255, 255, 255, 0.4),
+              0 0 45px rgba(255, 255, 255, 0.2),
+              inset 0 0 10px rgba(255, 255, 255, 0.1);
+  border-color: #ffffff;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .button-secondary {
