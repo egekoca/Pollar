@@ -134,6 +134,9 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
         return;
       }
 
+      // End timestamp'i u64 olarak hesapla (milisaniye)
+      const endTimestampMs = new Date(formData.endTime).getTime();
+
       // mint_poll çağrısı
       // Vector oluşturmak için Sui Transaction API'sinde tx.makeMoveVec kullanıyoruz
       tx.moveCall({
@@ -144,6 +147,7 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
           tx.pure.string(formData.image.trim()),
           tx.pure.string(startDateISO),
           tx.pure.string(endDateISO),
+          tx.pure.u64(endTimestampMs), // end_timestamp_ms
           tx.makeMoveVec({ 
             type: `${contractConfig.packageId}::${contractConfig.moduleName}::PollOption`,
             elements: optionResults 

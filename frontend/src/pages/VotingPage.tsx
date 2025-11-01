@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { getVotePoolById, VotePool } from "../data/mockData";
+import { VotePool } from "../data/mockData";
 import {
   LineChart,
   Line,
@@ -11,40 +11,261 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { Transaction } from "@mysten/sui/transactions";
+import { useBlockchainPoll } from "../utils/pollUtils";
+import { encryptVote, decryptVotes } from "../utils/sealUtils";
+import { contractConfig } from "../config/contractConfig";
+import { getVoteRegistryByPoll } from "../utils/pollUtils";
+import { findPollRegistry } from "../utils/blockchain";
+import { findUserObjectId } from "../utils/userUtils";
 import "../styles/theme.css";
 
 const VotingPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const account = useCurrentAccount();
+  const client = useSuiClient();
+  const { mutate: signAndExecute, isPending: isVotingPending } = useSignAndExecuteTransaction();
+  
+  // Blockchain'den poll oku
+  const { data: blockchainPoll, isLoading: isLoadingPoll } = useBlockchainPoll(id);
+  
   const [pool, setPool] = useState<VotePool | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [localPool, setLocalPool] = useState<VotePool | null>(null);
+  const [isDecrypting, setIsDecrypting] = useState(false);
+  const [decryptError, setDecryptError] = useState<string | null>(null);
+  const [showResults, setShowResults] = useState(false);
 
+  // Blockchain poll'u local state'e çevir
   useEffect(() => {
-    const foundPool = id ? getVotePoolById(id) : null;
-    if (foundPool) {
-      setPool(foundPool);
-      setLocalPool(JSON.parse(JSON.stringify(foundPool))); // Deep copy for local state
+    if (blockchainPoll) {
+      setPool(blockchainPoll);
+      setLocalPool(JSON.parse(JSON.stringify(blockchainPoll)));
     }
-  }, [id]);
+  }, [blockchainPoll]);
 
-  const handleVote = (optionId: string) => {
-    if (!localPool) return;
+  // Şifreli oy verme fonksiyonu
+  const handleVote = async (optionId: string) => {
+    if (!localPool || !account?.address || !id) return;
+
+    const optionIndex = localPool.options.findIndex((opt) => opt.id === optionId);
+    if (optionIndex === -1) return;
 
     setSelectedOption(optionId);
-    const updatedPool = { ...localPool };
-    const optionIndex = updatedPool.options.findIndex((opt) => opt.id === optionId);
 
-    if (optionIndex !== -1) {
-      updatedPool.options[optionIndex].voteCount += 1;
-      updatedPool.totalVotes += 1;
+    try {
+      // 1. Oy verisini şifrele
+      const voteData = {
+        optionIndex,
+        optionId,
+      };
 
-      // Recalculate percentages
+      const encryptedVoteBase64 = await encryptVote(voteData, id, client);
+
+      // 2. Şifrelenmiş oyu localStorage'a kaydet (geçici - daha sonra backend API'ye taşınabilir)
+      const votesKey = `encrypted_votes_${id}`;
+      const existingVotes = JSON.parse(localStorage.getItem(votesKey) || "[]");
+      existingVotes.push(encryptedVoteBase64);
+      localStorage.setItem(votesKey, JSON.stringify(existingVotes));
+
+      // 3. Blockchain'e mint_user_vote çağrısı yap (şifreli veri metadata olarak eklenebilir)
+      // Not: Şifreli veri blockchain'de saklanmıyor, sadece localStorage'da
+      // Gerçek implementasyonda backend API'ye gönderilebilir
+      
+      // Poll ve VoteRegistry'yi al
+      const pollObject = await client.getObject({
+        id: id,
+        options: { showContent: true },
+      });
+
+      if (!pollObject.data) {
+        throw new Error("Poll not found");
+      }
+
+      // PollRegistry'yi bul
+      const pollRegistryId = await findPollRegistry(client);
+      if (!pollRegistryId) {
+        throw new Error("PollRegistry not found");
+      }
+
+      // VoteRegistry'yi bul
+      const voteRegistryId = await getVoteRegistryByPoll(id, client, pollRegistryId);
+      if (!voteRegistryId) {
+        throw new Error("VoteRegistry not found");
+      }
+
+      // User oluştur veya al (eğer yoksa)
+      // Şimdilik basit bir yaklaşım: mint_user_vote çağrısı yap
+      const tx = new Transaction();
+
+      // Option'ı bul ve kullan (poll'un options'ından)
+      const pollOptions = (pollObject.data.content as any)?.fields?.options || [];
+      if (!pollOptions[optionIndex]) {
+        throw new Error("Option not found in poll");
+      }
+
+      const selectedPollOption = pollOptions[optionIndex];
+      const optionObjectId = selectedPollOption.fields?.id?.id || selectedPollOption;
+
+      // User object ID'sini bul
+      let userObjectId = await findUserObjectId(client, account.address);
+      
+      // Eğer User yoksa, önce User oluştur
+      if (!userObjectId) {
+        // User oluşturma transaction'ı
+        const userTx = new Transaction();
+        userTx.moveCall({
+          target: `${contractConfig.packageId}::${contractConfig.moduleName}::${contractConfig.functionNames.mintUser}`,
+          arguments: [
+            userTx.pure.string("User"), // Name
+            userTx.pure.string("https://example.com/user.jpg"), // Icon URL
+          ],
+        });
+
+        // User'ı oluştur ve sonra devam et
+        await new Promise<void>((resolve, reject) => {
+          signAndExecute(
+            {
+              transaction: userTx,
+            } as any,
+            {
+              onSuccess: async () => {
+                // User oluşturulduktan sonra User ID'sini bul
+                userObjectId = await findUserObjectId(client, account.address);
+                if (!userObjectId) {
+                  reject(new Error("Failed to find created User"));
+                } else {
+                  resolve();
+                }
+              },
+              onError: reject,
+            }
+          );
+        });
+      }
+
+      if (!userObjectId) {
+        throw new Error("User not found and could not be created");
+      }
+
+      // mint_user_vote çağrısı
+      tx.moveCall({
+        target: `${contractConfig.packageId}::${contractConfig.moduleName}::${contractConfig.functionNames.mintUserVote}`,
+        arguments: [
+          tx.object(id), // Poll
+          tx.object(optionObjectId), // PollOption
+          tx.object(userObjectId), // User object
+          tx.object(voteRegistryId), // VoteRegistry
+        ],
+      });
+
+      // Transaction'ı execute et
+      signAndExecute(
+        {
+          transaction: tx,
+        } as any,
+        {
+          onSuccess: () => {
+            console.log("Vote submitted successfully");
+            // Local state'i güncelle
+            const updatedPool = { ...localPool };
+            updatedPool.options[optionIndex].voteCount += 1;
+            updatedPool.totalVotes += 1;
+            updatedPool.options.forEach((opt) => {
+              opt.percentage = (opt.voteCount / updatedPool.totalVotes) * 100;
+            });
+            setLocalPool(updatedPool);
+          },
+          onError: (error) => {
+            console.error("Failed to submit vote:", error);
+            setSelectedOption(null);
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to encrypt/submit vote:", error);
+      setSelectedOption(null);
+    }
+  };
+
+  // Sonuçları görüntüleme (zaman kilidi kontrolü ile decrypt)
+  const handleShowResults = async () => {
+    if (!id || !pool) return;
+
+    setIsDecrypting(true);
+    setDecryptError(null);
+
+    try {
+      // Şifreli oyları localStorage'dan al
+      const votesKey = `encrypted_votes_${id}`;
+      const encryptedVotes = JSON.parse(localStorage.getItem(votesKey) || "[]");
+
+      if (encryptedVotes.length === 0) {
+        setDecryptError("No votes found to decrypt");
+        setIsDecrypting(false);
+        return;
+      }
+
+      // Transaction oluştur ve execute et (zaman kilidi kontrolü için)
+      const executeTx = async (tx: Transaction) => {
+        return new Promise((resolve, reject) => {
+          signAndExecute(
+            {
+              transaction: tx,
+            } as any,
+            {
+              onSuccess: resolve,
+              onError: reject,
+            }
+          );
+        });
+      };
+
+      // Decrypt işlemi (zaman kilidi kontrolü ile)
+      const decryptedVotes = await decryptVotes(
+        encryptedVotes,
+        id,
+        id, // pollObjectId
+        client,
+        executeTx
+      );
+
+      // Çözülmüş oyları say
+      const voteCounts: Record<string, number> = {};
+      decryptedVotes.forEach((vote) => {
+        if (vote) {
+          voteCounts[vote.optionId] = (voteCounts[vote.optionId] || 0) + 1;
+        }
+      });
+
+      // Local pool'u güncelle
+      const updatedPool = { ...localPool! };
+      let totalVotes = 0;
       updatedPool.options.forEach((opt) => {
-        opt.percentage = (opt.voteCount / updatedPool.totalVotes) * 100;
+        opt.voteCount = voteCounts[opt.id] || 0;
+        totalVotes += opt.voteCount;
+      });
+      updatedPool.totalVotes = totalVotes;
+      updatedPool.options.forEach((opt) => {
+        opt.percentage = totalVotes > 0 ? (opt.voteCount / totalVotes) * 100 : 0;
       });
 
       setLocalPool(updatedPool);
+      setShowResults(true);
+    } catch (error: any) {
+      console.error("Failed to decrypt votes:", error);
+      
+      // Zaman kilidi hatası kontrolü
+      const errorMessage = error?.message || String(error);
+      if (errorMessage.includes("EVotingPeriodNotOver") || errorMessage.includes("voting period")) {
+        setDecryptError("Voting results are not available yet. Please try again after the voting period ends.");
+      } else {
+        setDecryptError("Failed to decrypt votes. Please try again.");
+      }
+    } finally {
+      setIsDecrypting(false);
     }
   };
 
@@ -57,6 +278,16 @@ const VotingPage = () => {
       minute: "2-digit",
     });
   };
+
+  if (isLoadingPoll) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--bg-primary)", padding: "2rem" }}>
+        <div className="container" style={{ textAlign: "center" }}>
+          <p style={{ color: "var(--text-secondary)" }}>Loading poll...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!pool || !localPool) {
     return (
@@ -227,21 +458,54 @@ const VotingPage = () => {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 400px), 1fr))", gap: "clamp(1rem, 3vw, 2rem)" }}>
           {/* Voting Options */}
           <div className="card">
-            <h3
-              style={{
-                fontSize: "clamp(1.5rem, 3vw, 1.75rem)",
-                fontWeight: "600",
-                marginBottom: "clamp(1rem, 2.5vw, 1.5rem)",
-                color: "var(--text-primary)",
-              }}
-            >
-              Cast Your Vote
-            </h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "clamp(1rem, 2.5vw, 1.5rem)" }}>
+              <h3
+                style={{
+                  fontSize: "clamp(1.5rem, 3vw, 1.75rem)",
+                  fontWeight: "600",
+                  color: "var(--text-primary)",
+                }}
+              >
+                Cast Your Vote
+              </h3>
+              {!showResults && (
+                <button
+                  onClick={handleShowResults}
+                  disabled={isDecrypting}
+                  className="button button-primary"
+                  style={{
+                    fontSize: "clamp(0.85rem, 1.5vw, 1rem)",
+                    padding: "clamp(0.5rem, 1.2vw, 0.65rem) clamp(1rem, 2vw, 1.25rem)",
+                    cursor: isDecrypting ? "not-allowed" : "pointer",
+                    opacity: isDecrypting ? 0.6 : 1,
+                  }}
+                >
+                  {isDecrypting ? "Decrypting..." : "Show Results"}
+                </button>
+              )}
+            </div>
+            
+            {decryptError && (
+              <div
+                style={{
+                  padding: "1rem",
+                  background: "rgba(239, 68, 68, 0.1)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  borderRadius: "0.5rem",
+                  color: "#ef4444",
+                  marginBottom: "1rem",
+                  fontSize: "0.9rem",
+                }}
+              >
+                {decryptError}
+              </div>
+            )}
+            
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               {localPool.options.map((option, index) => (
                 <div
                   key={option.id}
-                  onClick={() => handleVote(option.id)}
+                  onClick={() => !isVotingPending && handleVote(option.id)}
                   style={{
                     padding: "1.5rem",
                     background: selectedOption === option.id ? "var(--bg-secondary)" : "var(--bg-card)",
@@ -250,7 +514,8 @@ const VotingPage = () => {
                         ? "2px solid var(--color-light-blue)"
                         : "1px solid var(--border-color)",
                     borderRadius: "0.75rem",
-                    cursor: "pointer",
+                    cursor: isVotingPending ? "not-allowed" : "pointer",
+                    opacity: isVotingPending ? 0.6 : 1,
                     transition: "all 0.3s ease",
                   }}
                   onMouseEnter={(e) => {

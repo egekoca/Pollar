@@ -78,43 +78,35 @@ export function useBlockchainPolls() {
   });
 }
 
-export const getVoteRegistryByPoll = async (pollId: string): Promise<string> =>
-{
-  const client = useSuiClient();
+/**
+ * Poll ID'sinden VoteRegistry ID'sini bulur (dynamic field'dan)
+ */
+export const getVoteRegistryByPoll = async (
+  pollId: string,
+  client: any,
+  pollRegistryId: string
+): Promise<string> => {
   try {
     let hasNextPage = true;
-    let cursor = null;
+    let cursor: string | null = null;
 
     // Search all dynamic fields with pagination
-    while (hasNextPage) 
-    {
+    while (hasNextPage) {
       const response = await client.getDynamicFields({
-        parentId: ENV.VITE_POLL_REGISTRY_ID,
+        parentId: pollRegistryId,
         cursor: cursor,
-        limit: 50
+        limit: 50,
       });
 
-      const found = response.data.find(
-        field => field.name.value === pollId
-      );  
+      const found = response.data.find((field: any) => {
+        // Dynamic field name can be different types, check based on pollId
+        const nameValue = typeof field.name === "object" ? field.name.value : field.name;
+        return nameValue === pollId;
+      });
 
-      if (found) 
-      {
-        const object = await client.getObject(
-        {
-          id: found.objectId,
-          options: 
-          {
-            showContent: true
-          }
-        });
-
-        if (object.data?.content?.dataType === 'moveObject') 
-          {
-          const fields = object.data.content.fields as any;
-          return fields.value || "";
-        }
-        return "";
+      if (found) {
+        // VoteRegistry ID'si dynamic field'ın value'sunda
+        return found.objectId;
       }
 
       hasNextPage = response.hasNextPage;
@@ -122,14 +114,11 @@ export const getVoteRegistryByPoll = async (pollId: string): Promise<string> =>
     }
 
     return "";
-    
-  } 
-  catch (error) 
-  {
-    console.error('Error searching for user:', error);
-    throw error;
-  }
-}
+  } catch (error) {
+    console.error("Error finding VoteRegistry:", error);
+    throw error;
+  }
+};
 
 /**
  * Belirli bir poll'u blockchain'den okumak için React Query hook
