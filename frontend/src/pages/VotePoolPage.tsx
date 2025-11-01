@@ -1,12 +1,20 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { ConnectButton, useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
 import { mockVotePools, addVotePool } from "../data/mockData";
 import CreateVotePoolModal from "../components/CreateVotePoolModal";
+import CreateProfileModal from "../components/CreateProfileModal";
+import UserProfileDropdown from "../components/UserProfileDropdown";
+import { getUserProfile, saveUserProfile, UserProfile } from "../utils/userProfile";
 import "../styles/theme.css";
 
 const VotePoolPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pools, setPools] = useState(mockVotePools);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const account = useCurrentAccount();
+  const { mutate: disconnect } = useDisconnectWallet();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -23,6 +31,20 @@ const VotePoolPage = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
   };
+
+  useEffect(() => {
+    if (account?.address) {
+      const profile = getUserProfile(account.address);
+      if (profile) {
+        setUserProfile(profile);
+        setIsProfileModalOpen(false);
+      } else {
+        setIsProfileModalOpen(true);
+      }
+    } else {
+      setUserProfile(null);
+    }
+  }, [account?.address]);
 
   const handleSubmitPool = (data: {
     name: string;
@@ -47,6 +69,25 @@ const VotePoolPage = () => {
 
     // Update local state to trigger re-render
     setPools([...mockVotePools]);
+  };
+
+  const handleCreateProfile = (username: string, avatarUrl: string) => {
+    if (!account?.address) return;
+
+    const newProfile: UserProfile = {
+      walletAddress: account.address,
+      username,
+      avatarUrl,
+    };
+
+    saveUserProfile(newProfile);
+    setUserProfile(newProfile);
+    setIsProfileModalOpen(false);
+  };
+
+  const handleLogout = () => {
+    disconnect();
+    setUserProfile(null);
   };
 
   return (
@@ -82,9 +123,25 @@ const VotePoolPage = () => {
             Pollar
           </h1>
         </Link>
-        <button onClick={handleCreateVotePool} className="button button-primary">
-          Create Vote Pool
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          {account && userProfile ? (
+            <>
+              <button onClick={handleCreateVotePool} className="button button-primary">
+                Create Vote Pool
+              </button>
+              <UserProfileDropdown profile={userProfile} onLogout={handleLogout} />
+            </>
+          ) : (
+            <>
+              <ConnectButton />
+              {account && !userProfile && (
+                <button onClick={() => setIsProfileModalOpen(true)} className="button button-secondary">
+                  Complete Profile
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </header>
 
       {/* Main Content */}
@@ -270,6 +327,16 @@ const VotePoolPage = () => {
         onClose={handleCloseModal}
         onSubmit={handleSubmitPool}
       />
+
+      {/* Create Profile Modal */}
+      {account?.address && (
+        <CreateProfileModal
+          isOpen={isProfileModalOpen}
+          walletAddress={account.address}
+          onClose={() => setIsProfileModalOpen(false)}
+          onSubmit={handleCreateProfile}
+        />
+      )}
     </div>
   );
 };
