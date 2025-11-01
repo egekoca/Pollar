@@ -11,7 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient, useSignPersonalMessage } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { useBlockchainPoll } from "../utils/pollUtils";
 import { encryptVote, decryptVotes } from "../utils/sealUtils";
@@ -27,6 +27,7 @@ const VotingPage = () => {
   const account = useCurrentAccount();
   const client = useSuiClient();
   const { mutate: signAndExecute, isPending: isVotingPending } = useSignAndExecuteTransaction();
+  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
   
   // Blockchain'den poll oku
   const { data: blockchainPoll, isLoading: isLoadingPoll } = useBlockchainPoll(id);
@@ -62,13 +63,16 @@ const VotingPage = () => {
         optionId,
       };
 
-      const encryptedVoteBase64 = await encryptVote(voteData, id, client);
+      console.log("📝 Starting vote encryption process...");
+      const encryptedVote = await encryptVote(voteData, id, client);
 
       // 2. Şifrelenmiş oyu localStorage'a kaydet (geçici - daha sonra backend API'ye taşınabilir)
+      // encryptedVote artık sadece base64 string (SessionKey decrypt sırasında oluşturulur)
       const votesKey = `encrypted_votes_${id}`;
       const existingVotes = JSON.parse(localStorage.getItem(votesKey) || "[]");
-      existingVotes.push(encryptedVoteBase64);
+      existingVotes.push(encryptedVote);
       localStorage.setItem(votesKey, JSON.stringify(existingVotes));
+      console.log("💾 Encrypted vote saved to localStorage:", { votesKey, totalVotes: existingVotes.length });
 
       // 3. Blockchain'e mint_user_vote çağrısı yap (şifreli veri metadata olarak eklenebilir)
       // Not: Şifreli veri blockchain'de saklanmıyor, sadece localStorage'da
@@ -202,6 +206,8 @@ const VotingPage = () => {
       const votesKey = `encrypted_votes_${id}`;
       const encryptedVotes = JSON.parse(localStorage.getItem(votesKey) || "[]");
 
+      console.log("📥 Retrieved encrypted votes from localStorage:", { votesKey, count: encryptedVotes.length });
+
       if (encryptedVotes.length === 0) {
         setDecryptError("No votes found to decrypt");
         setIsDecrypting(false);
@@ -224,12 +230,26 @@ const VotingPage = () => {
       };
 
       // Decrypt işlemi (zaman kilidi kontrolü ile)
+      if (!account?.address) {
+        setDecryptError("User account not found");
+        setIsDecrypting(false);
+        return;
+      }
+
+      // signPersonalMessage wrapper fonksiyonu
+      const signPersonalMessageWrapper = async (message: Uint8Array) => {
+        const result = await signPersonalMessage({ message });
+        return { signature: result.signature };
+      };
+
       const decryptedVotes = await decryptVotes(
         encryptedVotes,
         id,
         id, // pollObjectId
         client,
-        executeTx
+        executeTx,
+        account.address,
+        signPersonalMessageWrapper
       );
 
       // Çözülmüş oyları say
