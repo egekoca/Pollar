@@ -223,16 +223,22 @@ const LandingPage = () => {
         style={{
           padding: "clamp(4rem, 10vw, 8rem) clamp(1rem, 3vw, 2rem)",
           background: "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)",
-          borderTop: "1px solid var(--border-color)",
         }}
       >
         <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
           <h3
+            className="why-choose-animated-text"
             style={{
               textAlign: "center",
               fontSize: "clamp(2rem, 6vw, 4rem)",
               marginBottom: "clamp(4rem, 8vw, 6rem)",
-              color: "var(--text-primary)",
+              fontWeight: "900",
+              background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 15%, #3b82f6 30%, #60a5fa 45%, #87ceeb 60%, #bae6fd 75%, #ffffff 90%, #bae6fd 100%)",
+              backgroundSize: "300% auto",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              animation: "smoothFlowingGradient 5s ease-in-out infinite",
             }}
           >
             Why Choose Pollar?
@@ -270,7 +276,7 @@ const LandingPage = () => {
             >
               <div style={{ padding: "clamp(1.5rem, 3vw, 2rem)" }}>
                 <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#60a5fa" }}>
-                  Real-time Results
+                  Real time Results
                 </h4>
                 <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", fontSize: "clamp(1rem, 1.8vw, 1.15rem)" }}>
                   Watch results update in real-time as votes are cast. Track voting trends with
@@ -299,12 +305,210 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section
+        style={{
+          padding: "clamp(4rem, 10vw, 8rem) clamp(1rem, 3vw, 2rem)",
+          background: "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)",
+        }}
+      >
+        <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
+          <h3
+            className="pricing-animated-text"
+            style={{
+              textAlign: "center",
+              fontSize: "clamp(2rem, 6vw, 4rem)",
+              marginBottom: "clamp(4rem, 8vw, 6rem)",
+              fontWeight: "900",
+              background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 15%, #3b82f6 30%, #60a5fa 45%, #87ceeb 60%, #bae6fd 75%, #ffffff 90%, #bae6fd 100%)",
+              backgroundSize: "300% auto",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              animation: "smoothFlowingGradient 5s ease-in-out infinite",
+            }}
+          >
+            PRICING
+          </h3>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+              gap: "clamp(2rem, 4vw, 3rem)",
+            }}
+          >
+            <ElectricBorder
+              color="#3b82f6"
+              speed={1}
+              chaos={0.5}
+              thickness={2}
+              style={{ borderRadius: 16 }}
+            >
+              <div style={{ padding: "clamp(2rem, 4vw, 3rem)", textAlign: "center" }}>
+                <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#60a5fa" }}>
+                  Free
+                </h4>
+                <div style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: "bold", color: "#ffffff", marginBottom: "1rem" }}>
+                  $0
+                </div>
+                <p style={{ color: "var(--text-secondary)", marginBottom: "2rem", fontSize: "clamp(1rem, 1.8vw, 1.15rem)" }}>
+                  Perfect for getting started
+                </p>
+                <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", textAlign: "left" }}>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ Create up to 5 polls
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ Vote on unlimited polls
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ Basic analytics
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ Community support
+                  </li>
+                </ul>
+                <Link 
+                  to="/vote-pools" 
+                  className="hero-button-neon-blue"
+                  style={{ 
+                    fontSize: "clamp(0.9rem, 2vw, 1.1rem)", 
+                    padding: "clamp(0.65rem, 1.8vw, 0.85rem) clamp(1.5rem, 3.5vw, 2.25rem)",
+                    background: "transparent",
+                    color: "#60a5fa",
+                    border: "1.5px solid #60a5fa",
+                    borderRadius: "0.5rem",
+                    fontWeight: "600",
+                    textDecoration: "none",
+                    display: "inline-block",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                  }}
+                >
+                  Get Started
+                </Link>
+              </div>
+            </ElectricBorder>
+            <ElectricBorder
+              color="#3b82f6"
+              speed={1}
+              chaos={0.5}
+              thickness={2}
+              style={{ borderRadius: 16 }}
+            >
+              <div style={{ padding: "clamp(2rem, 4vw, 3rem)", textAlign: "center" }}>
+                <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#60a5fa" }}>
+                  Pro
+                </h4>
+                <div style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: "bold", color: "#ffffff", marginBottom: "1rem" }}>
+                  $9.99
+                  <span style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", fontWeight: "normal", color: "var(--text-secondary)" }}>/month</span>
+                </div>
+                <p style={{ color: "var(--text-secondary)", marginBottom: "2rem", fontSize: "clamp(1rem, 1.8vw, 1.15rem)" }}>
+                  For power users and organizations
+                </p>
+                <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", textAlign: "left" }}>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ Unlimited polls
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ Advanced analytics
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ Custom branding
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ Priority support
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ API access
+                  </li>
+                </ul>
+                <Link 
+                  to="/vote-pools" 
+                  className="hero-button-neon-blue"
+                  style={{ 
+                    fontSize: "clamp(0.9rem, 2vw, 1.1rem)", 
+                    padding: "clamp(0.65rem, 1.8vw, 0.85rem) clamp(1.5rem, 3.5vw, 2.25rem)",
+                    background: "transparent",
+                    color: "#60a5fa",
+                    border: "1.5px solid #60a5fa",
+                    borderRadius: "0.5rem",
+                    fontWeight: "600",
+                    textDecoration: "none",
+                    display: "inline-block",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                  }}
+                >
+                  Upgrade Now
+                </Link>
+              </div>
+            </ElectricBorder>
+            <ElectricBorder
+              color="#3b82f6"
+              speed={1}
+              chaos={0.5}
+              thickness={2}
+              style={{ borderRadius: 16 }}
+            >
+              <div style={{ padding: "clamp(2rem, 4vw, 3rem)", textAlign: "center" }}>
+                <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#60a5fa" }}>
+                  Enterprise
+                </h4>
+                <div style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: "bold", color: "#ffffff", marginBottom: "1rem" }}>
+                  Custom
+                </div>
+                <p style={{ color: "var(--text-secondary)", marginBottom: "2rem", fontSize: "clamp(1rem, 1.8vw, 1.15rem)" }}>
+                  Tailored solutions for large teams
+                </p>
+                <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", textAlign: "left" }}>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ Everything in Pro
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ Dedicated support
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ Custom integrations
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ SLA guarantee
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ On-premise deployment
+                  </li>
+                </ul>
+                <Link 
+                  to="/vote-pools" 
+                  className="hero-button-neon-blue"
+                  style={{ 
+                    fontSize: "clamp(0.9rem, 2vw, 1.1rem)", 
+                    padding: "clamp(0.65rem, 1.8vw, 0.85rem) clamp(1.5rem, 3.5vw, 2.25rem)",
+                    background: "transparent",
+                    color: "#60a5fa",
+                    border: "1.5px solid #60a5fa",
+                    borderRadius: "0.5rem",
+                    fontWeight: "600",
+                    textDecoration: "none",
+                    display: "inline-block",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                  }}
+                >
+                  Contact Sales
+                </Link>
+              </div>
+            </ElectricBorder>
+          </div>
+        </div>
+      </section>
+
       {/* Stats Section */}
       <section
         style={{
           padding: "clamp(2rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem)",
           textAlign: "center",
-          borderTop: "1px solid var(--border-color)",
         }}
       >
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
