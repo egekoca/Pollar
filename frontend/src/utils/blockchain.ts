@@ -1,4 +1,5 @@
 import { SuiClient } from "@mysten/sui/client";
+import { Transaction } from "@mysten/sui/transactions";
 import { contractConfig } from "../config/contractConfig";
 
 /**
@@ -255,5 +256,308 @@ export async function getPollById(
     console.error(`Error reading poll ${pollId}:`, error);
     return null;
   }
+}
+
+/**
+ * PollRegistry'den VoteRegistry ID'sini bulur (dynamic field ile)
+ */
+export async function findVoteRegistryByPollId(
+  client: SuiClient,
+  pollId: string
+): Promise<string | null> {
+  try {
+    const packageId = contractConfig.packageId;
+    if (!packageId) {
+      console.error("Package ID not configured");
+      return null;
+    }
+
+    // Önce PollRegistry'yi bul
+    const pollRegistryId = await findPollRegistry(client);
+    if (!pollRegistryId) {
+      console.error("PollRegistry not found");
+      return null;
+    }
+
+    console.log(`Looking for VoteRegistry for poll ${pollId} in PollRegistry ${pollRegistryId}`);
+
+    // Dynamic field'ları query et - Sui'nin doğru API'si
+    try {
+      // SuiClient.getDynamicFields kullan
+      const dynamicFields = await client.getDynamicFields({
+        parentId: pollRegistryId,
+      });
+
+      console.log(`🔍 Found ${dynamicFields.data.length} dynamic fields in PollRegistry`);
+
+      // Her dynamic field'ı kontrol et
+      for (const field of dynamicFields.data) {
+        // name bir object olabilir, ID'yi çıkar
+        let fieldName: string | null = null;
+        
+        if (typeof field.name === "string") {
+          fieldName = field.name;
+        } else if (field.name && typeof field.name === "object") {
+          // Dynamic field name bir struct olabilir (ID type)
+          if ("value" in field.name) {
+            fieldName = String(field.name.value);
+          } else if ("fields" in field.name) {
+            // ID field'ı olabilir: { fields: { id: { id: "0x..." } } }
+            const nameFields = (field.name as any).fields;
+            if (nameFields?.id) {
+              fieldName = typeof nameFields.id === "string" 
+                ? nameFields.id 
+                : (nameFields.id.id || null);
+            }
+          }
+        }
+
+        console.log(`  Field name: ${fieldName}, Poll ID: ${pollId}, Match: ${fieldName === pollId}`);
+
+        // Poll ID ile eşleşiyor mu kontrol et
+        if (fieldName === pollId) {
+          console.log(`✅ Found matching field for poll ${pollId}`);
+          
+          // Önce field.objectId'yi dene (Sui'de bu genellikle dynamic field value'su)
+          if (field.objectId) {
+            console.log(`  Trying field.objectId: ${field.objectId}`);
+            try {
+              const testRegistry = await client.getObject({
+                id: field.objectId,
+                options: { showContent: true },
+              });
+              
+              if (testRegistry.data?.content && "fields" in testRegistry.data.content) {
+                const testFields = (testRegistry.data.content as any).fields;
+                
+                // VoteRegistry kontrolü: poll_id, option_votes, usersVoted field'ları var mı?
+                if (testFields.poll_id || testFields.option_votes || testFields.usersVoted) {
+                  console.log(`  ✅ Confirmed VoteRegistry: ${field.objectId}`);
+                  return field.objectId;
+                } else {
+                  console.log(`  ⚠️ Object is not a VoteRegistry, checking dynamic field object...`);
+                }
+              }
+            } catch (testError: any) {
+              console.log(`  ⚠️ Error checking field.objectId: ${testError.message}`);
+            }
+          }
+          
+          // Dynamic field object'ini oku (value field'ından VoteRegistry ID'sini al)
+          try {
+            const dynamicFieldObject = await client.getDynamicFieldObject({
+              parentId: pollRegistryId,
+              name: field.name,
+            });
+
+            if (dynamicFieldObject.data) {
+              console.log(`  Dynamic field object type: ${dynamicFieldObject.data.type}`);
+              
+              // Dynamic field object'inin content'ini kontrol et
+              if (dynamicFieldObject.data.content && "fields" in dynamicFieldObject.data.content) {
+                const fields = (dynamicFieldObject.data.content as any).fields;
+                console.log(`  Dynamic field fields:`, Object.keys(fields));
+                
+                // Value field'ında VoteRegistry ID'si var (Move'da df::add ile eklenen)
+                if (fields.value) {
+                  let voteRegistryId: string | null = null;
+                  
+                  // Value bir ID object olabilir
+                  if (typeof fields.value === "string") {
+                    voteRegistryId = fields.value;
+                  } else if (fields.value && typeof fields.value === "object") {
+                    // ID object yapısı: { id: "0x..." } veya { fields: { id: { id: "0x..." } } }
+                    if (fields.value.id) {
+                      voteRegistryId = typeof fields.value.id === "string" 
+                        ? fields.value.id 
+                        : (fields.value.id.id || null);
+                    } else if (fields.value.fields?.id) {
+                      voteRegistryId = typeof fields.value.fields.id === "string"
+                        ? fields.value.fields.id
+                        : (fields.value.fields.id.id || null);
+                    }
+                  }
+                  
+                  if (voteRegistryId) {
+                    console.log(`  ✅ Found VoteRegistry ID from value field: ${voteRegistryId}`);
+                    // Doğrulama: Bu gerçekten VoteRegistry mi?
+                    try {
+                      const verifyRegistry = await client.getObject({
+                        id: voteRegistryId,
+                        options: { showContent: true },
+                      });
+                      if (verifyRegistry.data?.content && "fields" in verifyRegistry.data.content) {
+                        const verifyFields = (verifyRegistry.data.content as any).fields;
+                        if (verifyFields.poll_id || verifyFields.option_votes || verifyFields.usersVoted) {
+                          return voteRegistryId;
+                        }
+                      }
+                    } catch {
+                      // Devam et
+                    }
+                  }
+                }
+              }
+            }
+          } catch (readError: any) {
+            console.error(`  ❌ Error reading dynamic field object:`, readError.message);
+          }
+        }
+      }
+      
+      console.warn(`⚠️ No matching dynamic field found for poll ${pollId}`);
+    } catch (queryError: any) {
+      console.error("❌ getDynamicFields failed:", queryError);
+      console.error("Error details:", queryError.message);
+    }
+
+    // Alternatif: Direct getDynamicFieldObject denemesi (eğer ID'yi name olarak kullanabiliyorsak)
+    try {
+      // Poll ID'yi name olarak kullanmayı dene
+      const dynamicFieldObject = await client.getDynamicFieldObject({
+        parentId: pollRegistryId,
+        name: {
+          type: "0x2::object::ID",
+          value: pollId,
+        },
+      });
+
+      if (dynamicFieldObject.data?.content && "fields" in dynamicFieldObject.data.content) {
+        const fields = (dynamicFieldObject.data.content as any).fields;
+        const voteRegistryId = fields.value?.id || dynamicFieldObject.data.objectId;
+        if (voteRegistryId) {
+          console.log(`Found VoteRegistry via direct lookup: ${voteRegistryId}`);
+          return voteRegistryId;
+        }
+      }
+    } catch (directError) {
+      // Bu yöntem çalışmazsa normal, başka yöntemler denenecek
+      console.log("Direct lookup failed, this is normal:", directError);
+    }
+
+    console.warn(`VoteRegistry not found for poll ${pollId} in PollRegistry ${pollRegistryId}`);
+    return null;
+  } catch (error: any) {
+    console.error("Error finding VoteRegistry:", error);
+    console.error("Error message:", error?.message);
+    return null;
+  }
+}
+
+/**
+ * VoteRegistry'den oy bilgilerini okur
+ */
+export async function getVoteRegistry(
+  client: SuiClient,
+  voteRegistryId: string
+): Promise<{
+  poll_id: string;
+  usersVoted: string[];
+  option_votes: number[];
+} | null> {
+  try {
+    const voteRegistry = await client.getObject({
+      id: voteRegistryId,
+      options: {
+        showContent: true,
+      },
+    });
+
+    if (!voteRegistry.data?.content || !("fields" in voteRegistry.data.content)) {
+      console.error("VoteRegistry content not found or invalid");
+      return null;
+    }
+
+    const fields = (voteRegistry.data.content as any).fields;
+    console.log("VoteRegistry fields:", fields);
+
+    // poll_id bir ID object olabilir, ID'yi çıkar
+    let pollId = "";
+    if (fields.poll_id) {
+      if (typeof fields.poll_id === "string") {
+        pollId = fields.poll_id;
+      } else if (fields.poll_id.id) {
+        pollId = typeof fields.poll_id.id === "string" 
+          ? fields.poll_id.id 
+          : (fields.poll_id.id.id || "");
+      } else if (fields.poll_id.fields?.id) {
+        pollId = typeof fields.poll_id.fields.id === "string"
+          ? fields.poll_id.fields.id
+          : (fields.poll_id.fields.id.id || "");
+      }
+    }
+
+    // usersVoted bir vector<address> - Sui'de genellikle array olarak gelir
+    let usersVoted: string[] = [];
+    if (fields.usersVoted) {
+      if (Array.isArray(fields.usersVoted)) {
+        usersVoted = fields.usersVoted.map((addr: any) => {
+          if (typeof addr === "string") {
+            return addr;
+          }
+          // Address object olabilir
+          return addr || "";
+        }).filter((addr: string) => addr.length > 0);
+      }
+    }
+
+    // option_votes bir vector<u64> - Sui'de genellikle array olarak gelir
+    let option_votes: number[] = [];
+    if (fields.option_votes) {
+      if (Array.isArray(fields.option_votes)) {
+        option_votes = fields.option_votes.map((vote: any) => {
+          if (typeof vote === "number") {
+            return vote;
+          }
+          if (typeof vote === "string") {
+            return parseInt(vote, 10) || 0;
+          }
+          return 0;
+        });
+      }
+    }
+
+    console.log("Parsed VoteRegistry:", {
+      poll_id: pollId,
+      usersVoted,
+      option_votes,
+    });
+
+    return {
+      poll_id: pollId,
+      usersVoted,
+      option_votes,
+    };
+  } catch (error) {
+    console.error("Error reading VoteRegistry:", error);
+    return null;
+  }
+}
+
+/**
+ * Basit oy verme fonksiyonu - vote(poll, option_index, voteRegistry) çağırır
+ */
+export function createVoteTransaction(
+  pollId: string,
+  optionIndex: number,
+  voteRegistryId: string
+): Transaction {
+  const tx = new Transaction();
+  const packageId = contractConfig.packageId;
+
+  if (!packageId) {
+    throw new Error("Package ID not configured");
+  }
+
+  tx.moveCall({
+    target: `${packageId}::${contractConfig.moduleName}::vote`,
+    arguments: [
+      tx.object(pollId), // Poll object
+      tx.pure.u64(optionIndex), // option_index
+      tx.object(voteRegistryId), // VoteRegistry
+    ],
+  });
+
+  return tx;
 }
 

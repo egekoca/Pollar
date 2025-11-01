@@ -21,8 +21,14 @@ const EInvalidPollNameLength: u64 = 3;
 const EInvalidPollImageUrlLength: u64 = 4;
 const EInvalidStartDateLength: u64 = 5;
 const EInvalidEndDateLength: u64 = 6;
-const EInvalidOptionsLength: u64 = 7; // Poll option is not in the poll's options list
+const EInvalidOptionsLength: u64 = 7;
 const EAlreadyVoted: u64 = 8;
+const EInvalidVoteRegistry: u64 = 9;
+const EInvalidUserWallet: u64 = 10;
+const EPollNotStarted: u64 = 11;
+const EPollEnded: u64 = 12;
+const EInvalidDateRange: u64 = 13;
+const EInvalidOptionIndex: u64 = 14; // Basit oy verme için
 
 const VERSION: u64 = 1;
 
@@ -35,8 +41,9 @@ public struct Version has key
 public struct VoteRegistry has key 
 {
     id: UID,
-    usersVoted: vector<ID>,
-    votes: vector<ID>
+    poll_id: ID,
+    usersVoted: vector<address>, // Artık address kullanıyoruz, basitleştirdik
+    option_votes: vector<u64>, // Her option için oy sayısı (basit oy verme için)
 }
 
 public struct PollRegistry has key 
@@ -107,7 +114,7 @@ public fun create_poll_option(name: String, image_url: String, ctx: &mut TxConte
 {
     let pollOption = PollOption 
     {
-        id: object::new(ctx), // creates a new UID
+        id: object::new(ctx),
         name,
         image_url
     };
@@ -118,7 +125,7 @@ public fun create_poll(name: String, description: String, image_url: String, sta
 {
     let poll = Poll 
     {
-        id: object::new(ctx), // creates a new UID
+        id: object::new(ctx),
         name,
         description,
         image_url,
@@ -133,7 +140,7 @@ public fun create_user(name: String, icon_url: String, ctx: &mut TxContext): Use
 {
     let user = User 
     {
-        id: object::new(ctx), // creates a new UID
+        id: object::new(ctx),
         name,
         icon_url,
         wallet: ctx.sender(),
@@ -145,7 +152,7 @@ public fun create_user_vote(poll: Poll, poll_option: PollOption, user: User, ctx
 {
     let userVote = UserVote 
     {
-        id: object::new(ctx), // creates a new UID
+        id: object::new(ctx),
         user,
         poll,
         poll_option
@@ -175,16 +182,27 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
     let options_length = vector::length(&options);
     assert!(options_length >= 2, EInvalidOptionsLength);
 
-    
+    // Note: Date range validation removed - Move doesn't support String comparison
+    // Date validation should be done on the frontend
 
     let poll = create_poll(name, description, image_url, start_date, end_date, options, ctx);
     let inner_id = object::id(&poll);
     
+    // VoteRegistry'yi basitleştirdik - artık address ve option_votes kullanıyor
+    let options_len = vector::length(&poll.options);
+    let mut option_votes = vector::empty();
+    let mut i = 0;
+    while (i < options_len) {
+        vector::push_back(&mut option_votes, 0);
+        i = i + 1;
+    };
+    
     let voteRegistry = VoteRegistry 
     {
         id: object::new(ctx),
+        poll_id: inner_id,
         usersVoted: vector::empty(),
-        votes: vector::empty()
+        option_votes,
     };
 
     df::add(&mut pollRegistry.id, inner_id, object::id(&voteRegistry));
@@ -193,7 +211,7 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
     transfer::share_object(voteRegistry);
 }
 
-public entry fun mint_user(name: String, icon_url: String, ctx: &mut TxContext)
+public fun mint_user(name: String, icon_url: String, ctx: &mut TxContext)
 {
     // Validate name length (3-100 characters)
     let name_length = name.length();
@@ -209,9 +227,74 @@ public entry fun mint_user(name: String, icon_url: String, ctx: &mut TxContext)
     transfer::transfer(user, ctx.sender());
 }
 
+// BASİT OY VERME FONKSİYONU - User ve PollOption objesi olmadan, sadece option_index ile
+public entry fun vote(
+    poll: &Poll,
+    option_index: u64,
+    voteRegistry: &mut VoteRegistry,
+    ctx: &mut TxContext
+) {
+    let voter = ctx.sender();
+    let poll_id = object::id(poll);
+    
+    // VoteRegistry'nin bu Poll'a ait olduğunu kontrol et
+    assert!(voteRegistry.poll_id == poll_id, EInvalidVoteRegistry);
+    
+    // Option index validasyonu
+    let options_len = vector::length(&poll.options);
+    assert!(option_index < options_len, EInvalidOptionIndex);
+    
+    // Çift oy kontrolü - wallet adresi ile
+    let mut already_voted = false;
+    let mut j = 0;
+    let voters_len = vector::length(&voteRegistry.usersVoted);
+    while (j < voters_len) {
+        let voter_addr = *vector::borrow(&voteRegistry.usersVoted, j);
+        if (voter_addr == voter) {
+            already_voted = true;
+            break
+        };
+        j = j + 1;
+    };
+    assert!(!already_voted, EAlreadyVoted);
+    
+    // Oyu ekle - option_votes vector'ünü güncelle
+    let mut new_option_votes = vector::empty();
+    let mut i = 0;
+    let votes_len = vector::length(&voteRegistry.option_votes);
+    while (i < votes_len) {
+        if (i == option_index) {
+            let current_votes = *vector::borrow(&voteRegistry.option_votes, i);
+            vector::push_back(&mut new_option_votes, current_votes + 1);
+        } else {
+            let votes = *vector::borrow(&voteRegistry.option_votes, i);
+            vector::push_back(&mut new_option_votes, votes);
+        };
+        i = i + 1;
+    };
+    voteRegistry.option_votes = new_option_votes;
+    
+    // Oy veren adresini ekle
+    vector::push_back(&mut voteRegistry.usersVoted, voter);
+    
+    // Event emit
+    event::emit(UserVoteMinted{ user_vote: poll_id, owner: voter }); // Basit event
+}
+
+// Eski karmaşık oy verme fonksiyonu - geriye dönük uyumluluk için korundu
 public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User, voteRegistry: &mut VoteRegistry, ctx: &mut TxContext)
 {
-    // Check if the poll_option exists in poll's options
+    let poll_id = object::id(&poll);
+    let inner_user_id = object::id(&user);
+    let inner_poll_option_id = object::id(&poll_option);
+
+    // 1. VoteRegistry'nin bu Poll'a ait olduğunu kontrol et
+    assert!(voteRegistry.poll_id == poll_id, EInvalidVoteRegistry);
+
+    // 2. User wallet adresinin transaction gönderen kişiyle eşleştiğini kontrol et
+    assert!(user.wallet == ctx.sender(), EInvalidUserWallet);
+
+    // 3. Poll option'ın bu Poll'un options listesinde olduğunu kontrol et
     let mut option_exists = false;
     let mut i = 0;
     let len = vector::length(&poll.options);
@@ -219,45 +302,67 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
     while (i < len) 
     {
         let current_option = vector::borrow(&poll.options, i);
-        if (object::id(current_option) == object::id(&poll_option)) 
+        if (object::id(current_option) == inner_poll_option_id) 
         {
             option_exists = true;
             break
         };
         i = i + 1;
     };
-
-    
-    let inner_user_id = object::id(&user);
-    let inner_poll_option_id = object::id(&poll_option);
-    // Assert that the option exists in the poll
     assert!(option_exists, EInvalidPollOption);
 
-    // Prevent double voting: ensure the user hasn't voted already
-    /* let mut already_voted = false;
-    let mut k = 0;
-    let uv_len = vector::length(&voteRegistry.usersVoted);
-    while (k < uv_len)
-    {
-        let seen_id_ref = vector::borrow(&voteRegistry.usersVoted, k);
-        let seen_id = *seen_id_ref;
-        if (seen_id == inner_user_id) 
-        {
+    // 4. Kullanıcının daha önce oy verip vermediğini kontrol et (wallet adresi ile)
+    let voter = ctx.sender();
+    let mut already_voted = false;
+    let mut j = 0;
+    let voters_len = vector::length(&voteRegistry.usersVoted);
+    while (j < voters_len) {
+        let voter_addr = *vector::borrow(&voteRegistry.usersVoted, j);
+        if (voter_addr == voter) {
             already_voted = true;
-            break;
+            break
+        };
+        j = j + 1;
+    };
+    assert!(!already_voted, EAlreadyVoted);
+
+    // 5. Option index'ini bul
+    let mut option_index = 0;
+    let mut k = 0;
+    while (k < len) {
+        let current_option = vector::borrow(&poll.options, k);
+        if (object::id(current_option) == inner_poll_option_id) {
+            option_index = k;
+            break
         };
         k = k + 1;
-    }; */
-    assert!(!voteRegistry.usersVoted.contains(&inner_user_id), EAlreadyVoted);
+    };
 
+    // 6. Oyu ekle - option_votes vector'ünü güncelle
+    let mut new_option_votes = vector::empty();
+    let mut i2 = 0;
+    let votes_len = vector::length(&voteRegistry.option_votes);
+    while (i2 < votes_len) {
+        if (i2 == option_index) {
+            let current_votes = *vector::borrow(&voteRegistry.option_votes, i2);
+            vector::push_back(&mut new_option_votes, current_votes + 1);
+        } else {
+            let votes = *vector::borrow(&voteRegistry.option_votes, i2);
+            vector::push_back(&mut new_option_votes, votes);
+        };
+        i2 = i2 + 1;
+    };
+    voteRegistry.option_votes = new_option_votes;
+
+    // 7. Oy veren adresini ekle
+    vector::push_back(&mut voteRegistry.usersVoted, voter);
+
+    // 8. UserVote oluştur (eski yapı için)
     let user_vote = create_user_vote(poll, poll_option, user, ctx);
     let inner_vote_id = object::id(&user_vote);
-    voteRegistry.usersVoted.push_back(inner_user_id);
-    voteRegistry.votes.push_back(inner_poll_option_id);
 
     event::emit(UserVoteMinted{ user_vote: inner_vote_id, owner: ctx.sender() });
     transfer::transfer(user_vote, ctx.sender());
-    //transfer::share_object(voteRegistry);
 }
 
 public entry fun delete_poll(poll: Poll, ctx: &mut TxContext)
@@ -270,8 +375,6 @@ public entry fun delete_poll(poll: Poll, ctx: &mut TxContext)
         object::delete(pid);
     };
     vector::destroy_empty(options);
-
-    
     object::delete(id);
 }
 

@@ -1,6 +1,8 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { getVotePoolById, VotePool } from "../data/mockData";
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { findVoteRegistryByPollId, getVoteRegistry, createVoteTransaction, getPollById } from "../utils/blockchain";
+import { VotePool, VoteOption } from "../data/mockData";
 import {
   LineChart,
   Line,
@@ -16,35 +18,309 @@ import "../styles/theme.css";
 const VotingPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [pool, setPool] = useState<VotePool | null>(null);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const account = useCurrentAccount();
+  const client = useSuiClient();
+  const { mutate: signAndExecute, isPending: isVoting } = useSignAndExecuteTransaction();
+
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [voteRegistryId, setVoteRegistryId] = useState<string | null>(null);
   const [localPool, setLocalPool] = useState<VotePool | null>(null);
+  const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [pollData, setPollData] = useState<any>(null);
+  const [hasVoted, setHasVoted] = useState<boolean>(false);
 
+  // Poll ve VoteRegistry'yi yükle
   useEffect(() => {
-    const foundPool = id ? getVotePoolById(id) : null;
-    if (foundPool) {
-      setPool(foundPool);
-      setLocalPool(JSON.parse(JSON.stringify(foundPool))); // Deep copy for local state
+    if (!id) {
+      setIsLoading(false);
+      return;
     }
-  }, [id]);
 
-  const handleVote = (optionId: string) => {
-    if (!localPool) return;
+    const loadData = async () => {
+      setIsLoading(true);
+      setError("");
 
-    setSelectedOption(optionId);
-    const updatedPool = { ...localPool };
-    const optionIndex = updatedPool.options.findIndex((opt) => opt.id === optionId);
+      try {
+        // Önce poll'u oku
+        const poll = await getPollById(client, id);
+        if (!poll) {
+          setError("Poll bulunamadı");
+          setIsLoading(false);
+          return;
+        }
 
-    if (optionIndex !== -1) {
-      updatedPool.options[optionIndex].voteCount += 1;
-      updatedPool.totalVotes += 1;
+        setPollData(poll);
 
-      // Recalculate percentages
-      updatedPool.options.forEach((opt) => {
-        opt.percentage = (opt.voteCount / updatedPool.totalVotes) * 100;
-      });
+        // VoteRegistry'yi bul
+        const vrId = await findVoteRegistryByPollId(client, id);
+        if (!vrId) {
+          console.warn("VoteRegistry bulunamadı, boş VoteRegistry ile devam ediliyor");
+          // VoteRegistry bulunamazsa boş VoteRegistry ile devam et
+          const options: VoteOption[] = poll.options.map((opt: any) => ({
+            id: opt.id,
+            name: opt.name,
+            image: opt.image_url || undefined,
+            voteCount: 0,
+            percentage: 0,
+          }));
 
-      setLocalPool(updatedPool);
+          const poolData: VotePool = {
+            id: poll.pollId,
+            name: poll.name,
+            description: poll.description,
+            image: poll.image_url,
+            startTime: poll.start_date,
+            endTime: poll.end_date,
+            options,
+            totalVotes: 0,
+            history: [
+              {
+                timestamp: poll.start_date,
+                options: options.map((opt) => ({
+                  optionId: opt.id,
+                  percentage: 0,
+                })),
+              },
+            ],
+          };
+
+          setLocalPool(poolData);
+          setIsLoading(false);
+          return;
+        }
+
+        setVoteRegistryId(vrId);
+
+        // VoteRegistry'den oy bilgilerini oku
+        const voteData = await getVoteRegistry(client, vrId);
+        if (!voteData) {
+          console.warn("Oy bilgileri alınamadı, boş VoteRegistry ile devam ediliyor");
+          // Boş VoteRegistry ile devam et
+          const options: VoteOption[] = poll.options.map((opt: any) => ({
+            id: opt.id,
+            name: opt.name,
+            image: opt.image_url || undefined,
+            voteCount: 0,
+            percentage: 0,
+          }));
+
+          const poolData: VotePool = {
+            id: poll.pollId,
+            name: poll.name,
+            description: poll.description,
+            image: poll.image_url,
+            startTime: poll.start_date,
+            endTime: poll.end_date,
+            options,
+            totalVotes: 0,
+            history: [
+              {
+                timestamp: poll.start_date,
+                options: options.map((opt) => ({
+                  optionId: opt.id,
+                  percentage: 0,
+                })),
+              },
+            ],
+          };
+
+          setLocalPool(poolData);
+          setIsLoading(false);
+          return;
+        }
+
+        // Kullanıcının daha önce oy verip vermediğini kontrol et
+        const userAddress = account?.address;
+        let userHasVoted = false;
+        if (userAddress && voteData.usersVoted) {
+          userHasVoted = voteData.usersVoted.some((addr: string) => addr.toLowerCase() === userAddress.toLowerCase());
+        }
+        setHasVoted(userHasVoted);
+
+        // Pool'u oluştur
+        const totalVotes = voteData.option_votes.reduce((sum: number, count: number) => sum + count, 0);
+        
+        const options: VoteOption[] = poll.options.map((opt: any, index: number) => {
+          const voteCount = voteData.option_votes[index] || 0;
+          const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
+          
+          return {
+            id: opt.id,
+            name: opt.name,
+            image: opt.image_url || undefined,
+            voteCount,
+            percentage,
+          };
+        });
+
+        const poolData: VotePool = {
+          id: poll.pollId,
+          name: poll.name,
+          description: poll.description,
+          image: poll.image_url,
+          startTime: poll.start_date,
+          endTime: poll.end_date,
+          options,
+          totalVotes,
+          history: [
+            {
+              timestamp: poll.start_date,
+              options: options.map((opt) => ({
+                optionId: opt.id,
+                percentage: opt.percentage,
+              })),
+            },
+          ],
+        };
+
+        setLocalPool(poolData);
+      } catch (err: any) {
+        console.error("Veri yükleme hatası:", err);
+        setError(err.message || "Veri yüklenirken bir hata oluştu");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [id, client, account?.address]);
+
+  const handleVote = async (optionIndex: number) => {
+    if (!account?.address) {
+      setError("Lütfen cüzdanınızı bağlayın");
+      return;
+    }
+
+    if (!id) {
+      setError("Poll ID bulunamadı");
+      return;
+    }
+
+    if (!voteRegistryId) {
+      setError("VoteRegistry bulunamadı. Poll henüz VoteRegistry'ye kayıtlı olmayabilir.");
+      return;
+    }
+
+    if (isVoting) {
+      return; // Zaten bir oy verme işlemi devam ediyor
+    }
+
+    if (hasVoted) {
+      setError("Bu poll'da zaten oy kullanmışsınız. Bir kullanıcı sadece bir kez oy verebilir.");
+      return;
+    }
+
+    setError("");
+    setSelectedOption(optionIndex);
+
+    try {
+      // Transaction oluştur
+      const tx = createVoteTransaction(id, optionIndex, voteRegistryId);
+
+      // Transaction'ı gönder
+      signAndExecute(
+        {
+          transaction: tx,
+        } as any,
+        {
+          onSuccess: async (result: any) => {
+            console.log("Oy başarıyla verildi!", result);
+            
+            // Transaction digest'i al ve transaction'ın tamamlanmasını bekle
+            const transactionDigest = result.digest;
+            if (transactionDigest) {
+              try {
+                // Transaction'ın tamamlanmasını bekle (maksimum 10 saniye)
+                await client.waitForTransaction({
+                  digest: transactionDigest,
+                  timeout: 10000,
+                  pollInterval: 500,
+                });
+                console.log("Transaction tamamlandı:", transactionDigest);
+              } catch (waitError) {
+                console.warn("Transaction bekleme hatası (devam ediyoruz):", waitError);
+              }
+            }
+
+            // VoteRegistry'yi yeniden oku (birkaç deneme yap)
+            const refreshVoteData = async (retries = 3): Promise<void> => {
+              if (!voteRegistryId || !pollData) {
+                return;
+              }
+
+              for (let attempt = 1; attempt <= retries; attempt++) {
+                try {
+                  // Biraz bekle (blockchain'de veri güncellenmesi için)
+                  await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+
+                  const voteData = await getVoteRegistry(client, voteRegistryId);
+                  console.log(`VoteData (deneme ${attempt}):`, voteData);
+                  
+                  if (voteData && pollData) {
+                    const totalVotes = voteData.option_votes.reduce((sum: number, count: number) => sum + count, 0);
+                    const options: VoteOption[] = pollData.options.map((opt: any, idx: number) => {
+                      const voteCount = voteData.option_votes[idx] || 0;
+                      const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
+                      return {
+                        id: opt.id,
+                        name: opt.name,
+                        image: opt.image_url || undefined,
+                        voteCount,
+                        percentage,
+                      };
+                    });
+
+                    setLocalPool({
+                      ...pollData,
+                      options,
+                      totalVotes,
+                      history: localPool?.history || [],
+                    });
+                    setSelectedOption(null);
+                    setHasVoted(true); // Kullanıcı artık oy vermiş sayılır
+                    console.log("Vote verileri başarıyla güncellendi!");
+                    return; // Başarılı, çık
+                  }
+                } catch (err) {
+                  console.error(`Yenileme hatası (deneme ${attempt}):`, err);
+                  if (attempt === retries) {
+                    // Son denemede de başarısız olursa, kullanıcıya bilgi ver
+                    setError("Oy verildi ancak veriler güncellenemedi. Sayfayı yenileyin.");
+                  }
+                }
+              }
+            };
+
+            await refreshVoteData();
+          },
+          onError: (error: any) => {
+            console.error("Oy verme hatası:", error);
+            
+            // Hata mesajını parse et
+            let errorMessage = "Oy verilirken bir hata oluştu";
+            const errorStr = error.message || error.toString() || "";
+            
+            if (errorStr.includes("EAlreadyVoted") || errorStr.includes("8")) {
+              errorMessage = "Bu poll'da zaten oy kullanmışsınız. Bir kullanıcı sadece bir kez oy verebilir.";
+              setHasVoted(true); // Frontend state'ini güncelle
+            } else if (errorStr.includes("EInvalidOptionIndex") || errorStr.includes("14")) {
+              errorMessage = "Geçersiz seçenek index'i";
+            } else if (errorStr.includes("EInvalidVoteRegistry") || errorStr.includes("9")) {
+              errorMessage = "VoteRegistry bu poll'a ait değil";
+            } else {
+              errorMessage = error.message || errorStr || "Oy verilirken bir hata oluştu";
+            }
+            
+            setError(errorMessage);
+            setSelectedOption(null);
+          },
+        }
+      );
+    } catch (error: any) {
+      console.error("Oy verme hatası:", error);
+      setError(error.message || "Oy verilirken bir hata oluştu");
+      setSelectedOption(null);
     }
   };
 
@@ -58,11 +334,43 @@ const VotingPage = () => {
     });
   };
 
-  if (!pool || !localPool) {
+  if (isLoading) {
     return (
       <div style={{ minHeight: "100vh", background: "var(--bg-primary)", padding: "2rem" }}>
-        <div className="container">
+        <div className="container" style={{ textAlign: "center" }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: "1.2rem" }}>Yükleniyor...</p>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginTop: "0.5rem" }}>
+            Poll ID: {id}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !localPool) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--bg-primary)", padding: "2rem" }}>
+        <div className="container" style={{ textAlign: "center" }}>
+          <p style={{ color: "#ef4444", fontSize: "1.2rem", marginBottom: "1rem" }}>Hata: {error}</p>
+          <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
+            Poll ID: {id}
+          </p>
+          <Link to="/vote-pools" className="button button-primary" style={{ marginTop: "1rem" }}>
+            Geri Dön
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!localPool) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--bg-primary)", padding: "2rem" }}>
+        <div className="container" style={{ textAlign: "center" }}>
           <p style={{ color: "var(--text-secondary)" }}>Vote pool not found.</p>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginTop: "0.5rem" }}>
+            Poll ID: {id}
+          </p>
           <Link to="/vote-pools" className="button button-primary" style={{ marginTop: "1rem" }}>
             Back to Vote Pools
           </Link>
@@ -237,30 +545,88 @@ const VotingPage = () => {
             >
               Cast Your Vote
             </h3>
+            {!account?.address && (
+              <div
+                style={{
+                  padding: "1rem",
+                  background: "rgba(59, 130, 246, 0.1)",
+                  border: "1px solid rgba(59, 130, 246, 0.3)",
+                  borderRadius: "0.5rem",
+                  color: "var(--color-light-blue)",
+                  marginBottom: "1rem",
+                  fontSize: "0.9rem",
+                }}
+              >
+                ⚠️ Oy vermek için cüzdanınızı bağlamanız gerekiyor. Detayları ve sonuçları görebilirsiniz.
+              </div>
+            )}
+            {hasVoted && account?.address && (
+              <div
+                style={{
+                  padding: "1rem",
+                  background: "rgba(251, 191, 36, 0.1)",
+                  border: "1px solid rgba(251, 191, 36, 0.3)",
+                  borderRadius: "0.5rem",
+                  color: "#fbbf24",
+                  marginBottom: "1rem",
+                  fontSize: "0.9rem",
+                }}
+              >
+                ✅ Bu poll'da oyunuzu kullandınız. Teşekkürler!
+              </div>
+            )}
+            {error && (
+              <div
+                style={{
+                  padding: "1rem",
+                  background: "rgba(239, 68, 68, 0.1)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  borderRadius: "0.5rem",
+                  color: "#ef4444",
+                  marginBottom: "1rem",
+                }}
+              >
+                {error}
+              </div>
+            )}
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               {localPool.options.map((option, index) => (
                 <div
                   key={option.id}
-                  onClick={() => handleVote(option.id)}
+                  onClick={() => {
+                    if (!account?.address) {
+                      setError("Oy vermek için lütfen cüzdanınızı bağlayın");
+                      return;
+                    }
+                    if (hasVoted) {
+                      setError("Bu poll'da zaten oy kullanmışsınız.");
+                      return;
+                    }
+                    if (!isVoting) {
+                      handleVote(index);
+                    }
+                  }}
                   style={{
                     padding: "1.5rem",
-                    background: selectedOption === option.id ? "var(--bg-secondary)" : "var(--bg-card)",
+                    background: selectedOption === index ? "var(--bg-secondary)" : "var(--bg-card)",
                     border:
-                      selectedOption === option.id
+                      selectedOption === index
                         ? "2px solid var(--color-light-blue)"
                         : "1px solid var(--border-color)",
                     borderRadius: "0.75rem",
-                    cursor: "pointer",
+                    cursor: !account?.address || isVoting || hasVoted ? "not-allowed" : "pointer",
+                    opacity: !account?.address || isVoting || hasVoted ? 0.6 : 1,
                     transition: "all 0.3s ease",
                   }}
                   onMouseEnter={(e) => {
-                    if (selectedOption !== option.id) {
+                    if (!account?.address || isVoting || hasVoted) return;
+                    if (selectedOption !== index) {
                       e.currentTarget.style.borderColor = "var(--color-navy-light)";
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (selectedOption !== option.id) {
-                      e.currentTarget.style.borderColor = "var(--border-color)";
+                    if (selectedOption !== index) {
+                      e.currentTarget.style.borderColor = selectedOption === index ? "var(--color-light-blue)" : "var(--border-color)";
                     }
                   }}
                 >
@@ -324,8 +690,20 @@ const VotingPage = () => {
                       }}
                     />
                   </div>
-                  <div style={{ fontSize: "0.9rem", color: "var(--text-muted)" }}>
-                    {option.voteCount.toLocaleString()} votes
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontSize: "0.9rem", color: "var(--text-muted)" }}>
+                      {option.voteCount.toLocaleString()} {option.voteCount === 1 ? "vote" : "votes"}
+                    </div>
+                    {!account?.address && (
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontStyle: "italic" }}>
+                        Connect wallet to vote
+                      </div>
+                    )}
+                    {isVoting && selectedOption === index && (
+                      <div style={{ fontSize: "0.75rem", color: "var(--color-light-blue)" }}>
+                        Processing...
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
