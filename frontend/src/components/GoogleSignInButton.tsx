@@ -48,16 +48,17 @@ const GoogleSignInButton = ({ onSignIn }: { onSignIn?: () => void }) => {
         console.error("Enoki wallet does not support standard:connect");
       }
     } catch (error: any) {
-      console.error("Failed to sign in with Google:", error);
-      
-      // Handle specific error cases
+      // Handle specific error cases first
       const errorMessage = error?.message || String(error);
       
       if (errorMessage.includes("Popup closed") || errorMessage.includes("popup_closed")) {
-        // User closed the popup - this is normal behavior, don't show an alert
-        console.log("User closed the Google sign-in popup");
+        // User closed the popup - this is normal behavior, silently handle it
+        // Don't log as error, just return silently
         return;
       }
+      
+      // For other errors, log and show appropriate messages
+      console.error("Failed to sign in with Google:", error);
       
       if (errorMessage.includes("redirect_uri_mismatch")) {
         alert(
