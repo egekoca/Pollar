@@ -1,12 +1,15 @@
-import { getAllPolls, getPollById } from "./blockchain";
+import { getAllPolls, getPollById, findVoteRegistryByPollId, getVoteRegistry } from "./blockchain";
 import { useSuiClient } from "@mysten/dapp-kit";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { VotePool, VoteOption } from "../data/mockData";
+import { contractConfig } from "../config/contractConfig";
 
 /**
  * Blockchain'den okunan poll'u VotePool formatına dönüştürür
  */
-export function convertBlockchainPollToVotePool(
+export async function convertBlockchainPollToVotePool(
+  client: any,
   blockchainPoll: {
     pollId: string;
     owner: string;
@@ -20,16 +23,23 @@ export function convertBlockchainPollToVotePool(
       name: string;
       image_url: string;
     }>;
-  },
-  voteRegistry?: {
-    totalVotes: number;
-    optionVotes: Record<string, number>;
   }
-): VotePool {
-  const totalVotes = voteRegistry?.totalVotes || 0;
+): Promise<VotePool> {
+  // Get VoteRegistry for this poll
+  let voteData = null;
+  try {
+    const voteRegistryId = await findVoteRegistryByPollId(client, blockchainPoll.pollId);
+    if (voteRegistryId) {
+      voteData = await getVoteRegistry(client, voteRegistryId);
+    }
+  } catch (error) {
+    console.warn(`Could not fetch VoteRegistry for poll ${blockchainPoll.pollId}:`, error);
+  }
+
+  const totalVotes = voteData?.option_votes.reduce((sum: number, count: number) => sum + count, 0) || 0;
   
-  const options: VoteOption[] = blockchainPoll.options.map((opt) => {
-    const voteCount = voteRegistry?.optionVotes[opt.id] || 0;
+  const options: VoteOption[] = blockchainPoll.options.map((opt, index) => {
+    const voteCount = voteData?.option_votes[index] || 0;
     const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
     
     return {
@@ -41,6 +51,9 @@ export function convertBlockchainPollToVotePool(
     };
   });
 
+  // Sort options by vote count (descending) for display
+  const sortedOptions = [...options].sort((a, b) => b.voteCount - a.voteCount);
+
   return {
     id: blockchainPoll.pollId,
     name: blockchainPoll.name,
@@ -48,12 +61,12 @@ export function convertBlockchainPollToVotePool(
     image: blockchainPoll.image_url,
     startTime: blockchainPoll.start_date,
     endTime: blockchainPoll.end_date,
-    options,
+    options: sortedOptions,
     totalVotes,
     history: [
       {
         timestamp: blockchainPoll.start_date,
-        options: options.map((opt) => ({
+        options: sortedOptions.map((opt) => ({
           optionId: opt.id,
           percentage: opt.percentage,
         })),
@@ -64,18 +77,88 @@ export function convertBlockchainPollToVotePool(
 
 /**
  * Tüm poll'ları blockchain'den okumak için React Query hook
+ * Real-time updates için event'leri dinler
  */
 export function useBlockchainPolls() {
   const client = useSuiClient();
+  const subscriptionRef = useRef<(() => void) | null>(null);
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["blockchain-polls"],
     queryFn: async () => {
       const polls = await getAllPolls(client);
-      return polls.map((poll) => convertBlockchainPollToVotePool(poll));
+      // VoteRegistry verilerini de çek
+      const pollsWithVotes = await Promise.all(
+        polls.map((poll) => convertBlockchainPollToVotePool(client, poll))
+      );
+      return pollsWithVotes;
     },
-    refetchInterval: 10000, // 10 saniyede bir yenile
+    refetchInterval: 30000, // 30 saniyede bir fallback yenileme
   });
+
+  // Subscribe to events for real-time updates
+  useEffect(() => {
+    const packageId = contractConfig.packageId;
+    if (!packageId || !client) {
+      return;
+    }
+
+    console.log("🎧 Setting up event subscriptions for real-time vote updates...");
+
+    let voteUnsubscribe: (() => void) | null = null;
+
+    const setupSubscriptions = async () => {
+      try {
+        // Use subscribeEvent if available, otherwise use polling
+        const clientAny = client as any;
+        
+        if (clientAny.subscribeEvent) {
+          // Sui SDK event subscription
+          try {
+            // Subscribe to UserVoteMinted events (votes)
+            voteUnsubscribe = await clientAny.subscribeEvent({
+              filter: {
+                MoveEventType: `${packageId}::${contractConfig.moduleName}::UserVoteMinted`,
+              },
+              onMessage: (event: any) => {
+                console.log("🗳️ New vote cast event received:", event);
+                // Refetch polls when a vote is cast
+                setTimeout(() => {
+                  query.refetch();
+                  console.log("Poll data refetched after vote event");
+                }, 2000); // Wait 2 seconds for transaction to finalize
+              },
+            });
+
+            console.log("✅ Vote event subscription active for real-time updates");
+            subscriptionRef.current = () => {
+              if (voteUnsubscribe) voteUnsubscribe();
+            };
+          } catch (subError) {
+            console.warn("⚠️ Event subscription not supported, using polling:", subError);
+          }
+        } else {
+          // Fallback: Use shorter polling interval if event subscription is not available
+          console.log("⚠️ Event subscription API not available, using polling");
+        }
+      } catch (error) {
+        console.error("❌ Error setting up event subscriptions:", error);
+      }
+    };
+
+    setupSubscriptions();
+
+    // Cleanup on unmount
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current();
+        subscriptionRef.current = null;
+      }
+      if (voteUnsubscribe) voteUnsubscribe();
+    };
+  }, [client, query]);
+
+  return query;
 }
 
 export const getVoteRegistryByPoll = async (client: any, pollId: string): Promise<string> =>
@@ -148,10 +231,10 @@ export function useBlockchainPoll(pollId: string | undefined) {
       if (!pollId) return null;
       const poll = await getPollById(client, pollId);
       if (!poll) return null;
-      return convertBlockchainPollToVotePool(poll);
+      return await convertBlockchainPollToVotePool(client, poll);
     },
     enabled: !!pollId,
-    refetchInterval: 10000,
+    refetchInterval: 20000, // 20 saniyede bir fallback yenileme
   });
 }
 
