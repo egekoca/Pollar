@@ -101,61 +101,66 @@ const VotingPage = () => {
       {/* Header */}
       <header
         style={{
-          padding: "1.5rem 2rem",
+          padding: "clamp(1rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2rem)",
           borderBottom: "1px solid var(--border-color)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: "1rem",
         }}
       >
         <Link to="/vote-pools" style={{ display: "flex", alignItems: "center", gap: "0.75rem", textDecoration: "none" }}>
           <div
             style={{
-              width: "40px",
-              height: "40px",
+              width: "clamp(32px, 5vw, 40px)",
+              height: "clamp(32px, 5vw, 40px)",
               background: "linear-gradient(135deg, var(--color-navy) 0%, var(--color-light-blue) 100%)",
               borderRadius: "8px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "1.5rem",
+              fontSize: "clamp(1.2rem, 2vw, 1.5rem)",
               fontWeight: "bold",
               color: "var(--color-white)",
             }}
           >
             P
           </div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: "700", color: "var(--text-primary)" }}>
+          <h1 style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", fontWeight: "700", color: "var(--text-primary)" }}>
             Pollar
           </h1>
         </Link>
         <button
           onClick={() => navigate("/vote-pools")}
           className="button button-secondary"
+          style={{ fontSize: "clamp(0.85rem, 1.5vw, 1rem)", padding: "clamp(0.6rem, 1.5vw, 0.75rem) clamp(1rem, 2vw, 1.5rem)" }}
         >
           Back to Pools
         </button>
       </header>
 
       {/* Main Content */}
-      <main style={{ padding: "2rem", maxWidth: "1400px", margin: "0 auto" }}>
+      <main style={{ padding: "clamp(1rem, 3vw, 2rem)", maxWidth: "1400px", margin: "0 auto" }}>
         {/* Pool Header */}
-        <div style={{ marginBottom: "2rem" }}>
+        <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "200px 1fr",
-              gap: "2rem",
-              marginBottom: "2rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
+              gap: "clamp(1rem, 3vw, 2rem)",
+              marginBottom: "clamp(1.5rem, 3vw, 2rem)",
             }}
           >
             <div
               style={{
-                width: "200px",
-                height: "200px",
+                width: "100%",
+                maxWidth: "200px",
+                aspectRatio: "1",
                 borderRadius: "1rem",
                 overflow: "hidden",
                 background: "var(--bg-secondary)",
+                margin: "0 auto",
               }}
             >
               <img
@@ -171,7 +176,7 @@ const VotingPage = () => {
             <div>
               <h2
                 style={{
-                  fontSize: "2.5rem",
+                  fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
                   fontWeight: "700",
                   marginBottom: "1rem",
                   color: "var(--text-primary)",
@@ -182,35 +187,35 @@ const VotingPage = () => {
               <p
                 style={{
                   color: "var(--text-secondary)",
-                  fontSize: "1.1rem",
+                  fontSize: "clamp(1rem, 2vw, 1.1rem)",
                   lineHeight: "1.8",
                   marginBottom: "1.5rem",
                 }}
               >
                 {localPool.description}
               </p>
-              <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "clamp(1rem, 3vw, 2rem)", flexWrap: "wrap" }}>
                 <div>
-                  <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
+                  <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.85rem)", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
                     Total Votes
                   </div>
-                  <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--color-light-blue)" }}>
+                  <div style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", fontWeight: "bold", color: "var(--color-light-blue)" }}>
                     {localPool.totalVotes.toLocaleString()}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
+                  <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.85rem)", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
                     Starts
                   </div>
-                  <div style={{ fontSize: "1rem", color: "var(--text-secondary)" }}>
+                  <div style={{ fontSize: "clamp(0.9rem, 1.8vw, 1rem)", color: "var(--text-secondary)" }}>
                     {formatDate(localPool.startTime)}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
+                  <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.85rem)", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
                     Ends
                   </div>
-                  <div style={{ fontSize: "1rem", color: "var(--text-secondary)" }}>
+                  <div style={{ fontSize: "clamp(0.9rem, 1.8vw, 1rem)", color: "var(--text-secondary)" }}>
                     {formatDate(localPool.endTime)}
                   </div>
                 </div>
@@ -219,14 +224,14 @@ const VotingPage = () => {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 400px), 1fr))", gap: "clamp(1rem, 3vw, 2rem)" }}>
           {/* Voting Options */}
           <div className="card">
             <h3
               style={{
-                fontSize: "1.75rem",
+                fontSize: "clamp(1.5rem, 3vw, 1.75rem)",
                 fontWeight: "600",
-                marginBottom: "1.5rem",
+                marginBottom: "clamp(1rem, 2.5vw, 1.5rem)",
                 color: "var(--text-primary)",
               }}
             >
@@ -284,7 +289,7 @@ const VotingPage = () => {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
                     <h4
                       style={{
-                        fontSize: "1.25rem",
+                        fontSize: "clamp(1.1rem, 2vw, 1.25rem)",
                         fontWeight: "600",
                         color: "var(--text-primary)",
                       }}
@@ -293,7 +298,7 @@ const VotingPage = () => {
                     </h4>
                     <span
                       style={{
-                        fontSize: "1.5rem",
+                        fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)",
                         fontWeight: "bold",
                         color: "var(--color-light-blue)",
                       }}
@@ -331,9 +336,9 @@ const VotingPage = () => {
           <div className="card">
             <h3
               style={{
-                fontSize: "1.75rem",
+                fontSize: "clamp(1.5rem, 3vw, 1.75rem)",
                 fontWeight: "600",
-                marginBottom: "1.5rem",
+                marginBottom: "clamp(1rem, 2.5vw, 1.5rem)",
                 color: "var(--text-primary)",
               }}
             >

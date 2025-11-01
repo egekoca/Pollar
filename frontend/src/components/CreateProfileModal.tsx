@@ -62,7 +62,7 @@ const CreateProfileModal = ({ isOpen, walletAddress, onClose, onSubmit }: Create
         alignItems: "center",
         justifyContent: "center",
         zIndex: 2000,
-        padding: "2rem",
+        padding: "clamp(1rem, 3vw, 2rem)",
       }}
       onClick={onClose}
     >
@@ -72,11 +72,12 @@ const CreateProfileModal = ({ isOpen, walletAddress, onClose, onSubmit }: Create
           maxWidth: "500px",
           width: "100%",
           background: "var(--bg-card)",
+          padding: "clamp(1.25rem, 2.5vw, 1.5rem)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <h2 style={{ fontSize: "1.75rem", fontWeight: "600", color: "var(--text-primary)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "clamp(1rem, 2vw, 1.5rem)" }}>
+          <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 1.75rem)", fontWeight: "600", color: "var(--text-primary)" }}>
             Create Profile
           </h2>
           <button
@@ -204,8 +205,8 @@ const CreateProfileModal = ({ isOpen, walletAddress, onClose, onSubmit }: Create
                   src={avatarUrl}
                   alt="Avatar preview"
                   style={{
-                    width: "80px",
-                    height: "80px",
+                    width: "clamp(70px, 15vw, 80px)",
+                    height: "clamp(70px, 15vw, 80px)",
                     borderRadius: "50%",
                     objectFit: "cover",
                     border: "2px solid var(--border-color)",

@@ -116,7 +116,7 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit }: CreateVotePoolModalP
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1000,
-        padding: "2rem",
+        padding: "clamp(1rem, 3vw, 2rem)",
       }}
       onClick={onClose}
     >
@@ -128,11 +128,12 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit }: CreateVotePoolModalP
           maxHeight: "90vh",
           overflowY: "auto",
           background: "var(--bg-card)",
+          padding: "clamp(1.25rem, 2.5vw, 1.5rem)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <h2 style={{ fontSize: "1.75rem", fontWeight: "600", color: "var(--text-primary)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "clamp(1rem, 2vw, 1.5rem)" }}>
+          <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 1.75rem)", fontWeight: "600", color: "var(--text-primary)" }}>
             Create Vote Pool
           </h2>
           <button
@@ -345,7 +346,7 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit }: CreateVotePoolModalP
           </div>
 
           {/* Date Times */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
             <div>
               <label
                 style={{
@@ -353,6 +354,7 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit }: CreateVotePoolModalP
                   marginBottom: "0.5rem",
                   color: "var(--text-primary)",
                   fontWeight: "500",
+                  fontSize: "clamp(0.9rem, 1.5vw, 1rem)",
                 }}
               >
                 Start Time *
@@ -364,12 +366,12 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit }: CreateVotePoolModalP
                 required
                 style={{
                   width: "100%",
-                  padding: "0.75rem",
+                  padding: "clamp(0.6rem, 1.5vw, 0.75rem)",
                   background: "var(--bg-secondary)",
                   border: "1px solid var(--border-color)",
                   borderRadius: "0.5rem",
                   color: "var(--text-primary)",
-                  fontSize: "1rem",
+                  fontSize: "clamp(0.9rem, 1.5vw, 1rem)",
                 }}
               />
             </div>
@@ -380,6 +382,7 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit }: CreateVotePoolModalP
                   marginBottom: "0.5rem",
                   color: "var(--text-primary)",
                   fontWeight: "500",
+                  fontSize: "clamp(0.9rem, 1.5vw, 1rem)",
                 }}
               >
                 End Time *
@@ -391,12 +394,12 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit }: CreateVotePoolModalP
                 required
                 style={{
                   width: "100%",
-                  padding: "0.75rem",
+                  padding: "clamp(0.6rem, 1.5vw, 0.75rem)",
                   background: "var(--bg-secondary)",
                   border: "1px solid var(--border-color)",
                   borderRadius: "0.5rem",
                   color: "var(--text-primary)",
-                  fontSize: "1rem",
+                  fontSize: "clamp(0.9rem, 1.5vw, 1rem)",
                 }}
               />
             </div>
