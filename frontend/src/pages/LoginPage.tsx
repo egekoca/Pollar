@@ -257,7 +257,7 @@ const LoginPage = () => {
       <div
         style={{
           flex: "1",
-          background: "linear-gradient(135deg, var(--color-navy) 0%, var(--color-black-light) 100%)",
+          background: "var(--bg-primary)",
           position: "relative",
           overflow: "hidden",
           display: "flex",
@@ -265,79 +265,13 @@ const LoginPage = () => {
           justifyContent: "center",
         }}
       >
-        {/* Geometric Pattern Overlay */}
-        <div
+        <img 
+          src="/friends.png" 
+          alt="Friends" 
           style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            opacity: 0.1,
-            backgroundImage: `
-              repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.05) 35px, rgba(255,255,255,.05) 70px),
-              repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(255,255,255,.05) 35px, rgba(255,255,255,.05) 70px)
-            `,
-          }}
-        />
-
-        {/* Content */}
-        <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "3rem", maxWidth: "500px" }}>
-          <div
-            style={{
-              fontSize: "6rem",
-              color: "var(--color-light-blue)",
-              opacity: 0.8,
-              marginBottom: "2rem",
-            }}
-          >
-            ✓
-          </div>
-          <h2
-            style={{
-              fontSize: "2.5rem",
-              fontWeight: "700",
-              color: "var(--color-white)",
-              marginBottom: "1rem",
-            }}
-          >
-            Decentralized Voting
-          </h2>
-          <p
-            style={{
-              fontSize: "1.2rem",
-              color: "var(--color-light-blue)",
-              lineHeight: "1.8",
-            }}
-          >
-            Transparent, secure, and trustless voting powered by blockchain technology
-          </p>
-        </div>
-
-        {/* Decorative Shapes */}
-        <div
-          style={{
-            position: "absolute",
-            top: "10%",
-            right: "10%",
-            width: "100px",
-            height: "100px",
-            border: "2px solid var(--color-light-blue)",
-            borderRadius: "20px",
-            opacity: 0.2,
-            transform: "rotate(45deg)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: "15%",
-            left: "15%",
-            width: "150px",
-            height: "150px",
-            border: "2px solid var(--color-light-blue)",
-            borderRadius: "50%",
-            opacity: 0.15,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
           }}
         />
       </div>
