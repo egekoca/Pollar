@@ -78,6 +78,59 @@ export function useBlockchainPolls() {
   });
 }
 
+export const getVoteRegistryByPoll = async (pollId: string): Promise<string> =>
+{
+  const client = useSuiClient();
+  try {
+    let hasNextPage = true;
+    let cursor = null;
+
+    // Search all dynamic fields with pagination
+    while (hasNextPage) 
+    {
+      const response = await client.getDynamicFields({
+        parentId: ENV.VITE_POLL_REGISTRY_ID,
+        cursor: cursor,
+        limit: 50
+      });
+
+      const found = response.data.find(
+        field => field.name.value === pollId
+      );  
+
+      if (found) 
+      {
+        const object = await client.getObject(
+        {
+          id: found.objectId,
+          options: 
+          {
+            showContent: true
+          }
+        });
+
+        if (object.data?.content?.dataType === 'moveObject') 
+          {
+          const fields = object.data.content.fields as any;
+          return fields.value || "";
+        }
+        return "";
+      }
+
+      hasNextPage = response.hasNextPage;
+      cursor = response.nextCursor;
+    }
+
+    return "";
+    
+  } 
+  catch (error) 
+  {
+    console.error('Error searching for user:', error);
+    throw error;
+  }
+}
+
 /**
  * Belirli bir poll'u blockchain'den okumak için React Query hook
  */
