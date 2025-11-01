@@ -32,12 +32,17 @@ const EInvalidOptionIndex: u64 = 14; // For simple voting use-case
 
 const VERSION: u64 = 1;
 
+// Version object used to track package migration and current schema version.
+// Stored as a shared object so migrations can verify and update package state.
 public struct Version has key 
 {
     id: UID,
     version: u64
 }
 
+// VoteRegistry holds voting state for a single Poll.
+// It references the Poll ID, tracks which wallet addresses have voted,
+// and keeps per-option vote counts for simple tallying.
 public struct VoteRegistry has key 
 {
     id: UID,
@@ -46,11 +51,15 @@ public struct VoteRegistry has key
     option_votes: vector<u64>, // Vote counts per option (for simple voting)
 }
 
+// PollRegistry is a shared object that acts as a registry for polls.
+// Dynamic fields map Poll IDs to their corresponding VoteRegistry IDs.
 public struct PollRegistry has key 
 {
     id: UID,
 }
 
+// User represents a participant profile with a name, optional icon URL,
+// and the wallet address that owns the profile.
 public struct User has key, store 
 {
     id: UID,
@@ -59,12 +68,16 @@ public struct User has key, store
     wallet: address,
 }
 
+// Event payload emitted when a User is minted/created. Contains the User ID
+// and the owner address that received the minted object.
 public struct UserMinted has copy, drop
 {
     user: ID,
     owner: address
 }
 
+// Poll holds metadata for a poll: title, description, media, date strings,
+// and the list of PollOption objects available for voting.
 public struct Poll has key, store 
 {
     id: UID,
@@ -76,12 +89,16 @@ public struct Poll has key, store
     options: vector<PollOption>,
 }
 
+// Event payload emitted when a Poll is minted. Contains the Poll ID and the
+// owner address that received the minted Poll object.
 public struct PollMinted has copy, drop
 {
     poll: ID,
     owner: address
 }
 
+// PollOption represents a single selectable option within a Poll.
+// Each option has its own UID and optional image metadata.
 public struct PollOption has key, store 
 {
     id: UID,
@@ -89,6 +106,8 @@ public struct PollOption has key, store
     image_url: String
 }
 
+// UserVote is a legacy object representing a user's vote, retained for
+// backwards compatibility. It stores the User, Poll, and selected PollOption.
 public struct UserVote has key, store 
 {
     id: UID,
@@ -97,6 +116,8 @@ public struct UserVote has key, store
     poll_option: PollOption
 }
 
+// Event payload emitted when a UserVote is minted. Contains the UserVote ID
+// and the owner address that received the minted UserVote object.
 public struct UserVoteMinted has copy, drop
 {
     user_vote: ID,
