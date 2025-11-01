@@ -28,7 +28,7 @@ const EInvalidUserWallet: u64 = 10;
 const EPollNotStarted: u64 = 11;
 const EPollEnded: u64 = 12;
 const EInvalidDateRange: u64 = 13;
-const EInvalidOptionIndex: u64 = 14; // Basit oy verme için
+const EInvalidOptionIndex: u64 = 14; // For simple voting use-case
 
 const VERSION: u64 = 1;
 
@@ -42,8 +42,8 @@ public struct VoteRegistry has key
 {
     id: UID,
     poll_id: ID,
-    usersVoted: vector<address>, // Artık address kullanıyoruz, basitleştirdik
-    option_votes: vector<u64>, // Her option için oy sayısı (basit oy verme için)
+    usersVoted: vector<address>, // Now using addresses to track voters; simplified
+    option_votes: vector<u64>, // Vote counts per option (for simple voting)
 }
 
 public struct PollRegistry has key 
@@ -188,7 +188,7 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
     let poll = create_poll(name, description, image_url, start_date, end_date, options, ctx);
     let inner_id = object::id(&poll);
     
-    // VoteRegistry'yi basitleştirdik - artık address ve option_votes kullanıyor
+    // Simplified VoteRegistry - now uses address list and option_votes
     let options_len = vector::length(&poll.options);
     let mut option_votes = vector::empty();
     let mut i = 0;
@@ -227,7 +227,7 @@ public entry fun mint_user(name: String, icon_url: String, ctx: &mut TxContext)
     transfer::transfer(user, ctx.sender());
 }
 
-// BASİT OY VERME FONKSİYONU - User ve PollOption objesi olmadan, sadece option_index ile
+    // SIMPLE VOTING FUNCTION - uses only option_index (no User or PollOption objects)
 public entry fun vote(
     poll: &Poll,
     option_index: u64,
@@ -237,14 +237,14 @@ public entry fun vote(
     let voter = ctx.sender();
     let poll_id = object::id(poll);
     
-    // VoteRegistry'nin bu Poll'a ait olduğunu kontrol et
+    // Check the VoteRegistry belongs to this Poll
     assert!(voteRegistry.poll_id == poll_id, EInvalidVoteRegistry);
     
-    // Option index validasyonu
+    // Validate option index
     let options_len = vector::length(&poll.options);
     assert!(option_index < options_len, EInvalidOptionIndex);
     
-    // Çift oy kontrolü - wallet adresi ile
+    // Check for double voting by wallet address
     let mut already_voted = false;
     let mut j = 0;
     let voters_len = vector::length(&voteRegistry.usersVoted);
@@ -258,7 +258,7 @@ public entry fun vote(
     };
     assert!(!already_voted, EAlreadyVoted);
     
-    // Oyu ekle - option_votes vector'ünü güncelle
+    // Add the vote - update the option_votes vector
     let mut new_option_votes = vector::empty();
     let mut i = 0;
     let votes_len = vector::length(&voteRegistry.option_votes);
@@ -274,10 +274,10 @@ public entry fun vote(
     };
     voteRegistry.option_votes = new_option_votes;
     
-    // Oy veren adresini ekle
+    // Append the voter's address
     vector::push_back(&mut voteRegistry.usersVoted, voter);
     
-    // Event emit
+    // Emit event
     event::emit(UserVoteMinted{ user_vote: poll_id, owner: voter }); // Basit event
 }
 
@@ -288,13 +288,13 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
     let inner_user_id = object::id(&user);
     let inner_poll_option_id = object::id(&poll_option);
 
-    // 1. VoteRegistry'nin bu Poll'a ait olduğunu kontrol et
+    // 1. Verify the VoteRegistry belongs to this Poll
     assert!(voteRegistry.poll_id == poll_id, EInvalidVoteRegistry);
 
-    // 2. User wallet adresinin transaction gönderen kişiyle eşleştiğini kontrol et
+    // 2. Ensure the User's wallet address matches the transaction sender
     assert!(user.wallet == ctx.sender(), EInvalidUserWallet);
 
-    // 3. Poll option'ın bu Poll'un options listesinde olduğunu kontrol et
+    // 3. Verify the PollOption exists in the Poll's options list
     let mut option_exists = false;
     let mut i = 0;
     let len = vector::length(&poll.options);
@@ -311,7 +311,7 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
     };
     assert!(option_exists, EInvalidPollOption);
 
-    // 4. Kullanıcının daha önce oy verip vermediğini kontrol et (wallet adresi ile)
+    // 4. Check whether the user has already voted (by wallet address)
     let voter = ctx.sender();
     let mut already_voted = false;
     let mut j = 0;
@@ -326,7 +326,7 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
     };
     assert!(!already_voted, EAlreadyVoted);
 
-    // 5. Option index'ini bul
+    // 5. Find the option index for the provided PollOption
     let mut option_index = 0;
     let mut k = 0;
     while (k < len) {
@@ -338,7 +338,7 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
         k = k + 1;
     };
 
-    // 6. Oyu ekle - option_votes vector'ünü güncelle
+    // 6. Add the vote - update option_votes vector
     let mut new_option_votes = vector::empty();
     let mut i2 = 0;
     let votes_len = vector::length(&voteRegistry.option_votes);
@@ -354,10 +354,10 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
     };
     voteRegistry.option_votes = new_option_votes;
 
-    // 7. Oy veren adresini ekle
+    // 7. Append the voter's address to the registry
     vector::push_back(&mut voteRegistry.usersVoted, voter);
 
-    // 8. UserVote oluştur (eski yapı için)
+    // 8. Create a UserVote object (legacy structure for compatibility)
     let user_vote = create_user_vote(poll, poll_option, user, ctx);
     let inner_vote_id = object::id(&user_vote);
 
