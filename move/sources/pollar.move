@@ -8,6 +8,7 @@ use std::option::{Self, Option};
 use std::string::String;
 use std::vector;
 use sui::dynamic_field as df;
+use sui::clock::{Self, Clock};
 
 const EInvalidPackageVersion: u64 = 1001;
 const EVersionAlreadyUpdated: u64 = 1002;
@@ -23,6 +24,7 @@ const EInvalidStartDateLength: u64 = 5;
 const EInvalidEndDateLength: u64 = 6;
 const EInvalidOptionsLength: u64 = 7; // Poll option is not in the poll's options list
 const EAlreadyVoted: u64 = 8;
+const EVotingPeriodNotOver: u64 = 9;
 
 const VERSION: u64 = 1;
 
@@ -66,6 +68,7 @@ public struct Poll has key, store
     image_url: String,
     start_date: String,
     end_date: String,
+    end_timestamp_ms: u64,
     options: vector<PollOption>,
 }
 
@@ -102,6 +105,17 @@ fun init(ctx: &mut TxContext)
     transfer::share_object(Version { id: object::new(ctx), version: VERSION });
 }
 
+/// Timelock: Only allows access after voting period ends
+public entry fun seal_approve_timelock(
+    poll: &Poll,
+    clock: &Clock
+) {
+    assert!(
+        clock::timestamp_ms(clock) > poll.end_timestamp_ms,
+        EVotingPeriodNotOver 
+    );
+}
+
 
 public fun create_poll_option(name: String, image_url: String, ctx: &mut TxContext): PollOption
 {
@@ -114,7 +128,7 @@ public fun create_poll_option(name: String, image_url: String, ctx: &mut TxConte
     pollOption
 }
 
-public fun create_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, options: vector<PollOption>, ctx: &mut TxContext): Poll
+public fun create_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, end_timestamp_ms: u64, options: vector<PollOption>, ctx: &mut TxContext): Poll
 {
     let poll = Poll 
     {
@@ -124,6 +138,7 @@ public fun create_poll(name: String, description: String, image_url: String, sta
         image_url,
         start_date,
         end_date,
+        end_timestamp_ms,
         options
     };
     poll
@@ -153,7 +168,7 @@ public fun create_user_vote(poll: Poll, poll_option: PollOption, user: User, ctx
     userVote
 }
 
-public entry fun mint_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, options: vector<PollOption>,  pollRegistry: &mut PollRegistry, ctx: &mut TxContext)
+public entry fun mint_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, end_timestamp_ms: u64, options: vector<PollOption>,  pollRegistry: &mut PollRegistry, ctx: &mut TxContext)
 {
     // Validate poll name length (3-250 characters)
     let name_length = name.length();
@@ -177,7 +192,7 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
 
     
 
-    let poll = create_poll(name, description, image_url, start_date, end_date, options, ctx);
+    let poll = create_poll(name, description, image_url, start_date, end_date, end_timestamp_ms, options, ctx);
     let inner_id = object::id(&poll);
     
     let voteRegistry = VoteRegistry 
@@ -262,7 +277,7 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
 
 public entry fun delete_poll(poll: Poll, ctx: &mut TxContext)
 {
-    let Poll { id, name: _, description: _, image_url: _, start_date: _, end_date: _, options: mut options } = poll;
+    let Poll { id, name: _, description: _, image_url: _, start_date: _, end_date: _, end_timestamp_ms: _, options: mut options } = poll;
     while (!vector::is_empty(&options)) 
     {
         let pollOption = vector::pop_back(&mut options);
