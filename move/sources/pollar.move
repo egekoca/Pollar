@@ -28,29 +28,38 @@ const EInvalidUserWallet: u64 = 10;
 const EPollNotStarted: u64 = 11;
 const EPollEnded: u64 = 12;
 const EInvalidDateRange: u64 = 13;
-const EInvalidOptionIndex: u64 = 14; // Basit oy verme için
+const EInvalidOptionIndex: u64 = 14; // For simple voting use-case
 
 const VERSION: u64 = 1;
 
+// Version object used to track package migration and current schema version.
+// Stored as a shared object so migrations can verify and update package state.
 public struct Version has key 
 {
     id: UID,
     version: u64
 }
 
+// VoteRegistry holds voting state for a single Poll.
+// It references the Poll ID, tracks which wallet addresses have voted,
+// and keeps per-option vote counts for simple tallying.
 public struct VoteRegistry has key 
 {
     id: UID,
     poll_id: ID,
-    usersVoted: vector<address>, // Artık address kullanıyoruz, basitleştirdik
-    option_votes: vector<u64>, // Her option için oy sayısı (basit oy verme için)
+    usersVoted: vector<address>, // Now using addresses to track voters; simplified
+    option_votes: vector<u64>, // Vote counts per option (for simple voting)
 }
 
+// PollRegistry is a shared object that acts as a registry for polls.
+// Dynamic fields map Poll IDs to their corresponding VoteRegistry IDs.
 public struct PollRegistry has key 
 {
     id: UID,
 }
 
+// User represents a participant profile with a name, optional icon URL,
+// and the wallet address that owns the profile.
 public struct User has key, store 
 {
     id: UID,
@@ -59,12 +68,16 @@ public struct User has key, store
     wallet: address,
 }
 
+// Event payload emitted when a User is minted/created. Contains the User ID
+// and the owner address that received the minted object.
 public struct UserMinted has copy, drop
 {
     user: ID,
     owner: address
 }
 
+// Poll holds metadata for a poll: title, description, media, date strings,
+// and the list of PollOption objects available for voting.
 public struct Poll has key, store 
 {
     id: UID,
@@ -76,12 +89,16 @@ public struct Poll has key, store
     options: vector<PollOption>,
 }
 
+// Event payload emitted when a Poll is minted. Contains the Poll ID and the
+// owner address that received the minted Poll object.
 public struct PollMinted has copy, drop
 {
     poll: ID,
     owner: address
 }
 
+// PollOption represents a single selectable option within a Poll.
+// Each option has its own UID and optional image metadata.
 public struct PollOption has key, store 
 {
     id: UID,
@@ -89,6 +106,8 @@ public struct PollOption has key, store
     image_url: String
 }
 
+// UserVote is a legacy object representing a user's vote, retained for
+// backwards compatibility. It stores the User, Poll, and selected PollOption.
 public struct UserVote has key, store 
 {
     id: UID,
@@ -97,6 +116,8 @@ public struct UserVote has key, store
     poll_option: PollOption
 }
 
+// Event payload emitted when a UserVote is minted. Contains the UserVote ID
+// and the owner address that received the minted UserVote object.
 public struct UserVoteMinted has copy, drop
 {
     user_vote: ID,
@@ -188,7 +209,7 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
     let poll = create_poll(name, description, image_url, start_date, end_date, options, ctx);
     let inner_id = object::id(&poll);
     
-    // VoteRegistry'yi basitleştirdik - artık address ve option_votes kullanıyor
+    // Simplified VoteRegistry - now uses address list and option_votes
     let options_len = vector::length(&poll.options);
     let mut option_votes = vector::empty();
     let mut i = 0;
@@ -211,7 +232,7 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
     transfer::share_object(voteRegistry);
 }
 
-public fun mint_user(name: String, icon_url: String, ctx: &mut TxContext)
+public entry fun mint_user(name: String, icon_url: String, ctx: &mut TxContext)
 {
     // Validate name length (3-100 characters)
     let name_length = name.length();
@@ -227,7 +248,7 @@ public fun mint_user(name: String, icon_url: String, ctx: &mut TxContext)
     transfer::transfer(user, ctx.sender());
 }
 
-// BASİT OY VERME FONKSİYONU - User ve PollOption objesi olmadan, sadece option_index ile
+    // SIMPLE VOTING FUNCTION - uses only option_index (no User or PollOption objects)
 public entry fun vote(
     poll: &Poll,
     option_index: u64,
@@ -237,14 +258,14 @@ public entry fun vote(
     let voter = ctx.sender();
     let poll_id = object::id(poll);
     
-    // VoteRegistry'nin bu Poll'a ait olduğunu kontrol et
+    // Check the VoteRegistry belongs to this Poll
     assert!(voteRegistry.poll_id == poll_id, EInvalidVoteRegistry);
     
-    // Option index validasyonu
+    // Validate option index
     let options_len = vector::length(&poll.options);
     assert!(option_index < options_len, EInvalidOptionIndex);
     
-    // Çift oy kontrolü - wallet adresi ile
+    // Check for double voting by wallet address
     let mut already_voted = false;
     let mut j = 0;
     let voters_len = vector::length(&voteRegistry.usersVoted);
@@ -258,7 +279,7 @@ public entry fun vote(
     };
     assert!(!already_voted, EAlreadyVoted);
     
-    // Oyu ekle - option_votes vector'ünü güncelle
+    // Add the vote - update the option_votes vector
     let mut new_option_votes = vector::empty();
     let mut i = 0;
     let votes_len = vector::length(&voteRegistry.option_votes);
@@ -274,10 +295,10 @@ public entry fun vote(
     };
     voteRegistry.option_votes = new_option_votes;
     
-    // Oy veren adresini ekle
+    // Append the voter's address
     vector::push_back(&mut voteRegistry.usersVoted, voter);
     
-    // Event emit
+    // Emit event
     event::emit(UserVoteMinted{ user_vote: poll_id, owner: voter }); // Basit event
 }
 
@@ -288,13 +309,13 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
     let inner_user_id = object::id(&user);
     let inner_poll_option_id = object::id(&poll_option);
 
-    // 1. VoteRegistry'nin bu Poll'a ait olduğunu kontrol et
+    // 1. Verify the VoteRegistry belongs to this Poll
     assert!(voteRegistry.poll_id == poll_id, EInvalidVoteRegistry);
 
-    // 2. User wallet adresinin transaction gönderen kişiyle eşleştiğini kontrol et
+    // 2. Ensure the User's wallet address matches the transaction sender
     assert!(user.wallet == ctx.sender(), EInvalidUserWallet);
 
-    // 3. Poll option'ın bu Poll'un options listesinde olduğunu kontrol et
+    // 3. Verify the PollOption exists in the Poll's options list
     let mut option_exists = false;
     let mut i = 0;
     let len = vector::length(&poll.options);
@@ -311,7 +332,7 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
     };
     assert!(option_exists, EInvalidPollOption);
 
-    // 4. Kullanıcının daha önce oy verip vermediğini kontrol et (wallet adresi ile)
+    // 4. Check whether the user has already voted (by wallet address)
     let voter = ctx.sender();
     let mut already_voted = false;
     let mut j = 0;
@@ -326,7 +347,7 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
     };
     assert!(!already_voted, EAlreadyVoted);
 
-    // 5. Option index'ini bul
+    // 5. Find the option index for the provided PollOption
     let mut option_index = 0;
     let mut k = 0;
     while (k < len) {
@@ -338,7 +359,7 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
         k = k + 1;
     };
 
-    // 6. Oyu ekle - option_votes vector'ünü güncelle
+    // 6. Add the vote - update option_votes vector
     let mut new_option_votes = vector::empty();
     let mut i2 = 0;
     let votes_len = vector::length(&voteRegistry.option_votes);
@@ -354,10 +375,10 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
     };
     voteRegistry.option_votes = new_option_votes;
 
-    // 7. Oy veren adresini ekle
+    // 7. Append the voter's address to the registry
     vector::push_back(&mut voteRegistry.usersVoted, voter);
 
-    // 8. UserVote oluştur (eski yapı için)
+    // 8. Create a UserVote object (legacy structure for compatibility)
     let user_vote = create_user_vote(poll, poll_option, user, ctx);
     let inner_vote_id = object::id(&user_vote);
 
@@ -401,3 +422,4 @@ public fun init_for_testing(ctx: &mut TxContext)
 {
     init(ctx);
 }
+
