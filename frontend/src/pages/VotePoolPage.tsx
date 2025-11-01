@@ -1,20 +1,20 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { ConnectButton, useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
+import { useCurrentAccount, useDisconnectWallet, useWallets } from "@mysten/dapp-kit";
 import { mockVotePools, addVotePool } from "../data/mockData";
 import CreateVotePoolModal from "../components/CreateVotePoolModal";
-import CreateProfileModal from "../components/CreateProfileModal";
 import UserProfileDropdown from "../components/UserProfileDropdown";
-import { getUserProfile, saveUserProfile, UserProfile } from "../utils/userProfile";
+import { getUserProfile, UserProfile } from "../utils/userProfile";
 import "../styles/theme.css";
 
 const VotePoolPage = () => {
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pools, setPools] = useState(mockVotePools);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const account = useCurrentAccount();
   const { mutate: disconnect } = useDisconnectWallet();
+  const wallets = useWallets();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -37,14 +37,14 @@ const VotePoolPage = () => {
       const profile = getUserProfile(account.address);
       if (profile) {
         setUserProfile(profile);
-        setIsProfileModalOpen(false);
       } else {
-        setIsProfileModalOpen(true);
+        // No profile, redirect to create profile page
+        navigate("/create-profile");
       }
     } else {
       setUserProfile(null);
     }
-  }, [account?.address]);
+  }, [account?.address, navigate]);
 
   const handleSubmitPool = (data: {
     name: string;
@@ -71,19 +71,6 @@ const VotePoolPage = () => {
     setPools([...mockVotePools]);
   };
 
-  const handleCreateProfile = (username: string, avatarUrl: string) => {
-    if (!account?.address) return;
-
-    const newProfile: UserProfile = {
-      walletAddress: account.address,
-      username,
-      avatarUrl,
-    };
-
-    saveUserProfile(newProfile);
-    setUserProfile(newProfile);
-    setIsProfileModalOpen(false);
-  };
 
   const handleLogout = () => {
     disconnect();
@@ -134,14 +121,9 @@ const VotePoolPage = () => {
               <UserProfileDropdown profile={userProfile} onLogout={handleLogout} />
             </>
           ) : (
-            <>
-              <ConnectButton />
-              {account && !userProfile && (
-                <button onClick={() => setIsProfileModalOpen(true)} className="button button-secondary" style={{ fontSize: "clamp(0.85rem, 1.5vw, 1rem)", padding: "clamp(0.6rem, 1.5vw, 0.75rem) clamp(1rem, 2vw, 1.5rem)" }}>
-                  Complete Profile
-                </button>
-              )}
-            </>
+            <button onClick={() => navigate("/login")} className="button button-primary">
+              Connect Wallet
+            </button>
           )}
         </div>
       </header>
@@ -330,15 +312,6 @@ const VotePoolPage = () => {
         onSubmit={handleSubmitPool}
       />
 
-      {/* Create Profile Modal */}
-      {account?.address && (
-        <CreateProfileModal
-          isOpen={isProfileModalOpen}
-          walletAddress={account.address}
-          onClose={() => setIsProfileModalOpen(false)}
-          onSubmit={handleCreateProfile}
-        />
-      )}
     </div>
   );
 };

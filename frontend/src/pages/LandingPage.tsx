@@ -72,19 +72,12 @@ const LandingPage = () => {
         {/* Sağ Taraf - Go Voting Butonu */}
         <Link 
           to="/vote-pools" 
-          className="go-voting-button-neon" 
+          className="button button-primary go-voting-button" 
           style={{ 
             fontSize: "clamp(0.9rem, 1.8vw, 1rem)",
-            padding: "clamp(0.5rem, 1.2vw, 0.65rem) clamp(1.25rem, 2.5vw, 1.75rem)",
-            background: "transparent",
-            color: "#3b82f6",
-            border: "1.5px solid #3b82f6",
-            borderRadius: "0.5rem",
-            fontWeight: "600",
-            textDecoration: "none",
-            display: "inline-block",
             transition: "all 0.3s ease",
-            cursor: "pointer",
+            position: "relative",
+            overflow: "hidden",
           }}
         >
           Go Voting
@@ -161,23 +154,7 @@ const LandingPage = () => {
             From trust to truth, redefining how we vote.
           </p>
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            <Link 
-              to="/vote-pools" 
-              className="hero-button-neon-blue"
-              style={{ 
-                fontSize: "clamp(0.9rem, 2vw, 1.1rem)", 
-                padding: "clamp(0.65rem, 1.8vw, 0.85rem) clamp(1.5rem, 3.5vw, 2.25rem)",
-                background: "transparent",
-                color: "#60a5fa",
-                border: "1.5px solid #60a5fa",
-                borderRadius: "0.5rem",
-                fontWeight: "600",
-                textDecoration: "none",
-                display: "inline-block",
-                transition: "all 0.3s ease",
-                cursor: "pointer",
-              }}
-            >
+            <Link to="/vote-pools" className="button button-primary" style={{ fontSize: "clamp(0.9rem, 2vw, 1.1rem)", padding: "clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 3vw, 2rem)" }}>
               Start Voting
             </Link>
             <Link 

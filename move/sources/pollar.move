@@ -6,7 +6,6 @@ use sui::object::{Self, ID, UID};
 use sui::event;
 use std::option::{Self, Option};
 use std::string::String;
-use sui::dynamic_field as df;
 use std::vector;
 
 const EInvalidPackageVersion: u64 = 1001;
@@ -22,6 +21,7 @@ const EInvalidPollImageUrlLength: u64 = 4;
 const EInvalidStartDateLength: u64 = 5;
 const EInvalidEndDateLength: u64 = 6;
 const EInvalidOptionsLength: u64 = 7; // Poll option is not in the poll's options list
+const EAlreadyVoted: u64 = 8;
 
 const VERSION: u64 = 1;
 
@@ -29,6 +29,14 @@ public struct Version has key
 {
     id: UID,
     version: u64
+}
+
+public struct VoteRegistry has key 
+{
+    id: UID,
+    poll: Poll,
+    usersVoted: vector<ID>,
+    votes: vector<ID>
 }
 
 public struct User has key, store 
@@ -52,7 +60,7 @@ public struct Poll has key, store
     image_url: String,
     start_date: String,
     end_date: String,
-    options: vector<PollOption>
+    options: vector<PollOption>,
 }
 
 public struct PollMinted has copy, drop
@@ -71,6 +79,7 @@ public struct PollOption has key, store
 public struct UserVote has key, store 
 {
     id: UID,
+    user: User,
     poll: Poll,
     poll_option: PollOption
 }
@@ -83,7 +92,7 @@ public struct UserVoteMinted has copy, drop
 
 fun init(ctx: &mut TxContext) 
 {
-    transfer::share_object(Version { id: object::new(ctx), version: VERSION })
+    transfer::share_object(Version { id: object::new(ctx), version: VERSION });
 }
 
 
@@ -124,11 +133,12 @@ public fun create_user(name: String, icon_url: String, ctx: &mut TxContext): Use
     user
 }
 
-public fun create_user_vote(poll: Poll, poll_option: PollOption, ctx: &mut TxContext): UserVote
+public fun create_user_vote(poll: Poll, poll_option: PollOption, user: User, ctx: &mut TxContext): UserVote
 {
     let userVote = UserVote 
     {
         id: object::new(ctx), // creates a new UID
+        user,
         poll,
         poll_option
     };
@@ -164,7 +174,7 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
     transfer::transfer(poll, ctx.sender());
 }
 
-public entry fun mint_user(name: String, icon_url: String, hacker_id: String, twitter_link: String, created_date: String, ctx: &mut TxContext)
+public entry fun mint_user(name: String, icon_url: String, ctx: &mut TxContext)
 {
     // Validate name length (3-100 characters)
     let name_length = name.length();
@@ -180,7 +190,7 @@ public entry fun mint_user(name: String, icon_url: String, hacker_id: String, tw
     transfer::transfer(user, ctx.sender());
 }
 
-public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, ctx: &mut TxContext)
+public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User, voteRegistry: &mut VoteRegistry, ctx: &mut TxContext)
 {
     // Check if the poll_option exists in poll's options
     let mut option_exists = false;
@@ -190,21 +200,45 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, ctx: &mut T
     while (i < len) 
     {
         let current_option = vector::borrow(&poll.options, i);
-        if (object::id(current_option) == object::id(&poll_option)) {
+        if (object::id(current_option) == object::id(&poll_option)) 
+        {
             option_exists = true;
             break
         };
         i = i + 1;
     };
+
     
+    let inner_user_id = object::id(&user);
+    let inner_poll_option_id = object::id(&poll_option);
     // Assert that the option exists in the poll
     assert!(option_exists, EInvalidPollOption);
 
-    let user_vote = create_user_vote(poll, poll_option, ctx);
-    let inner_id = object::id(&user_vote);
-    
-    event::emit(UserVoteMinted{ user_vote: inner_id, owner: ctx.sender() });
+    // Prevent double voting: ensure the user hasn't voted already
+    /* let mut already_voted = false;
+    let mut k = 0;
+    let uv_len = vector::length(&voteRegistry.usersVoted);
+    while (k < uv_len)
+    {
+        let seen_id_ref = vector::borrow(&voteRegistry.usersVoted, k);
+        let seen_id = *seen_id_ref;
+        if (seen_id == inner_user_id) 
+        {
+            already_voted = true;
+            break;
+        };
+        k = k + 1;
+    }; */
+    assert!(!voteRegistry.usersVoted.contains(&inner_user_id), EAlreadyVoted);
+
+    let user_vote = create_user_vote(poll, poll_option, user, ctx);
+    let inner_vote_id = object::id(&user_vote);
+    voteRegistry.usersVoted.push_back(inner_user_id);
+    voteRegistry.votes.push_back(inner_poll_option_id);
+
+    event::emit(UserVoteMinted{ user_vote: inner_vote_id, owner: ctx.sender() });
     transfer::transfer(user_vote, ctx.sender());
+    //transfer::share_object(voteRegistry);
 }
 
 public entry fun delete_poll(poll: Poll, ctx: &mut TxContext)
@@ -217,6 +251,8 @@ public entry fun delete_poll(poll: Poll, ctx: &mut TxContext)
         object::delete(pid);
     };
     vector::destroy_empty(options);
+
+    
     object::delete(id);
 }
 
