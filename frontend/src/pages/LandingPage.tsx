@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Lightning from "../components/Lightning";
+import PillNav from "../components/PillNav";
 import "../styles/theme.css";
 
 const LandingPage = () => {
@@ -9,35 +10,49 @@ const LandingPage = () => {
       <header
         style={{
           padding: "clamp(0.75rem, 1.5vw, 1rem) clamp(1rem, 3vw, 2rem)",
-          borderBottom: "1px solid var(--border-color)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "1rem",
+          position: "relative",
         }}
       >
+        {/* Sol Taraf - Logo + Proje İsmi */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <div
-            style={{
-              width: "clamp(32px, 5vw, 40px)",
+          <img 
+            src="/pollar-logo.png" 
+            alt="Pollar Logo" 
+            style={{ 
+              width: "clamp(32px, 5vw, 40px)", 
               height: "clamp(32px, 5vw, 40px)",
-              background: "linear-gradient(135deg, var(--color-navy) 0%, var(--color-light-blue) 100%)",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "clamp(1.2rem, 2vw, 1.5rem)",
-              fontWeight: "bold",
-              color: "var(--color-white)",
-            }}
-          >
-            P
-          </div>
-          <h1 style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", fontWeight: "700", color: "var(--text-primary)" }}>
-            Pollar
+              borderRadius: "8px"
+            }} 
+          />
+          <h1 style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", fontWeight: "700", color: "var(--text-primary)" }}>
+            POLLAR
           </h1>
         </div>
+
+        {/* Orta - PillNav */}
+        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <PillNav
+            logo="/pollar-logo.png"
+            logoAlt="Pollar Logo"
+            items={[
+              { label: 'Home', href: '/' },
+              { label: 'Pools', href: '/vote-pools' },
+              { label: 'Profile', href: '/my-profile' },
+            ]}
+            activeHref="/"
+            baseColor="#000000"
+            pillColor="#ffffff"
+            hoveredPillTextColor="#ffffff"
+            pillTextColor="#000000"
+          />
+        </div>
+
+        {/* Sağ Taraf - Go Voting Butonu */}
         <Link to="/vote-pools" className="button button-primary" style={{ fontSize: "clamp(0.9rem, 1.8vw, 1rem)" }}>
           Go Voting
         </Link>
@@ -59,8 +74,8 @@ const LandingPage = () => {
         }}
       >
         {/* Lightning Background */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, opacity: 0.4 }}>
-          <Lightning hue={220} xOffset={0} speed={1} intensity={1} size={1} />
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, opacity: 1 }}>
+          <Lightning hue={220} xOffset={0} speed={1} intensity={1.2} size={1} />
         </div>
         <div style={{ position: "relative", zIndex: 1 }}>
           <h2
