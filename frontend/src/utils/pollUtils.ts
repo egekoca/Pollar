@@ -78,24 +78,29 @@ export function useBlockchainPolls() {
   });
 }
 
-export const getVoteRegistryByPoll = async (pollId: string): Promise<string> =>
+export const getVoteRegistryByPoll = async (client: any, pollId: string): Promise<string> =>
 {
-  const client = useSuiClient();
   try {
+    const pollRegistryId = import.meta.env.VITE_POLL_REGISTRY_ID;
+    if (!pollRegistryId) {
+      console.error("VITE_POLL_REGISTRY_ID is not configured in environment variables");
+      return "";
+    }
+
     let hasNextPage = true;
     let cursor = null;
 
     // Search all dynamic fields with pagination
     while (hasNextPage) 
     {
-      const response = await client.getDynamicFields({
-        parentId: ENV.VITE_POLL_REGISTRY_ID,
+      const response: any = await client.getDynamicFields({
+        parentId: pollRegistryId,
         cursor: cursor,
         limit: 50
       });
 
       const found = response.data.find(
-        field => field.name.value === pollId
+        (field: any) => field.name.value === pollId
       );  
 
       if (found) 
