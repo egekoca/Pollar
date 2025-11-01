@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { gsap } from "gsap";
 import Lightning from "../components/Lightning";
 import PillNav from "../components/PillNav";
+import ElectricBorder from "../components/ElectricBorder";
 import "../styles/theme.css";
 
 const LandingPage = () => {
@@ -72,12 +73,19 @@ const LandingPage = () => {
         {/* Sağ Taraf - Go Voting Butonu */}
         <Link 
           to="/vote-pools" 
-          className="button button-primary go-voting-button" 
+          className="go-voting-button-neon" 
           style={{ 
             fontSize: "clamp(0.9rem, 1.8vw, 1rem)",
+            padding: "clamp(0.5rem, 1.2vw, 0.65rem) clamp(1.25rem, 2.5vw, 1.75rem)",
+            background: "transparent",
+            color: "#3b82f6",
+            border: "1.5px solid #3b82f6",
+            borderRadius: "0.5rem",
+            fontWeight: "600",
+            textDecoration: "none",
+            display: "inline-block",
             transition: "all 0.3s ease",
-            position: "relative",
-            overflow: "hidden",
+            cursor: "pointer",
           }}
         >
           Go Voting
@@ -213,17 +221,17 @@ const LandingPage = () => {
       {/* Features Section */}
       <section
         style={{
-          padding: "clamp(2rem, 5vw, 4rem) clamp(1rem, 3vw, 2rem)",
-          background: "var(--bg-secondary)",
+          padding: "clamp(4rem, 10vw, 8rem) clamp(1rem, 3vw, 2rem)",
+          background: "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)",
           borderTop: "1px solid var(--border-color)",
         }}
       >
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+        <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
           <h3
             style={{
               textAlign: "center",
-              fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
-              marginBottom: "clamp(2rem, 4vw, 3rem)",
+              fontSize: "clamp(2rem, 6vw, 4rem)",
+              marginBottom: "clamp(4rem, 8vw, 6rem)",
               color: "var(--text-primary)",
             }}
           >
@@ -232,37 +240,61 @@ const LandingPage = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
-              gap: "clamp(1rem, 3vw, 2rem)",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 350px), 1fr))",
+              gap: "clamp(2rem, 4vw, 3rem)",
             }}
           >
-            <div className="card">
-              <h4 style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", marginBottom: "1rem", color: "var(--color-light-blue)" }}>
-                Decentralized
-              </h4>
-              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", fontSize: "clamp(0.9rem, 1.8vw, 1rem)" }}>
-                Built on blockchain technology for maximum transparency and security. Every vote is
-                immutable and verifiable.
-              </p>
-            </div>
-            <div className="card">
-              <h4 style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", marginBottom: "1rem", color: "var(--color-light-blue)" }}>
-                Real-time Results
-              </h4>
-              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", fontSize: "clamp(0.9rem, 1.8vw, 1rem)" }}>
-                Watch results update in real-time as votes are cast. Track voting trends with
-                interactive charts and graphs.
-              </p>
-            </div>
-            <div className="card">
-              <h4 style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", marginBottom: "1rem", color: "var(--color-light-blue)" }}>
-                Easy to Use
-              </h4>
-              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", fontSize: "clamp(0.9rem, 1.8vw, 1rem)" }}>
-                Create polls in seconds. No complicated setup or technical knowledge required.
-                Start voting immediately.
-              </p>
-            </div>
+            <ElectricBorder
+              color="#3b82f6"
+              speed={1}
+              chaos={0.5}
+              thickness={2}
+              style={{ borderRadius: 16 }}
+            >
+              <div style={{ padding: "clamp(1.5rem, 3vw, 2rem)" }}>
+                <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#60a5fa" }}>
+                  Decentralized
+                </h4>
+                <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", fontSize: "clamp(1rem, 1.8vw, 1.15rem)" }}>
+                  Built on blockchain technology for maximum transparency and security. Every vote is
+                  immutable and verifiable.
+                </p>
+              </div>
+            </ElectricBorder>
+            <ElectricBorder
+              color="#3b82f6"
+              speed={1}
+              chaos={0.5}
+              thickness={2}
+              style={{ borderRadius: 16 }}
+            >
+              <div style={{ padding: "clamp(1.5rem, 3vw, 2rem)" }}>
+                <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#60a5fa" }}>
+                  Real-time Results
+                </h4>
+                <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", fontSize: "clamp(1rem, 1.8vw, 1.15rem)" }}>
+                  Watch results update in real-time as votes are cast. Track voting trends with
+                  interactive charts and graphs.
+                </p>
+              </div>
+            </ElectricBorder>
+            <ElectricBorder
+              color="#3b82f6"
+              speed={1}
+              chaos={0.5}
+              thickness={2}
+              style={{ borderRadius: 16 }}
+            >
+              <div style={{ padding: "clamp(1.5rem, 3vw, 2rem)" }}>
+                <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#60a5fa" }}>
+                  Easy to Use
+                </h4>
+                <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", fontSize: "clamp(1rem, 1.8vw, 1.15rem)" }}>
+                  Create polls in seconds. No complicated setup or technical knowledge required.
+                  Start voting immediately.
+                </p>
+              </div>
+            </ElectricBorder>
           </div>
         </div>
       </section>
