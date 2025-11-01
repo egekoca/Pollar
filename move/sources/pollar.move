@@ -211,7 +211,7 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
     transfer::share_object(voteRegistry);
 }
 
-public fun mint_user(name: String, icon_url: String, ctx: &mut TxContext)
+public entry fun mint_user(name: String, icon_url: String, ctx: &mut TxContext)
 {
     // Validate name length (3-100 characters)
     let name_length = name.length();
@@ -401,3 +401,4 @@ public fun init_for_testing(ctx: &mut TxContext)
 {
     init(ctx);
 }
+
