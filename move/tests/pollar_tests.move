@@ -5,7 +5,8 @@ module pollarapp::pollar_tests {
     use sui::tx_context::{Self, TxContext};
     use std::string::{Self, String};
     use std::vector;
-    use pollarapp::pollar::{Self, User, Poll, PollOption, PollRegistry, Version};
+    use pollarapp::pollar::{Self, User, Poll, PollOption, PollRegistry, Version, UserVote};
+    use sui::transfer;
 
     const USER_ADDRESS: address = @0x0;
     const USER2_ADDRESS: address = @0x1;
@@ -196,5 +197,57 @@ module pollarapp::pollar_tests {
             pollar::delete_poll(created_poll, ctx);
         };
         test_scenario::end(scenario);
+    }
+
+    // Test create_user_vote function
+    #[test]
+    fun test_create_user_vote() {
+        let sender = USER_ADDRESS;
+        let mut scenario = test_scenario::begin(sender);
+        
+        let user = pollar::create_user(
+            string::utf8(b"Test User"),
+            string::utf8(b"http://example.com/user.jpg"),
+            scenario.ctx()
+        );
+        
+        let mut options = vector::empty<PollOption>();
+        let option1 = pollar::create_poll_option(
+            string::utf8(b"Option 1"),
+            string::utf8(b"http://example.com/image1.jpg"),
+            scenario.ctx()
+        );
+        let option2 = pollar::create_poll_option(
+            string::utf8(b"Option 2"),
+            string::utf8(b"http://example.com/image2.jpg"),
+            scenario.ctx()
+        );
+        vector::push_back(&mut options, option1);
+        vector::push_back(&mut options, option2);
+        
+        let poll = pollar::create_poll(
+            string::utf8(b"Test Poll"),
+            string::utf8(b"Test Description"),
+            string::utf8(b"http://example.com/poll.jpg"),
+            string::utf8(b"2025-11-01"),
+            string::utf8(b"2025-12-01"),
+            options,
+            scenario.ctx()
+        );
+        
+        let vote_option = pollar::create_poll_option(
+            string::utf8(b"Option 1"),
+            string::utf8(b"http://example.com/image1.jpg"),
+            scenario.ctx()
+        );
+        
+        let user_vote = pollar::create_user_vote(poll, vote_option, user, scenario.ctx());
+        transfer::public_transfer(user_vote, sender);
+        
+        scenario.next_tx(sender);
+        let user_vote_received = scenario.take_from_sender<UserVote>();
+        transfer::public_transfer(user_vote_received, sender);
+        
+        scenario.end();
     }
 }  
