@@ -5,21 +5,20 @@ module pollarapp::pollar_tests {
     use sui::tx_context::{Self, TxContext};
     use std::string::{Self, String};
     use std::vector;
-    use pollarapp::pollar::{Self, User, Poll, PollOption};
+    use pollarapp::pollar::{Self, User, Poll, PollOption, PollRegistry};
 
     const USER_ADDRESS: address = @0x0;
     const USER2_ADDRESS: address = @0x1;
 
+    // Helper function to create test user and poll
     #[test_only]
     fun setup_test(ctx: &mut TxContext): (User, Poll) {
-        // Test için bir user oluştur
         let test_user = pollar::create_user(
             string::utf8(b"Test User"),
             string::utf8(b"http://example.com/user.jpg"),
             ctx
         );
 
-        // Test için poll options oluştur
         let mut options = vector::empty<PollOption>();
         let mut option1 = pollar::create_poll_option(
             string::utf8(b"Option 1"),
@@ -35,7 +34,6 @@ module pollarapp::pollar_tests {
         vector::push_back(&mut options, option1);
         vector::push_back(&mut options, option2);
 
-        // Test için poll oluştur
         let test_poll = pollar::create_poll(
             string::utf8(b"Test Poll"),
             string::utf8(b"Test Description"),
@@ -51,45 +49,49 @@ module pollarapp::pollar_tests {
 
   
 
-#[test]
-fun test_delete_poll() {
-    let mut scenario = test_scenario::begin(USER_ADDRESS);
-    let ctx = test_scenario::ctx( &mut scenario);
-    
-    // Her iki değeri de kullan
-    let (user, poll) = setup_test(ctx);
-    
-    // Önce user'ı sil
-    pollar::delete_user(user, ctx);
-    // Sonra poll'u sil
-    pollar::delete_poll(poll, ctx);
-    
-    test_scenario::end(scenario);
-}
+    // Test delete_poll function
+    #[test]
+    fun test_delete_poll() {
+        let mut scenario = test_scenario::begin(USER_ADDRESS);
+        let ctx = test_scenario::ctx( &mut scenario);
+        
+        let (user, poll) = setup_test(ctx);
+        pollar::delete_user(user, ctx);
+        pollar::delete_poll(poll, ctx);
+        
+        test_scenario::end(scenario);
+    }
 
-#[test]
-fun test_delete_user() {
-    let mut scenario = test_scenario::begin(USER_ADDRESS);
-    let ctx = test_scenario::ctx(&mut scenario);
-    
-    // Her iki değeri de kullan
-    let (user, poll) = setup_test(ctx);
-    
-    // Önce user'ı sil
-    pollar::delete_user(user, ctx);
-    // Sonra poll'u sil
-    pollar::delete_poll(poll, ctx);
-    
-    test_scenario::end(scenario);
-}
+    // Test delete_user function
+    #[test]
+    fun test_delete_user() {
+        let mut scenario = test_scenario::begin(USER_ADDRESS);
+        let ctx = test_scenario::ctx(&mut scenario);
+        
+        let (user, poll) = setup_test(ctx);
+        pollar::delete_user(user, ctx);
+        pollar::delete_poll(poll, ctx);
+        
+        test_scenario::end(scenario);
+    }
 
 
 
+    // Test for mint_poll function - creates PollRegistry, polls, and options
     #[test]
     fun test_mint_poll() {
         let mut scenario = test_scenario::begin(USER_ADDRESS);
         {
             let ctx = test_scenario::ctx(&mut scenario);
+            pollar::init_for_testing(ctx);
+        };
+        {
+            let _ctx = test_scenario::ctx(&mut scenario);
+        };
+        {
+            let mut poll_registry = test_scenario::take_shared<PollRegistry>(&scenario);
+            let ctx = test_scenario::ctx(&mut scenario);
+            
             let mut options = vector::empty();
             vector::push_back(&mut options, pollar::create_poll_option(
                 string::utf8(b"Option 1"),
@@ -103,6 +105,71 @@ fun test_delete_user() {
             ));
             
             pollar::mint_poll(
+                (b"Test Poll".to_string()),
+                (b"Test Description".to_string()),
+                (b"http://example.com/poll.jpg".to_string()),
+                (b"2025-11-01".to_string()),
+                (b"2025-12-01".to_string()),
+                options,
+                &mut poll_registry,
+                ctx
+            );
+            
+            test_scenario::return_shared(poll_registry);
+        };
+        test_scenario::end(scenario);
+    }
+
+    // Test mint_user function
+    #[test]
+    fun test_mint_user() {
+        let mut scenario = test_scenario::begin(USER_ADDRESS);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            pollar::mint_user(
+                string::utf8(b"Test User"),
+                string::utf8(b"http://example.com/user.jpg"),
+                ctx
+            );
+        };
+        test_scenario::end(scenario);
+    }
+
+    // Test create_user function
+    #[test]
+    fun test_create_user() {
+        let mut scenario = test_scenario::begin(USER_ADDRESS);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let user = pollar::create_user(
+                string::utf8(b"Test User"),
+                string::utf8(b"http://example.com/user.jpg"),
+                ctx
+            );
+            pollar::delete_user(user, ctx);
+        };
+        test_scenario::end(scenario);
+    }
+
+    // Test create_poll function
+    #[test]
+    fun test_create_poll() {
+        let mut scenario = test_scenario::begin(USER_ADDRESS);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let mut options = vector::empty<PollOption>();
+            vector::push_back(&mut options, pollar::create_poll_option(
+                string::utf8(b"Option 1"),
+                string::utf8(b"http://example.com/image1.jpg"),
+                ctx
+            ));
+            vector::push_back(&mut options, pollar::create_poll_option(
+                string::utf8(b"Option 2"),
+                string::utf8(b"http://example.com/image2.jpg"),
+                ctx
+            ));
+
+            let created_poll = pollar::create_poll(
                 string::utf8(b"Test Poll"),
                 string::utf8(b"Test Description"),
                 string::utf8(b"http://example.com/poll.jpg"),
@@ -111,74 +178,9 @@ fun test_delete_user() {
                 options,
                 ctx
             );
+
+            pollar::delete_poll(created_poll, ctx);
         };
         test_scenario::end(scenario);
     }
-
-    #[test]
-fun test_mint_user() {
-    let mut scenario = test_scenario::begin(USER_ADDRESS);
-    {
-        let ctx = test_scenario::ctx(&mut scenario);
-        // mint_user signature in sources: (name, icon_url, ctx)
-        pollar::mint_user(
-            string::utf8(b"Test User"),
-            string::utf8(b"http://example.com/user.jpg"),
-            ctx
-        );
-    };
-    test_scenario::end(scenario);
-}
-
-#[test]
-fun test_create_user() {
-    let mut scenario = test_scenario::begin(USER_ADDRESS);
-    {
-        let ctx = test_scenario::ctx(&mut scenario);
-        // create_user returns a User (does NOT transfer it)
-        let user = pollar::create_user(
-            string::utf8(b"Test User"),
-            string::utf8(b"http://example.com/user.jpg"),
-            ctx
-        );
-
-        // Opsiyonel temizlik: oluşturulan user objesini sil (delete_user bir entry olduğu için çağrıyoruz)
-        pollar::delete_user(user, ctx);
-    };
-    test_scenario::end(scenario);
-}
-
-#[test]
-fun test_create_poll() {
-    let mut scenario = test_scenario::begin(USER_ADDRESS);
-    {
-        let ctx = test_scenario::ctx(&mut scenario);
-        let mut options = vector::empty<PollOption>();
-        vector::push_back(&mut options, pollar::create_poll_option(
-            string::utf8(b"Option 1"),
-            string::utf8(b"http://example.com/image1.jpg"),
-            ctx
-        ));
-        vector::push_back(&mut options, pollar::create_poll_option(
-            string::utf8(b"Option 2"),
-            string::utf8(b"http://example.com/image2.jpg"),
-            ctx
-        ));
-
-        // create_poll returns a Poll object but does not transfer it
-        let created_poll = pollar::create_poll(
-            string::utf8(b"Test Poll"),
-            string::utf8(b"Test Description"),
-            string::utf8(b"http://example.com/poll.jpg"),
-            string::utf8(b"2025-11-01"),
-            string::utf8(b"2025-12-01"),
-            options,
-            ctx
-        );
-
-        // cleanup: delete the created poll object
-        pollar::delete_poll(created_poll, ctx);
-    };
-    test_scenario::end(scenario);
-}
 }  
