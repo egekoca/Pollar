@@ -50,36 +50,7 @@ const LandingPage = () => {
             POLLAR
           </h1>
         </div>
-
-        {/* Orta - PillNav */}
-        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
-          <PillNav
-            logo="/pollar-logo.png"
-            logoAlt="Pollar Logo"
-            items={[
-              { label: 'Home', href: '/' },
-              { label: 'Pools', href: '/vote-pools' },
-              { label: 'Profile', href: '/my-profile' },
-            ]}
-            activeHref="/"
-            baseColor="#000000"
-            pillColor="#ffffff"
-            hoveredPillTextColor="#ffffff"
-            pillTextColor="#000000"
-          />
-        </div>
-
-        {/* Sağ Taraf - Go Voting Butonu */}
-        <Link 
-          to="/vote-pools" 
-          className="button button-primary go-voting-button" 
-          style={{ 
-            fontSize: "clamp(0.9rem, 1.8vw, 1rem)",
-            transition: "all 0.3s ease",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
+        <Link to="/login" className="button button-primary">
           Go Voting
         </Link>
       </header>
@@ -149,7 +120,7 @@ const LandingPage = () => {
             From trust to truth, redefining how we vote.
           </p>
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            <Link to="/vote-pools" className="button button-primary" style={{ fontSize: "clamp(0.9rem, 2vw, 1.1rem)", padding: "clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 3vw, 2rem)" }}>
+            <Link to="/login" className="button button-primary" style={{ fontSize: "clamp(0.9rem, 2vw, 1.1rem)", padding: "clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 3vw, 2rem)" }}>
               Start Voting
             </Link>
             <Link to="/vote-pools" className="button button-secondary" style={{ fontSize: "clamp(0.9rem, 2vw, 1.1rem)", padding: "clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 3vw, 2rem)" }}>
