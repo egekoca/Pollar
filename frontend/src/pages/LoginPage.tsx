@@ -69,7 +69,7 @@ const LoginPage = () => {
       <div
         style={{
           flex: "0 0 45%",
-          background: "var(--color-white)",
+          background: "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)",
           padding: "3rem 4rem",
           display: "flex",
           flexDirection: "column",
@@ -82,38 +82,24 @@ const LoginPage = () => {
           <Link
             to="/"
             style={{
-              display: "inline-flex",
+              display: "flex",
               alignItems: "center",
               gap: "0.75rem",
               textDecoration: "none",
               marginBottom: "3rem",
             }}
           >
-            <div
+            <img 
+              src="/pollar-logo.png" 
+              alt="Pollar Logo" 
               style={{
-                width: "48px",
-                height: "48px",
-                background: "linear-gradient(135deg, var(--color-navy) 0%, var(--color-light-blue) 100%)",
-                borderRadius: "10px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "1.75rem",
-                fontWeight: "bold",
-                color: "var(--color-white)",
-              }}
-            >
-              P
-            </div>
-            <h1
-              style={{
-                fontSize: "1.75rem",
-                fontWeight: "700",
-                color: "var(--color-black)",
-                margin: 0,
-              }}
-            >
-              Pollar
+                width: "clamp(32px, 5vw, 40px)", 
+                height: "clamp(32px, 5vw, 40px)",
+                borderRadius: "8px",
+              }} 
+            />
+            <h1 style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
+              POLLAR
             </h1>
           </Link>
 
@@ -124,9 +110,9 @@ const LoginPage = () => {
               style={{
                 fontSize: "0.95rem",
                 fontWeight: "600",
-                color: "var(--color-navy)",
+                color: "var(--color-navy-light)",
                 textDecoration: "none",
-                borderBottom: "2px solid var(--color-navy)",
+                borderBottom: "2px solid var(--color-navy-light)",
                 paddingBottom: "0.5rem",
               }}
             >
@@ -137,7 +123,7 @@ const LoginPage = () => {
               style={{
                 fontSize: "0.95rem",
                 fontWeight: "500",
-                color: "var(--color-gray)",
+                color: "var(--text-secondary)",
                 textDecoration: "none",
                 paddingBottom: "0.5rem",
               }}
@@ -152,7 +138,7 @@ const LoginPage = () => {
               style={{
                 fontSize: "2.5rem",
                 fontWeight: "700",
-                color: "var(--color-black)",
+                color: "var(--text-primary)",
                 marginBottom: "0.5rem",
               }}
             >
@@ -161,7 +147,7 @@ const LoginPage = () => {
             <p
               style={{
                 fontSize: "1.1rem",
-                color: "var(--color-gray)",
+                color: "var(--text-secondary)",
                 marginBottom: "2.5rem",
                 lineHeight: "1.6",
               }}
@@ -175,7 +161,7 @@ const LoginPage = () => {
                 <div
                   style={{
                     fontSize: "0.85rem",
-                    color: "var(--color-gray)",
+                    color: "var(--text-secondary)",
                     marginBottom: "1.5rem",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
@@ -239,7 +225,7 @@ const LoginPage = () => {
               <div
                 style={{
                   fontSize: "0.85rem",
-                  color: "var(--color-gray)",
+                  color: "var(--text-secondary)",
                   marginBottom: "1.5rem",
                   textTransform: "uppercase",
                   letterSpacing: "0.5px",
@@ -258,10 +244,10 @@ const LoginPage = () => {
 
         {/* Footer */}
         <div>
-          <div style={{ fontSize: "0.85rem", color: "var(--color-gray)", marginBottom: "0.5rem" }}>
+          <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
             English (United States)
           </div>
-          <div style={{ fontSize: "0.75rem", color: "var(--color-gray-light)", marginTop: "1rem" }}>
+          <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "1rem" }}>
             Copyright © 2025 Pollar. All rights reserved.
           </div>
         </div>
