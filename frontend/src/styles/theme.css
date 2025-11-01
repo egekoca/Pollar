@@ -156,10 +156,32 @@ body {
   box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2);
 }
 
+/* Vote Pool Card - Custom Styling */
+.vote-pool-card {
+  background-color: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.vote-pool-card:hover {
+  transform: none !important;
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.4), 
+              0 0 40px rgba(96, 165, 250, 0.2),
+              0 0 60px rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
 /* Responsive Utilities */
 @media (max-width: 768px) {
   .card:hover {
     transform: translateY(-2px);
+  }
+  
+  .vote-pool-card:hover {
+    transform: none !important;
   }
 }
 

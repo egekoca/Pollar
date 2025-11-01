@@ -72,7 +72,7 @@ const VotePoolPage = () => {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)" }}>
       {/* Header */}
       <header
         style={{
@@ -161,7 +161,7 @@ const VotePoolPage = () => {
           <h2 
             className="active-pools-animated-text"
             style={{ 
-              fontSize: "clamp(1.75rem, 4vw, 2.5rem)", 
+              fontSize: "clamp(2.5rem, 6vw, 4rem)", 
               marginBottom: "0.5rem",
               fontWeight: "900",
               textTransform: "uppercase",
@@ -216,13 +216,13 @@ const VotePoolPage = () => {
               to={`/voting/${pool.id}`}
               style={{ textDecoration: "none", color: "inherit" }}
             >
-              <div className="card" style={{ cursor: "pointer", height: "100%" }}>
+              <div className="vote-pool-card" style={{ cursor: "pointer", height: "100%" }}>
                 {/* Pool Image */}
                 <div
                   style={{
                     width: "100%",
                     height: "200px",
-                    borderRadius: "0.5rem",
+                    borderRadius: "0.5rem 0.5rem 0 0",
                     marginBottom: "1rem",
                     overflow: "hidden",
                     background: "var(--bg-secondary)",
@@ -240,60 +240,65 @@ const VotePoolPage = () => {
                 </div>
 
                 {/* Pool Info */}
-                <h3
-                  style={{
-                    fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)",
-                    fontWeight: "600",
-                    marginBottom: "0.75rem",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {pool.name}
-                </h3>
-                <p
-                  style={{
-                    color: "var(--text-secondary)",
-                    marginBottom: "1rem",
-                    lineHeight: "1.6",
-                    fontSize: "clamp(0.9rem, 1.5vw, 0.95rem)",
-                  }}
-                >
-                  {pool.description}
-                </p>
+                <div style={{ padding: "0 1rem" }}>
+                  <h3
+                    style={{
+                      fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)",
+                      fontWeight: "700",
+                      marginBottom: "0.5rem",
+                      color: "#ffffff",
+                    }}
+                  >
+                    {pool.name}
+                  </h3>
+                  <p
+                    style={{
+                      color: "#ffffff",
+                      marginBottom: "1rem",
+                      lineHeight: "1.6",
+                      fontSize: "clamp(0.9rem, 1.5vw, 0.95rem)",
+                      opacity: 0.9,
+                    }}
+                  >
+                    {pool.description}
+                  </p>
 
-                {/* Options Preview */}
-                <div style={{ marginBottom: "1rem" }}>
-                  <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>
-                    Options:
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                    {pool.options.slice(0, 3).map((option) => (
-                      <span
-                        key={option.id}
-                        style={{
-                          padding: "0.25rem 0.75rem",
-                          background: "var(--bg-secondary)",
-                          borderRadius: "1rem",
-                          fontSize: "0.85rem",
-                          border: "1px solid var(--border-color)",
-                        }}
-                      >
-                        {option.name}
-                      </span>
-                    ))}
-                    {pool.options.length > 3 && (
-                      <span
-                        style={{
-                          padding: "0.25rem 0.75rem",
-                          background: "var(--bg-secondary)",
-                          borderRadius: "1rem",
-                          fontSize: "0.85rem",
-                          border: "1px solid var(--border-color)",
-                        }}
-                      >
-                        +{pool.options.length - 3} more
-                      </span>
-                    )}
+                  {/* Options Preview */}
+                  <div style={{ marginBottom: "1rem" }}>
+                    <div style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.6)", marginBottom: "0.5rem" }}>
+                      Options:
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                      {pool.options.slice(0, 3).map((option) => (
+                        <span
+                          key={option.id}
+                          style={{
+                            padding: "0.4rem 0.9rem",
+                            background: "transparent",
+                            borderRadius: "9999px",
+                            fontSize: "0.85rem",
+                            border: "1px solid rgba(255, 255, 255, 0.3)",
+                            color: "rgba(255, 255, 255, 0.9)",
+                          }}
+                        >
+                          {option.name}
+                        </span>
+                      ))}
+                      {pool.options.length > 3 && (
+                        <span
+                          style={{
+                            padding: "0.4rem 0.9rem",
+                            background: "transparent",
+                            borderRadius: "9999px",
+                            fontSize: "0.85rem",
+                            border: "1px solid rgba(255, 255, 255, 0.3)",
+                            color: "rgba(255, 255, 255, 0.9)",
+                          }}
+                        >
+                          +{pool.options.length - 3} more
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -303,20 +308,20 @@ const VotePoolPage = () => {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    paddingTop: "1rem",
-                    borderTop: "1px solid var(--border-color)",
+                    padding: "1rem",
+                    borderTop: "1px solid rgba(255, 255, 255, 0.1)",
                     marginTop: "auto",
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Total Votes</div>
-                    <div style={{ fontSize: "1.25rem", fontWeight: "bold", color: "var(--color-light-blue)" }}>
+                    <div style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.6)" }}>Total Votes</div>
+                    <div style={{ fontSize: "1.25rem", fontWeight: "bold", color: "#60a5fa" }}>
                       {pool.totalVotes.toLocaleString()}
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Ends</div>
-                    <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+                    <div style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.6)" }}>Ends</div>
+                    <div style={{ fontSize: "0.9rem", color: "#ffffff" }}>
                       {formatDate(pool.endTime)}
                     </div>
                   </div>
@@ -326,21 +331,20 @@ const VotePoolPage = () => {
                 {pool.options && pool.options.length > 0 && (
                 <div
                   style={{
-                    marginTop: "1rem",
-                    padding: "0.75rem",
-                    background: "var(--bg-secondary)",
-                    borderRadius: "0.5rem",
-                    border: "1px solid var(--border-color)",
+                    marginTop: "0",
+                    padding: "0.75rem 1rem 1rem 1rem",
+                    background: "transparent",
+                    borderRadius: "0",
                   }}
                 >
-                  <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
+                  <div style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.6)", marginBottom: "0.25rem" }}>
                     Leading Option
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontWeight: "600", color: "var(--text-primary)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                    <span style={{ fontWeight: "600", color: "#ffffff" }}>
                       {pool.options[0].name}
                     </span>
-                    <span style={{ color: "var(--color-light-blue)", fontWeight: "bold" }}>
+                    <span style={{ color: "#60a5fa", fontWeight: "bold" }}>
                       {pool.options[0].percentage.toFixed(1)}%
                     </span>
                   </div>
@@ -348,7 +352,7 @@ const VotePoolPage = () => {
                     style={{
                       marginTop: "0.5rem",
                       height: "6px",
-                      background: "var(--bg-primary)",
+                      background: "rgba(255, 255, 255, 0.1)",
                       borderRadius: "3px",
                       overflow: "hidden",
                     }}
@@ -357,7 +361,7 @@ const VotePoolPage = () => {
                       style={{
                         width: `${pool.options[0].percentage}%`,
                         height: "100%",
-                        background: "linear-gradient(90deg, var(--color-navy) 0%, var(--color-light-blue) 100%)",
+                        background: "linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)",
                         transition: "width 0.3s ease",
                       }}
                     />
