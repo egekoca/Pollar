@@ -56,6 +56,27 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
     },
   },
   {
+    name: "Sui Workshop",
+    type: "0xe7a8f41cd0edef5431cf713dc6446f0bd80e394cba191741aa40ae5bd5d72326::simple_nft::SimpleNFT",
+    packageId: "0xe7a8f41cd0edef5431cf713dc6446f0bd80e394cba191741aa40ae5bd5d72326",
+    moduleName: "simple_nft",
+    structName: "SimpleNFT",
+    description: "Sui Workshop NFT Collection",
+    imageUrl: "/suiworkshop.png",
+    theme: {
+      backgroundGradient: "linear-gradient(180deg, #0a0e27 0%, #1a1f3a 30%, #2a2f4a 60%, #0a0e27 100%)",
+      backgroundImages: [
+        "https://cryptopotato.com/tr/wp-content/uploads/2025/05/Sui_Header_1717037160BNVlLeLycn.jpg",
+        "https://cdn.prod.website-files.com/6683c774a6e7a5003c5889c3/6763f7b7b0899fd3cffe2b3d_6763f572866fbd04f1767cbb_sui_banner_backpack_exchange.jpeg",
+        "https://uzmancoin.com/wp-content/uploads/2023/05/sui-coin-nedir-nasil-alinir-1120x670.jpg",
+        "https://99bitcoins.com/tr/wp-content/uploads/sites/7/2025/05/kapak-resmi-2-15.png",
+      ],
+      primaryColor: "#4fc3f7",
+      secondaryColor: "#29b6f6",
+      overlayOpacity: 0.15,
+    },
+  },
+  {
     name: "Tallys",
     type: "0x75888defd3f392d276643932ae204cd85337a5b8f04335f9f912b6291149f423::nft::Tally",
     packageId: "0x75888defd3f392d276643932ae204cd85337a5b8f04335f9f912b6291149f423",

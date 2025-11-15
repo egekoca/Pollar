@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
-import { findVoteRegistryByPollId, getVoteRegistry, createVoteTransaction, createVoteWithNftTransaction, getPollById, getUserNftsByType, createSealedVoteTransaction, createSealedVoteWithNftTransaction } from "../utils/blockchain";
+import { findVoteRegistryByPollId, getVoteRegistry, getPollById, getUserNftsByType, createSealedVoteTransaction, createSealedVoteWithNftTransaction } from "../utils/blockchain";
 import { VotePool, VoteOption } from "../data/mockData";
 import { gsap } from "gsap";
 import PillNav from "../components/PillNav";
@@ -293,10 +293,9 @@ const VotingPage = () => {
           tx = await createSealedVoteTransaction(client, id, optionIndex, voteRegistryId);
         }
       } else {
-        // Fallback to unencrypted voting (for backward compatibility)
-        tx = requiresNft && selectedNftId
-          ? createVoteWithNftTransaction(id, optionIndex, voteRegistryId, selectedNftId, pollData.nft_collection_type)
-          : createVoteTransaction(id, optionIndex, voteRegistryId);
+        // This should never happen as useSealedVoting is always true
+        // But kept for safety
+        throw new Error("Unencrypted voting is not supported. Please use sealed voting.");
       }
 
       // Transaction'ı gönder

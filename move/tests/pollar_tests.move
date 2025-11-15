@@ -234,33 +234,5 @@ use sui::dynamic_field;
         scenario.end();
     }
 
-    // Test create_user_vote function
-    #[test]
-    fun test_create_user_vote() {
-        let sender = USER_ADDRESS;
-        let mut scenario = test_scenario::begin(sender);
-        
-        let user = create_test_user(scenario.ctx());
-        let poll = create_test_poll(scenario.ctx());
-        
-        let vote_option = pollar::create_poll_option(
-            string::utf8(TEST_OPTION1_NAME),
-            string::utf8(TEST_OPTION1_IMAGE),
-            scenario.ctx()
-        );
-        
-        // NOTE: create_user_vote now takes &Poll (reference) instead of owned Poll
-        let user_vote = pollar::create_user_vote(&poll, vote_option, user, scenario.ctx());
-        transfer::public_transfer(user_vote, sender);
-        
-        scenario.next_tx(sender);
-        let user_vote_received = scenario.take_from_sender<UserVote>();
-        transfer::public_transfer(user_vote_received, sender);
-        
-        // Clean up poll (it's owned in test, but shared in production)
-        pollar::delete_poll(poll, scenario.ctx());
-        
-        scenario.end();
-    }
 
 }

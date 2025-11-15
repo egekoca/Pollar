@@ -23,8 +23,6 @@ export const contractConfig = {
   functionNames: {
     mintUser: "mint_user",
     mintPoll: "mint_poll",
-    mintUserVote: "mint_user_vote",
-    vote: "vote", // Basit oy verme fonksiyonu
   },
 };
 

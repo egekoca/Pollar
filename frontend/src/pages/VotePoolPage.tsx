@@ -47,9 +47,10 @@ const VotePoolPage = () => {
   const allCollectionTypes = NFT_COLLECTIONS.map(col => col.type);
   const uniqueCollectionTypesUnsorted = Array.from(new Set([...uniqueCollectionTypesFromPolls, ...allCollectionTypes]));
   
-  // Sort collections in desired order: Hero, Popkins, Tallys, Pawtato Heroes
+  // Sort collections in desired order: Hero, Sui Workshop, Popkins, Tallys, Pawtato Heroes
   const collectionOrder = [
     "0xc6726b1b8f40ed882c5d7b7bb2e6fec36a4f19017dd9354268068473de37464e::hero::Hero", // Hero
+    "0xe7a8f41cd0edef5431cf713dc6446f0bd80e394cba191741aa40ae5bd5d72326::simple_nft::SimpleNFT", // Sui Workshop
     "0xb908f3c6fea6865d32e2048c520cdfe3b5c5bbcebb658117c41bad70f52b7ccc::popkins_nft::Popkins", // Popkins
     "0x75888defd3f392d276643932ae204cd85337a5b8f04335f9f912b6291149f423::nft::Tally", // Tallys
     "0x0000000000000000000000000000000000000000000000000000000000000000::pawtato_heroes::PawtatoHero", // Pawtato Heroes
@@ -242,84 +243,96 @@ const VotePoolPage = () => {
       {/* Background NFT Images - Left and Right Sides (Only for Popkins and Tallys) */}
       {theme?.backgroundImages && theme.backgroundImages.length > 0 && (
         <>
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 0,
-              pointerEvents: "none",
-              overflow: "hidden",
-            }}
-          >
-            {/* Left Side NFTs */}
-            <div
-              className="nft-side-left"
-              style={{
-                position: "absolute",
-                left: "clamp(0.5rem, 2vw, 2rem)",
-                top: "50%",
-                transform: "translateY(-50%)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "clamp(1rem, 2vw, 2rem)",
-              }}
-            >
-              {theme.backgroundImages.slice(0, 3).map((imageUrl, index) => (
+          {(() => {
+            // Popkins, Tallys, Pawtato Heroes için 3'erli, diğerleri için 2'şerli
+            const isThreePerSide = selectedCollection?.name === "Popkins" || 
+                                   selectedCollection?.name === "Tallys" || 
+                                   selectedCollection?.name === "Pawtato Heroes";
+            const leftCount = isThreePerSide ? 3 : 2;
+            const rightStart = isThreePerSide ? 3 : 2;
+            const rightEnd = isThreePerSide ? 6 : 4;
+            
+            return (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 0,
+                  pointerEvents: "none",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Left Side NFTs */}
                 <div
-                  key={`left-${index}`}
-                  className="nft-card"
+                  className="nft-side-left"
                   style={{
-                    width: "clamp(80px, 12vw, 200px)",
-                    height: "clamp(80px, 12vw, 200px)",
-                    backgroundImage: `url(${imageUrl})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    borderRadius: "16px",
-                    filter: "blur(0.7px)",
-                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    transform: `rotate(${index * 3 - 3}deg)`,
+                    position: "absolute",
+                    left: "clamp(0.5rem, 2vw, 2rem)",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "clamp(1rem, 2vw, 2rem)",
                   }}
-                />
-              ))}
-            </div>
+                >
+                  {theme.backgroundImages.slice(0, leftCount).map((imageUrl, index) => (
+                    <div
+                      key={`left-${index}`}
+                      className="nft-card"
+                      style={{
+                        width: "clamp(80px, 12vw, 200px)",
+                        height: "clamp(80px, 12vw, 200px)",
+                        backgroundImage: `url(${imageUrl})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        borderRadius: "16px",
+                        filter: "blur(0.7px)",
+                        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        transform: `rotate(${index * 3 - 3}deg)`,
+                      }}
+                    />
+                  ))}
+                </div>
 
-            {/* Right Side NFTs */}
-            <div
-              className="nft-side-right"
-              style={{
-                position: "absolute",
-                right: "clamp(0.5rem, 2vw, 2rem)",
-                top: "50%",
-                transform: "translateY(-50%)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "clamp(1rem, 2vw, 2rem)",
-              }}
-            >
-              {theme.backgroundImages.slice(3, 6).map((imageUrl, index) => (
+                {/* Right Side NFTs */}
                 <div
-                  key={`right-${index}`}
-                  className="nft-card"
+                  className="nft-side-right"
                   style={{
-                    width: "clamp(80px, 12vw, 200px)",
-                    height: "clamp(80px, 12vw, 200px)",
-                    backgroundImage: `url(${imageUrl})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    borderRadius: "16px",
-                    filter: "blur(0.7px)",
-                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    transform: `rotate(${index * -3 + 3}deg)`,
+                    position: "absolute",
+                    right: "clamp(0.5rem, 2vw, 2rem)",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "clamp(1rem, 2vw, 2rem)",
                   }}
-                />
-              ))}
-            </div>
-          </div>
+                >
+                  {theme.backgroundImages.slice(rightStart, rightEnd).map((imageUrl, index) => (
+                    <div
+                      key={`right-${index}`}
+                      className="nft-card"
+                      style={{
+                        width: "clamp(80px, 12vw, 200px)",
+                        height: "clamp(80px, 12vw, 200px)",
+                        backgroundImage: `url(${imageUrl})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        borderRadius: "16px",
+                        filter: "blur(0.7px)",
+                        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        transform: `rotate(${index * -3 + 3}deg)`,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
           <style>{`
             @media (max-width: 1024px) {
               .nft-side-left,
@@ -485,7 +498,8 @@ const VotePoolPage = () => {
             const isTallys = collection?.name === "Tallys";
             const isPawtatoHeroes = collection?.name === "Pawtato Heroes";
             const isHero = collection?.name === "Hero";
-            const hasImage = isPopkins || isTallys || isPawtatoHeroes;
+            const isSuiWorkshop = collection?.name === "Sui Workshop";
+            const hasImage = isPopkins || isTallys || isPawtatoHeroes || isSuiWorkshop;
             const isSelected = selectedCollectionType === collectionType;
             return (
               <button
@@ -514,6 +528,8 @@ const VotePoolPage = () => {
                         ? "0 0 15px rgba(132, 204, 22, 0.6), 0 0 30px rgba(163, 230, 53, 0.4)"
                         : isHero
                         ? "0 0 15px rgba(139, 92, 246, 0.6), 0 0 30px rgba(167, 139, 250, 0.4)"
+                        : isSuiWorkshop
+                        ? "0 0 15px rgba(79, 195, 247, 0.6), 0 0 30px rgba(41, 182, 246, 0.4)"
                         : "none")
                     : "none",
                 }}
@@ -551,6 +567,18 @@ const VotePoolPage = () => {
                       display: "block",
                     }}
                   />
+                ) : isSuiWorkshop ? (
+                  <img 
+                    src="/suilogo.jpg" 
+                    alt="Sui Workshop" 
+                    style={{
+                      height: "clamp(2rem, 4vw, 3rem)",
+                      width: "auto",
+                      objectFit: "contain",
+                      display: "block",
+                      borderRadius: "1rem",
+                    }}
+                  />
                 ) : (
                   collection?.name || collectionType.split("::").pop() || "Unknown"
                 )}
@@ -580,6 +608,9 @@ const VotePoolPage = () => {
                 } else if (collection.name === "Hero") {
                   title = "HERO VOTE POLLS";
                   gradient = "linear-gradient(90deg, #8b5cf6 0%, #a78bfa 20%, #c084fc 40%, #d8b4fe 60%, #e9d5ff 80%, #f3e8ff 100%)"; // Purple gradient
+                } else if (collection.name === "Sui Workshop") {
+                  title = "SUI WORKSHOP VOTE POLLS";
+                  gradient = "linear-gradient(90deg, #0277bd 0%, #0288d1 20%, #03a9f4 40%, #29b6f6 60%, #4fc3f7 80%, #81d4fa 100%)"; // Blue gradient
                 }
               }
             }
@@ -728,6 +759,7 @@ const VotePoolPage = () => {
             const isTallys = poolCollection?.name === "Tallys";
             const isPawtatoHeroes = poolCollection?.name === "Pawtato Heroes";
             const isHero = poolCollection?.name === "Hero";
+            const isSuiWorkshop = poolCollection?.name === "Sui Workshop";
             
             // Check if poll is active
             const now = new Date();
@@ -744,6 +776,8 @@ const VotePoolPage = () => {
               ? "rgba(132, 204, 22, 0.3), rgba(163, 230, 53, 0.3)" // Lime green for Pawtato Heroes
               : isHero
               ? "rgba(139, 92, 246, 0.3), rgba(167, 139, 250, 0.3)" // Purple for Hero
+              : isSuiWorkshop
+              ? "rgba(79, 195, 247, 0.3), rgba(41, 182, 246, 0.3)" // Blue for Sui Workshop
               : "transparent";
             
             return (
@@ -761,10 +795,10 @@ const VotePoolPage = () => {
                   flexDirection: "column",
                   position: "relative",
                   boxShadow: glowColor !== "transparent" 
-                    ? `0 0 20px ${isPopkins ? "rgba(255, 165, 0, 0.4)" : isTallys ? "rgba(255, 20, 147, 0.4)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.4)" : "rgba(139, 92, 246, 0.4)"}, 0 0 40px ${isPopkins ? "rgba(50, 205, 50, 0.3)" : isTallys ? "rgba(255, 99, 71, 0.3)" : isPawtatoHeroes ? "rgba(163, 230, 53, 0.3)" : "rgba(167, 139, 250, 0.3)"}`
+                    ? `0 0 20px ${isPopkins ? "rgba(255, 165, 0, 0.4)" : isTallys ? "rgba(255, 20, 147, 0.4)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.4)" : isHero ? "rgba(139, 92, 246, 0.4)" : isSuiWorkshop ? "rgba(79, 195, 247, 0.4)" : "rgba(139, 92, 246, 0.4)"}, 0 0 40px ${isPopkins ? "rgba(50, 205, 50, 0.3)" : isTallys ? "rgba(255, 99, 71, 0.3)" : isPawtatoHeroes ? "rgba(163, 230, 53, 0.3)" : isHero ? "rgba(167, 139, 250, 0.3)" : isSuiWorkshop ? "rgba(41, 182, 246, 0.3)" : "rgba(167, 139, 250, 0.3)"}`
                     : undefined,
                   border: glowColor !== "transparent"
-                    ? `1px solid ${isPopkins ? "rgba(255, 165, 0, 0.5)" : isTallys ? "rgba(255, 20, 147, 0.5)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.5)" : "rgba(139, 92, 246, 0.5)"}`
+                    ? `1px solid ${isPopkins ? "rgba(255, 165, 0, 0.5)" : isTallys ? "rgba(255, 20, 147, 0.5)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.5)" : isHero ? "rgba(139, 92, 246, 0.5)" : isSuiWorkshop ? "rgba(79, 195, 247, 0.5)" : "rgba(139, 92, 246, 0.5)"}`
                     : undefined,
                 }}
               >
@@ -786,7 +820,7 @@ const VotePoolPage = () => {
                 />
 
                 {/* NFT Collection Badge - Ribbon Style Top Right */}
-                {(isPopkins || isTallys || isPawtatoHeroes || isHero) && (
+                {(isPopkins || isTallys || isPawtatoHeroes || isHero || isSuiWorkshop) && (
                   <div
                     style={{
                       position: "absolute",
@@ -808,8 +842,8 @@ const VotePoolPage = () => {
                         height: "0",
                         borderStyle: "solid",
                         borderWidth: `0 clamp(55px, 7.5vw, 75px) clamp(55px, 7.5vw, 75px) 0`,
-                        borderColor: `transparent ${isPopkins ? "rgba(255, 165, 0, 0.95)" : isTallys ? "rgba(255, 20, 147, 0.95)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.95)" : "rgba(139, 92, 246, 0.95)"} transparent transparent`,
-                        filter: `drop-shadow(0 2px 8px ${isPopkins ? "rgba(255, 165, 0, 0.7)" : isTallys ? "rgba(255, 20, 147, 0.7)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.7)" : "rgba(139, 92, 246, 0.7)"})`,
+                        borderColor: `transparent ${isPopkins ? "rgba(255, 165, 0, 0.95)" : isTallys ? "rgba(255, 20, 147, 0.95)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.95)" : isHero ? "rgba(139, 92, 246, 0.95)" : isSuiWorkshop ? "rgba(33, 150, 243, 0.95)" : "rgba(139, 92, 246, 0.95)"} transparent transparent`,
+                        filter: `drop-shadow(0 2px 8px ${isPopkins ? "rgba(255, 165, 0, 0.7)" : isTallys ? "rgba(255, 20, 147, 0.7)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.7)" : isHero ? "rgba(139, 92, 246, 0.7)" : isSuiWorkshop ? "rgba(33, 150, 243, 0.7)" : "rgba(139, 92, 246, 0.7)"})`,
                       }}
                     />
                     {/* Ribbon Fold Shadow */}
@@ -822,12 +856,12 @@ const VotePoolPage = () => {
                         height: "0",
                         borderStyle: "solid",
                         borderWidth: `0 clamp(40px, 5.5vw, 55px) clamp(40px, 5.5vw, 55px) 0`,
-                        borderColor: `transparent ${isPopkins ? "rgba(255, 140, 0, 0.8)" : isTallys ? "rgba(255, 0, 100, 0.8)" : isPawtatoHeroes ? "rgba(101, 163, 13, 0.8)" : "rgba(124, 58, 237, 0.8)"} transparent transparent`,
+                        borderColor: `transparent ${isPopkins ? "rgba(255, 140, 0, 0.8)" : isTallys ? "rgba(255, 0, 100, 0.8)" : isPawtatoHeroes ? "rgba(101, 163, 13, 0.8)" : isHero ? "rgba(124, 58, 237, 0.8)" : isSuiWorkshop ? "rgba(25, 118, 210, 0.8)" : "rgba(124, 58, 237, 0.8)"} transparent transparent`,
                         transform: "translate(4px, 4px)",
                       }}
                     />
                     {/* Image Container - Centered on Ribbon, Larger and More to Top Right */}
-                    {!isHero && (
+                    {!isHero && !isSuiWorkshop && (
                       <div
                         style={{
                           position: "absolute",
@@ -843,7 +877,7 @@ const VotePoolPage = () => {
                         }}
                       >
                         <img
-                          src={isPopkins ? "/popkins.png" : isTallys ? "/tallys.png" : "/PawtatoHeroes.png"}
+                          src={isPopkins ? "/popkins.png" : isTallys ? "/tallys.png" : isPawtatoHeroes ? "/PawtatoHeroes.png" : "/popkins.png"}
                           alt={poolCollection?.name}
                           style={{
                             width: "100%",

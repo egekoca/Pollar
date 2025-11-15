@@ -666,33 +666,6 @@ export async function checkIfTransactionIsSealed(
 }
 
 /**
- * Basit oy verme fonksiyonu - vote(poll, option_index, voteRegistry) çağırır
- */
-export function createVoteTransaction(
-  pollId: string,
-  optionIndex: number,
-  voteRegistryId: string
-): Transaction {
-  const tx = new Transaction();
-  const packageId = contractConfig.packageId;
-
-  if (!packageId) {
-    throw new Error("Package ID not configured");
-  }
-
-  tx.moveCall({
-    target: `${packageId}::${contractConfig.moduleName}::vote`,
-    arguments: [
-      tx.object(pollId), // Poll object
-      tx.pure.u64(optionIndex), // option_index
-      tx.object(voteRegistryId), // VoteRegistry
-    ],
-  });
-
-  return tx;
-}
-
-/**
  * Seal client'ı initialize eder
  */
 export function createSealClient(client: SuiClient): SealClient {
@@ -879,38 +852,6 @@ export async function createSealedVoteWithNftTransaction(
 }
 
 /**
- * NFT ile oy verme fonksiyonu - vote_with_nft(poll, option_index, voteRegistry, nft) çağırır
- * NFT ownership kontrolü Sui runtime tarafından yapılır
- */
-export function createVoteWithNftTransaction(
-  pollId: string,
-  optionIndex: number,
-  voteRegistryId: string,
-  nftId: string,
-  nftType: string // Full NFT type (e.g., "0x...::popkins_nft::Popkins")
-): Transaction {
-  const tx = new Transaction();
-  const packageId = contractConfig.packageId;
-
-  if (!packageId) {
-    throw new Error("Package ID not configured");
-  }
-
-  tx.moveCall({
-    target: `${packageId}::${contractConfig.moduleName}::vote_with_nft`,
-    typeArguments: [nftType], // Generic type argument for NFT
-    arguments: [
-      tx.object(pollId), // Poll object
-      tx.pure.u64(optionIndex), // option_index
-      tx.object(voteRegistryId), // VoteRegistry
-      tx.object(nftId), // NFT object - ownership verified by Sui runtime
-    ],
-  });
-
-  return tx;
-}
-
-/**
  * Kullanıcının sahip olduğu NFT'leri belirli bir collection type için getirir
  */
 export async function getUserNftsByType(
@@ -943,7 +884,7 @@ export async function getUserNftsByType(
 
 /**
  * Kullanıcının attığı oyları getirir
- * Not: vote() ve vote_with_nft() fonksiyonları UserVote object'i oluşturmuyor,
+ * Not: vote_sealed() ve vote_sealed_with_nft() fonksiyonları UserVote object'i oluşturmuyor,
  * bu yüzden tüm poll'ları kontrol edip VoteRegistry'den kullanıcının oylarını buluyoruz
  */
 export async function getUserVotes(
@@ -965,7 +906,7 @@ export async function getUserVotes(
 
     console.log("Getting user votes for address:", userAddress);
 
-    // Önce UserVote object'lerini kontrol et (mint_user_vote kullanılmışsa)
+    // Önce UserVote object'lerini kontrol et (eski sistemde mint_user_vote kullanılmışsa)
     const userVoteType = `${packageId}::${contractConfig.moduleName}::UserVote`;
     let ownedUserVotes: Array<{
       pollId: string;
