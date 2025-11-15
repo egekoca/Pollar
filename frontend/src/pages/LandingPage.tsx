@@ -60,6 +60,7 @@ const LandingPage = () => {
             items={[
               { label: 'Home', href: '/' },
               { label: 'Pools', href: '/vote-pools' },
+              { label: 'Prediction Market', href: '/prediction-market' },
               { label: 'Pricing', href: '#pricing' },
             ]}
             activeHref="/"

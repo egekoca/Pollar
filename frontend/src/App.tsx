@@ -5,6 +5,7 @@ import CreateProfilePage from "./pages/CreateProfilePage";
 import VotePoolPage from "./pages/VotePoolPage";
 import VotingPage from "./pages/VotingPage";
 import MyProfilePage from "./pages/MyProfilePage";
+import PredictionMarketPage from "./pages/PredictionMarketPage";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/vote-pools" element={<VotePoolPage />} />
         <Route path="/voting/:id" element={<VotingPage />} />
         <Route path="/my-profile" element={<MyProfilePage />} />
+        <Route path="/prediction-market" element={<PredictionMarketPage />} />
       </Routes>
     </Router>
   );
