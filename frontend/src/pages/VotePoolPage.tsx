@@ -587,9 +587,53 @@ const VotePoolPage = () => {
                 >
                   {title}
                 </h2>
-          <p style={{ color: "var(--text-muted)", fontSize: "clamp(1rem, 2vw, 1.1rem)" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: "clamp(1rem, 2vw, 1.1rem)", marginBottom: "1rem" }}>
             Participate in ongoing polls and make your voice heard
           </p>
+          {selectedCollectionType && (() => {
+            const collection = getCollectionByType(selectedCollectionType);
+            if (collection && collection.tradeportUrl) {
+              return (
+                <a
+                  href={collection.tradeportUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-block",
+                    padding: "0.75rem 1.5rem",
+                    background: collection.name === "Popkins" 
+                      ? "linear-gradient(135deg, rgba(255, 165, 0, 0.8), rgba(50, 205, 50, 0.8))"
+                      : collection.name === "Tallys"
+                      ? "linear-gradient(135deg, rgba(255, 20, 147, 0.8), rgba(255, 99, 71, 0.8))"
+                      : collection.name === "Pawtato Heroes"
+                      ? "linear-gradient(135deg, rgba(132, 204, 22, 0.8), rgba(163, 230, 53, 0.8))"
+                      : "var(--color-light-blue)",
+                    color: "#000000",
+                    border: "none",
+                    borderRadius: "0.5rem",
+                    fontWeight: "700",
+                    fontSize: "clamp(0.9rem, 2vw, 1.1rem)",
+                    cursor: "pointer",
+                    textDecoration: "none",
+                    transition: "all 0.3s ease",
+                    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
+                    marginTop: "0.5rem",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 15px rgba(0, 0, 0, 0.3)";
+                  }}
+                >
+                  Buy {collection.name}
+                </a>
+              );
+            }
+            return null;
+          })()}
               </>
             );
           })()}
@@ -761,46 +805,21 @@ const VotePoolPage = () => {
                       }}
                     />
                     {/* Image Container - Centered on Ribbon, Larger and More to Top Right */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "clamp(6px, 1vw, 10px)",
-                        right: "clamp(6px, 1vw, 10px)",
-                        width: "clamp(50px, 7.5vw, 70px)",
-                        height: "clamp(50px, 7.5vw, 70px)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 11,
-                        transform: "rotate(45deg)",
-                      }}
-                    >
-                      {isHero ? (
-                        <div
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: "rgba(139, 92, 246, 0.2)",
-                            borderRadius: "50%",
-                            border: "2px solid rgba(139, 92, 246, 0.8)",
-                            transform: "rotate(-45deg)",
-                          }}
-                        >
-                          <span
-                            style={{
-                              color: "#a78bfa",
-                              fontSize: "clamp(0.6rem, 1.5vw, 0.9rem)",
-                              fontWeight: "bold",
-                              textShadow: "0 2px 4px rgba(0, 0, 0, 0.8)",
-                            }}
-                          >
-                            HERO
-                          </span>
-                        </div>
-                      ) : (
+                    {!isHero && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "clamp(6px, 1vw, 10px)",
+                          right: "clamp(6px, 1vw, 10px)",
+                          width: "clamp(50px, 7.5vw, 70px)",
+                          height: "clamp(50px, 7.5vw, 70px)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          zIndex: 11,
+                          transform: "rotate(45deg)",
+                        }}
+                      >
                         <img
                           src={isPopkins ? "/popkins.png" : isTallys ? "/tallys.png" : "/PawtatoHeroes.png"}
                           alt={poolCollection?.name}
@@ -812,8 +831,8 @@ const VotePoolPage = () => {
                             transform: "rotate(-45deg)",
                           }}
                         />
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

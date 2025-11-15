@@ -7,6 +7,7 @@ export interface NFTCollection {
   structName: string; // Struct name
   imageUrl?: string; // Optional image URL for the collection
   description?: string; // Optional description
+  tradeportUrl?: string; // TradePort marketplace URL for buying NFTs
   theme?: {
     backgroundGradient?: string; // CSS gradient for background
     backgroundImages?: string[]; // Array of NFT image URLs for background decoration
@@ -24,6 +25,7 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
     moduleName: "popkins_nft",
     structName: "Popkins",
     description: "Popkins NFT Collection",
+    tradeportUrl: "https://www.tradeport.xyz/sui/collection/0xb908f3c6fea6865d32e2048c520cdfe3b5c5bbcebb658117c41bad70f52b7ccc%3A%3Apopkins_nft%3A%3APopkins?bottomTab=trades&tab=items",
     theme: {
       backgroundGradient: "linear-gradient(180deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #1a1a2e 100%)",
       backgroundImages: [
@@ -60,6 +62,7 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
     moduleName: "nft",
     structName: "Tally",
     description: "Tallys NFT Collection",
+    tradeportUrl: "https://www.tradeport.xyz/sui/collection/0x75888defd3f392d276643932ae204cd85337a5b8f04335f9f912b6291149f423%3A%3Anft%3A%3ATally?bottomTab=trades&tab=items",
     theme: {
       backgroundGradient: "linear-gradient(180deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #1a1a2e 100%)",
       backgroundImages: [
@@ -82,6 +85,7 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
     moduleName: "pawtato_heroes",
     structName: "PawtatoHero",
     description: "Pawtato Heroes NFT Collection",
+    tradeportUrl: "https://www.tradeport.xyz/sui/collection/pawtato-heroes?bottomTab=trades&tab=items",
     theme: {
       backgroundGradient: "linear-gradient(180deg, #1a2e1a 0%, #2d4a2d 30%, #1a3d1a 60%, #1a2e1a 100%)",
       backgroundImages: [
