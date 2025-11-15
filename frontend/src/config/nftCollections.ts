@@ -53,6 +53,28 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
       overlayOpacity: 0.1,
     },
   },
+  {
+    name: "Tallys",
+    type: "0x75888defd3f392d276643932ae204cd85337a5b8f04335f9f912b6291149f423::nft::Tally",
+    packageId: "0x75888defd3f392d276643932ae204cd85337a5b8f04335f9f912b6291149f423",
+    moduleName: "nft",
+    structName: "Tally",
+    description: "Tallys NFT Collection",
+    theme: {
+      backgroundGradient: "linear-gradient(180deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #1a1a2e 100%)",
+      backgroundImages: [
+        "https://img.tradeport.gg/?url=https%3A%2F%2Ftradeport.mypinata.cloud%2Fipfs%2Fbafybeif4wzfdje322lsouuwfjuu4hia7jdkmw7pjs2kkxwkzge7ozunfgy%3FpinataGatewayToken%3D5Uc_j2QFWW75kVPmXB6eWCJ0aVZmc4o9QAq5TiuPfMHZQLKa_VNL3uaXj5NKrq0w%26img-width%3D700%26img-height%3D700%26img-fit%3Dcover%26img-quality%3D80%26img-onerror%3Dredirect%26img-fit%3Dpad%26img-format%3Dwebp&profile=39f29b4d-02ca-4157-a034-2686ee4a0e0f&mime-type=io%2Fipfs%2Fbafybeif4wzfdje322lsouuwfjuu4hia7jdkmw7pjs2kkxwkzge7ozunfgy",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Ftradeport.mypinata.cloud%2Fipfs%2Fbafybeifqhxgosi5aw6krqqjacpvwjplnoevw5ahyzvtbdg4y33mrqkne3q%3FpinataGatewayToken%3D5Uc_j2QFWW75kVPmXB6eWCJ0aVZmc4o9QAq5TiuPfMHZQLKa_VNL3uaXj5NKrq0w%26img-width%3D700%26img-height%3D700%26img-fit%3Dcover%26img-quality%3D80%26img-onerror%3Dredirect%26img-fit%3Dpad%26img-format%3Dwebp&profile=39f29b4d-02ca-4157-a034-2686ee4a0e0f&mime-type=io%2Fipfs%2Fbafybeifqhxgosi5aw6krqqjacpvwjplnoevw5ahyzvtbdg4y33mrqkne3q",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Ftradeport.mypinata.cloud%2Fipfs%2Fbafybeies2tsig2xklsu2y3k5nwu2zqopx45pntlch4p5ci6lnpufkwnjam%3FpinataGatewayToken%3D5Uc_j2QFWW75kVPmXB6eWCJ0aVZmc4o9QAq5TiuPfMHZQLKa_VNL3uaXj5NKrq0w%26img-width%3D700%26img-height%3D700%26img-fit%3Dcover%26img-quality%3D80%26img-onerror%3Dredirect%26img-fit%3Dpad%26img-format%3Dwebp&profile=39f29b4d-02ca-4157-a034-2686ee4a0e0f&mime-type=io%2Fipfs%2Fbafybeies2tsig2xklsu2y3k5nwu2zqopx45pntlch4p5ci6lnpufkwnjam",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Ftradeport.mypinata.cloud%2Fipfs%2Fbafybeidwrszhottxl7uip3zjvfqqozs2ozv6rvgtgykwpz7u7luxq6mduu%3FpinataGatewayToken%3D5Uc_j2QFWW75kVPmXB6eWCJ0aVZmc4o9QAq5TiuPfMHZQLKa_VNL3uaXj5NKrq0w%26img-width%3D700%26img-height%3D700%26img-fit%3Dcover%26img-quality%3D80%26img-onerror%3Dredirect%26img-fit%3Dpad%26img-format%3Dwebp&profile=39f29b4d-02ca-4157-a034-2686ee4a0e0f",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Ftradeport.mypinata.cloud%2Fipfs%2Fbafybeiame7uxod64pfonq4zjckvett62tuqy4s3j66v2t3lwz7t25x2ihu%3FpinataGatewayToken%3D5Uc_j2QFWW75kVPmXB6eWCJ0aVZmc4o9QAq5TiuPfMHZQLKa_VNL3uaXj5NKrq0w%26img-width%3D700%26img-height%3D700%26img-fit%3Dcover%26img-quality%3D80%26img-onerror%3Dredirect%26img-fit%3Dpad%26img-format%3Dwebp&profile=39f29b4d-02ca-4157-a034-2686ee4a0e0f",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Ftradeport.mypinata.cloud%2Fipfs%2Fbafybeieb22ssu2cvtvjv3b6okfvsrtsuifaemcquc34yku25wa3v7xtsey%3FpinataGatewayToken%3D5Uc_j2QFWW75kVPmXB6eWCJ0aVZmc4o9QAq5TiuPfMHZQLKa_VNL3uaXj5NKrq0w%26img-width%3D700%26img-height%3D700%26img-fit%3Dcover%26img-quality%3D80%26img-onerror%3Dredirect%26img-fit%3Dpad%26img-format%3Dwebp&profile=39f29b4d-02ca-4157-a034-2686ee4a0e0f",
+      ],
+      primaryColor: "#10b981",
+      secondaryColor: "#34d399",
+      overlayOpacity: 0.12,
+    },
+  },
 ];
 
 // Helper function to get collection by type

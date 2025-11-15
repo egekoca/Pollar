@@ -40,7 +40,12 @@ const VotePoolPage = () => {
     : allPools.filter((pool) => pool.nft_collection_type === selectedCollectionType);
   
   // Get unique collection types from all polls
-  const uniqueCollectionTypes = getUniqueCollectionTypes(allPools);
+  const uniqueCollectionTypesFromPolls = getUniqueCollectionTypes(allPools);
+  
+  // Show all defined NFT collections, not just ones with existing polls
+  // This ensures all collection buttons are visible even if no polls exist yet
+  const allCollectionTypes = NFT_COLLECTIONS.map(col => col.type);
+  const uniqueCollectionTypes = Array.from(new Set([...uniqueCollectionTypesFromPolls, ...allCollectionTypes]));
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -324,10 +329,6 @@ const VotePoolPage = () => {
           flexWrap: "wrap",
           justifyContent: "center",
           alignItems: "center",
-          padding: "1rem",
-          background: "rgba(59, 130, 246, 0.1)",
-          borderRadius: "0.75rem",
-          border: "1px solid rgba(59, 130, 246, 0.3)",
         }}>
           <button
             onClick={() => setSelectedCollectionType(null)}
@@ -346,22 +347,55 @@ const VotePoolPage = () => {
           </button>
           {uniqueCollectionTypes.map((collectionType) => {
             const collection = getCollectionByType(collectionType);
+            const isPopkins = collection?.name === "Popkins";
+            const isTallys = collection?.name === "Tallys";
+            const hasImage = isPopkins || isTallys;
+            const isSelected = selectedCollectionType === collectionType;
             return (
               <button
                 key={collectionType}
                 onClick={() => setSelectedCollectionType(collectionType)}
                 style={{
-                  padding: "0.75rem 1.5rem",
-                  background: selectedCollectionType === collectionType ? "var(--color-light-blue)" : "transparent",
-                  color: selectedCollectionType === collectionType ? "#000000" : "var(--text-primary)",
-                  border: "1.5px solid var(--color-light-blue)",
+                  padding: hasImage ? "0" : "0.75rem 1.5rem",
+                  background: hasImage ? "transparent" : (isSelected ? "var(--color-light-blue)" : "transparent"),
+                  color: hasImage ? "transparent" : (isSelected ? "#000000" : "var(--text-primary)"),
+                  border: hasImage ? "none" : "1.5px solid var(--color-light-blue)",
                   borderRadius: "0.5rem",
                   fontWeight: "600",
                   cursor: "pointer",
                   transition: "all 0.3s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: hasImage && isSelected ? 1 : (hasImage ? 0.7 : 1),
+                  transform: hasImage && isSelected ? "scale(1.05)" : "scale(1)",
                 }}
               >
-                {collection?.name || collectionType.split("::").pop() || "Unknown"}
+                {isPopkins ? (
+                  <img 
+                    src="/popkins.png" 
+                    alt="Popkins" 
+                    style={{
+                      height: "clamp(2rem, 4vw, 3rem)",
+                      width: "auto",
+                      objectFit: "contain",
+                      display: "block",
+                    }}
+                  />
+                ) : isTallys ? (
+                  <img 
+                    src="/tallys.png" 
+                    alt="Tallys" 
+                    style={{
+                      height: "clamp(2rem, 4vw, 3rem)",
+                      width: "auto",
+                      objectFit: "contain",
+                      display: "block",
+                    }}
+                  />
+                ) : (
+                  collection?.name || collectionType.split("::").pop() || "Unknown"
+                )}
               </button>
             );
           })}
