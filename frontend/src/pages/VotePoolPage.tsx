@@ -7,7 +7,7 @@ import CreateVotePoolModal from "../components/CreateVotePoolModal";
 import UserProfileDropdown from "../components/UserProfileDropdown";
 import { getUserProfile, UserProfile } from "../utils/userProfile";
 import { useBlockchainPolls } from "../utils/pollUtils";
-import { NFT_COLLECTIONS, getUniqueCollectionTypes, getCollectionByType } from "../config/nftCollections";
+import { NFT_COLLECTIONS, getUniqueCollectionTypes, getCollectionByType, getCollectionByName } from "../config/nftCollections";
 import "../styles/theme.css";
 
 const VotePoolPage = () => {
@@ -83,8 +83,138 @@ const VotePoolPage = () => {
     setUserProfile(null);
   };
 
+  // Get theme for selected collection
+  const selectedCollection = selectedCollectionType 
+    ? getCollectionByType(selectedCollectionType)
+    : null;
+  
+  const theme = selectedCollection?.theme;
+  // Always use dark background like other pages
+  const defaultBackground = "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)";
+  const backgroundGradient = defaultBackground; // Keep dark background, NFT theme only affects NFT images
+
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)" }}>
+    <div 
+      style={{ 
+        minHeight: "100vh", 
+        background: backgroundGradient,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Background NFT Images - Left and Right Sides */}
+      {theme?.backgroundImages && theme.backgroundImages.length > 0 && (
+        <>
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 0,
+              pointerEvents: "none",
+              overflow: "hidden",
+            }}
+          >
+            {/* Left Side NFTs */}
+            <div
+              className="nft-side-left"
+              style={{
+                position: "absolute",
+                left: "clamp(0.5rem, 2vw, 2rem)",
+                top: "50%",
+                transform: "translateY(-50%)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "clamp(1rem, 2vw, 2rem)",
+              }}
+            >
+              {theme.backgroundImages.slice(0, 3).map((imageUrl, index) => (
+                <div
+                  key={`left-${index}`}
+                  className="nft-card"
+                  style={{
+                    width: "clamp(80px, 12vw, 200px)",
+                    height: "clamp(80px, 12vw, 200px)",
+                    backgroundImage: `url(${imageUrl})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    borderRadius: "16px",
+                    filter: "blur(1.5px)",
+                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    transform: `rotate(${index * 3 - 3}deg)`,
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Right Side NFTs */}
+            <div
+              className="nft-side-right"
+              style={{
+                position: "absolute",
+                right: "clamp(0.5rem, 2vw, 2rem)",
+                top: "50%",
+                transform: "translateY(-50%)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "clamp(1rem, 2vw, 2rem)",
+              }}
+            >
+              {theme.backgroundImages.slice(3, 6).map((imageUrl, index) => (
+                <div
+                  key={`right-${index}`}
+                  className="nft-card"
+                  style={{
+                    width: "clamp(80px, 12vw, 200px)",
+                    height: "clamp(80px, 12vw, 200px)",
+                    backgroundImage: `url(${imageUrl})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    borderRadius: "16px",
+                    filter: "blur(1.5px)",
+                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    transform: `rotate(${index * -3 + 3}deg)`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          <style>{`
+            @media (max-width: 1024px) {
+              .nft-side-left,
+              .nft-side-right {
+                display: none !important;
+              }
+              .main-content-responsive {
+                padding-left: clamp(1rem, 3vw, 2rem) !important;
+                padding-right: clamp(1rem, 3vw, 2rem) !important;
+              }
+            }
+            @media (min-width: 1025px) and (max-width: 1400px) {
+              .nft-card {
+                width: clamp(100px, 10vw, 150px) !important;
+                height: clamp(100px, 10vw, 150px) !important;
+              }
+              .main-content-responsive {
+                padding-left: clamp(1rem, calc(10vw + 2rem), calc(150px + 3rem)) !important;
+                padding-right: clamp(1rem, calc(10vw + 2rem), calc(150px + 3rem)) !important;
+              }
+            }
+            @media (min-width: 1401px) {
+              .main-content-responsive {
+                padding-left: clamp(2rem, calc(12vw + 2rem), calc(200px + 4rem)) !important;
+                padding-right: clamp(2rem, calc(12vw + 2rem), calc(200px + 4rem)) !important;
+              }
+            }
+          `}</style>
+        </>
+      )}
+      
+      <div style={{ position: "relative", zIndex: 1 }}>
       {/* Header */}
       <header
         style={{
@@ -169,66 +299,19 @@ const VotePoolPage = () => {
       </header>
 
       {/* Main Content */}
-      <main style={{ padding: "clamp(1rem, 3vw, 2rem)", maxWidth: "1400px", margin: "0 auto", position: "relative" }}>
-        {/* Sol Taraf - Lightning Video */}
-        <div
-          style={{
-            position: "fixed",
-            left: 0,
-            top: "clamp(60px, 8vw, 80px)",
-            bottom: 0,
-            width: "clamp(150px, 15vw, 250px)",
-            zIndex: 1,
-            pointerEvents: "none",
-            overflow: "hidden",
-          }}
-        >
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              opacity: 0.3,
-            }}
-          >
-            <source src="/lightnings .mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        </div>
-
-        {/* Sağ Taraf - Lightning Video */}
-        <div
-          style={{
-            position: "fixed",
-            right: 0,
-            top: "clamp(60px, 8vw, 80px)",
-            bottom: 0,
-            width: "clamp(150px, 15vw, 250px)",
-            zIndex: 1,
-            pointerEvents: "none",
-            overflow: "hidden",
-          }}
-        >
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              opacity: 0.3,
-            }}
-          >
-            <source src="/lightnings .mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        </div>
+      <main 
+        className="main-content-responsive"
+        style={{ 
+          padding: "clamp(1rem, 3vw, 2rem)",
+          paddingLeft: "clamp(1rem, calc(12vw + 2rem), calc(200px + 4rem))",
+          paddingRight: "clamp(1rem, calc(12vw + 2rem), calc(200px + 4rem))",
+          maxWidth: "1400px", 
+          margin: "0 auto", 
+          position: "relative",
+          width: "100%",
+          boxSizing: "border-box",
+        }}
+      >
 
         {/* İçerik - Mevcut yapı */}
         <div style={{ position: "relative", zIndex: 2 }}>
@@ -509,7 +592,7 @@ const VotePoolPage = () => {
         onClose={handleCloseModal}
         onSuccess={handlePollCreated}
       />
-
+      </div>
     </div>
   );
 };

@@ -7,6 +7,13 @@ export interface NFTCollection {
   structName: string; // Struct name
   imageUrl?: string; // Optional image URL for the collection
   description?: string; // Optional description
+  theme?: {
+    backgroundGradient?: string; // CSS gradient for background
+    backgroundImages?: string[]; // Array of NFT image URLs for background decoration
+    primaryColor?: string; // Primary theme color
+    secondaryColor?: string; // Secondary theme color
+    overlayOpacity?: number; // Overlay opacity for background images (0-1)
+  };
 }
 
 export const NFT_COLLECTIONS: NFTCollection[] = [
@@ -17,6 +24,20 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
     moduleName: "popkins_nft",
     structName: "Popkins",
     description: "Popkins NFT Collection",
+    theme: {
+      backgroundGradient: "linear-gradient(180deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #1a1a2e 100%)",
+      backgroundImages: [
+        "https://img.tradeport.gg/?url=https%3A%2F%2Fwalrus.tusky.io%2F4b08rEfaxSI4ERKhaLPlfp4oJodrVNS_b9ym7qo5ASs&profile=a3334d93-8f63-41df-a4b9-124a4976a170",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Fwalrus.tusky.io%2FJQbtgh3k-VlJRLqKE3azvCGbniFql2XP-eXZ32UJYeo&profile=a3334d93-8f63-41df-a4b9-124a4976a170",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Fwalrus.tusky.io%2FOOGedpdAs4UOe4tEsKmjMg2VDrJtIUnrqAR7ooqLiYQ&profile=a3334d93-8f63-41df-a4b9-124a4976a170",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Fwalrus.tusky.io%2FCde-Hek5zO6nsSbHFEVGBc5Nihf4eeCXvWQi8cbYi6c&profile=a3334d93-8f63-41df-a4b9-124a4976a170",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Fwalrus.tusky.io%2FjuGW5LYCxYPYqwY4NZyEjYrDqrhQEppxzx8E86_15go&profile=a3334d93-8f63-41df-a4b9-124a4976a170",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Fwalrus.tusky.io%2FUZ4c8lJZaFI_SqfnVXgSOKpDWAva6HT-GjPTkrkvo4k&profile=a3334d93-8f63-41df-a4b9-124a4976a170",
+      ],
+      primaryColor: "#3b82f6",
+      secondaryColor: "#60a5fa",
+      overlayOpacity: 0.12,
+    },
   },
   {
     name: "Hero",
@@ -25,12 +46,23 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
     moduleName: "hero",
     structName: "Hero",
     description: "Hero NFT Collection (Testnet)",
+    theme: {
+      backgroundGradient: "linear-gradient(180deg, #1e1e2e 0%, #2d1b3d 50%, #1e1e2e 100%)",
+      primaryColor: "#8b5cf6",
+      secondaryColor: "#a78bfa",
+      overlayOpacity: 0.1,
+    },
   },
 ];
 
 // Helper function to get collection by type
 export function getCollectionByType(type: string): NFTCollection | undefined {
   return NFT_COLLECTIONS.find((col) => col.type === type);
+}
+
+// Helper function to get collection by name
+export function getCollectionByName(name: string): NFTCollection | undefined {
+  return NFT_COLLECTIONS.find((col) => col.name === name);
 }
 
 // Helper function to get all unique collection types from polls

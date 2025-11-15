@@ -5,6 +5,7 @@ import { findVoteRegistryByPollId, getVoteRegistry, createVoteTransaction, creat
 import { VotePool, VoteOption } from "../data/mockData";
 import { gsap } from "gsap";
 import PillNav from "../components/PillNav";
+import { getCollectionByType } from "../config/nftCollections";
 import {
   LineChart,
   Line,
@@ -412,10 +413,20 @@ const VotingPage = () => {
     });
   };
 
+  // Get theme for poll's NFT collection
+  const pollCollection = pollData?.nft_collection_type 
+    ? getCollectionByType(pollData.nft_collection_type)
+    : null;
+  
+  const theme = pollCollection?.theme;
+  // Always use dark background like other pages
+  const defaultBackground = "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)";
+  const backgroundGradient = defaultBackground; // Keep dark background, NFT theme only affects NFT images
+
   if (isLoading) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--bg-primary)", padding: "2rem" }}>
-        <div className="container" style={{ textAlign: "center" }}>
+      <div style={{ minHeight: "100vh", background: backgroundGradient, padding: "2rem", position: "relative" }}>
+        <div className="container" style={{ textAlign: "center", position: "relative", zIndex: 1 }}>
           <p style={{ color: "var(--text-secondary)", fontSize: "1.2rem" }}>Loading...</p>
           <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginTop: "0.5rem" }}>
             Poll ID: {id}
@@ -427,8 +438,8 @@ const VotingPage = () => {
 
   if (error && !localPool) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--bg-primary)", padding: "2rem" }}>
-        <div className="container" style={{ textAlign: "center" }}>
+      <div style={{ minHeight: "100vh", background: backgroundGradient, padding: "2rem", position: "relative" }}>
+        <div className="container" style={{ textAlign: "center", position: "relative", zIndex: 1 }}>
           <p style={{ color: "#ef4444", fontSize: "1.2rem", marginBottom: "1rem" }}>Error: {error}</p>
           <p style={{ color: "var(--text-secondary)", marginBottom: "1rem" }}>
             Poll ID: {id}
@@ -443,8 +454,8 @@ const VotingPage = () => {
 
   if (!localPool) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--bg-primary)", padding: "2rem" }}>
-        <div className="container" style={{ textAlign: "center" }}>
+      <div style={{ minHeight: "100vh", background: backgroundGradient, padding: "2rem", position: "relative" }}>
+        <div className="container" style={{ textAlign: "center", position: "relative", zIndex: 1 }}>
           <p style={{ color: "var(--text-secondary)" }}>Vote pool not found.</p>
           <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginTop: "0.5rem" }}>
             Poll ID: {id}
@@ -483,7 +494,127 @@ const VotingPage = () => {
   const colors = ["#3b82f6", "#87ceeb", "#60a5fa", "#93c5fd"];
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
+    <div 
+      style={{ 
+        minHeight: "100vh", 
+        background: backgroundGradient,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Background NFT Images - Left and Right Sides */}
+      {theme?.backgroundImages && theme.backgroundImages.length > 0 && (
+        <>
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 0,
+              pointerEvents: "none",
+              overflow: "hidden",
+            }}
+          >
+            {/* Left Side NFTs */}
+            <div
+              className="nft-side-left"
+              style={{
+                position: "absolute",
+                left: "clamp(0.5rem, 2vw, 2rem)",
+                top: "50%",
+                transform: "translateY(-50%)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "clamp(1rem, 2vw, 2rem)",
+              }}
+            >
+              {theme.backgroundImages.slice(0, 3).map((imageUrl, index) => (
+                <div
+                  key={`left-${index}`}
+                  className="nft-card"
+                  style={{
+                    width: "clamp(80px, 12vw, 200px)",
+                    height: "clamp(80px, 12vw, 200px)",
+                    backgroundImage: `url(${imageUrl})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    borderRadius: "16px",
+                    filter: "blur(1.5px)",
+                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    transform: `rotate(${index * 3 - 3}deg)`,
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Right Side NFTs */}
+            <div
+              className="nft-side-right"
+              style={{
+                position: "absolute",
+                right: "clamp(0.5rem, 2vw, 2rem)",
+                top: "50%",
+                transform: "translateY(-50%)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "clamp(1rem, 2vw, 2rem)",
+              }}
+            >
+              {theme.backgroundImages.slice(3, 6).map((imageUrl, index) => (
+                <div
+                  key={`right-${index}`}
+                  className="nft-card"
+                  style={{
+                    width: "clamp(80px, 12vw, 200px)",
+                    height: "clamp(80px, 12vw, 200px)",
+                    backgroundImage: `url(${imageUrl})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    borderRadius: "16px",
+                    filter: "blur(1.5px)",
+                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    transform: `rotate(${index * -3 + 3}deg)`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          <style>{`
+            @media (max-width: 1024px) {
+              .nft-side-left,
+              .nft-side-right {
+                display: none !important;
+              }
+              .main-content-responsive {
+                padding-left: clamp(1rem, 3vw, 2rem) !important;
+                padding-right: clamp(1rem, 3vw, 2rem) !important;
+              }
+            }
+            @media (min-width: 1025px) and (max-width: 1400px) {
+              .nft-card {
+                width: clamp(100px, 10vw, 150px) !important;
+                height: clamp(100px, 10vw, 150px) !important;
+              }
+              .main-content-responsive {
+                padding-left: clamp(1rem, calc(10vw + 2rem), calc(150px + 3rem)) !important;
+                padding-right: clamp(1rem, calc(10vw + 2rem), calc(150px + 3rem)) !important;
+              }
+            }
+            @media (min-width: 1401px) {
+              .main-content-responsive {
+                padding-left: clamp(2rem, calc(12vw + 2rem), calc(200px + 4rem)) !important;
+                padding-right: clamp(2rem, calc(12vw + 2rem), calc(200px + 4rem)) !important;
+              }
+            }
+          `}</style>
+        </>
+      )}
+      
+      <div style={{ position: "relative", zIndex: 1 }}>
       {/* Header */}
       <header
         style={{
@@ -565,7 +696,19 @@ const VotingPage = () => {
       </header>
 
       {/* Main Content */}
-      <main style={{ padding: "clamp(1rem, 3vw, 2rem)", maxWidth: "1400px", margin: "0 auto" }}>
+      <main 
+        className="main-content-responsive"
+        style={{ 
+          padding: "clamp(1rem, 3vw, 2rem)",
+          paddingLeft: "clamp(1rem, calc(12vw + 2rem), calc(200px + 4rem))",
+          paddingRight: "clamp(1rem, calc(12vw + 2rem), calc(200px + 4rem))",
+          maxWidth: "1400px", 
+          margin: "0 auto",
+          position: "relative",
+          width: "100%",
+          boxSizing: "border-box",
+        }}
+      >
         {/* Pool Header */}
         <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
           <div
@@ -1002,6 +1145,7 @@ const VotingPage = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
