@@ -462,6 +462,7 @@ const VotePoolPage = () => {
             const isPopkins = collection?.name === "Popkins";
             const isTallys = collection?.name === "Tallys";
             const isPawtatoHeroes = collection?.name === "Pawtato Heroes";
+            const isHero = collection?.name === "Hero";
             const hasImage = isPopkins || isTallys || isPawtatoHeroes;
             const isSelected = selectedCollectionType === collectionType;
             return (
@@ -482,14 +483,17 @@ const VotePoolPage = () => {
                   justifyContent: "center",
                   opacity: hasImage && isSelected ? 1 : (hasImage ? 0.7 : 1),
                   transform: hasImage && isSelected ? "scale(1.05)" : "scale(1)",
-                  boxShadow: hasImage && isSelected 
+                  boxShadow: (hasImage || isHero) && isSelected 
                     ? (isPopkins 
-                        ? "0 0 20px rgba(255, 140, 0, 0.8), 0 0 40px rgba(255, 165, 0, 0.6), 0 0 60px rgba(255, 140, 0, 0.4)"
+                        ? "0 0 15px rgba(255, 165, 0, 0.6), 0 0 30px rgba(255, 140, 0, 0.4)"
                         : isTallys
-                        ? "0 0 20px rgba(255, 20, 147, 0.8), 0 0 40px rgba(255, 105, 180, 0.6), 0 0 60px rgba(255, 20, 147, 0.4)"
+                        ? "0 0 15px rgba(255, 20, 147, 0.6), 0 0 30px rgba(255, 105, 180, 0.4)"
+                        : isPawtatoHeroes
+                        ? "0 0 15px rgba(132, 204, 22, 0.6), 0 0 30px rgba(163, 230, 53, 0.4)"
+                        : isHero
+                        ? "0 0 15px rgba(139, 92, 246, 0.6), 0 0 30px rgba(167, 139, 250, 0.4)"
                         : "none")
                     : "none",
-                  overflow: hasImage ? "hidden" : "visible",
                 }}
               >
                 {isPopkins ? (
@@ -501,17 +505,6 @@ const VotePoolPage = () => {
                       width: "auto",
                       objectFit: "contain",
                       display: "block",
-                      filter: "brightness(1.3) saturate(1.4) contrast(1.15)",
-                      transition: "all 0.3s ease",
-                      border: "none",
-                      outline: "none",
-                      borderRadius: "1rem",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.filter = "brightness(1.35) saturate(1.45) contrast(1.18)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.filter = "brightness(1.3) saturate(1.4) contrast(1.15)";
                     }}
                   />
                 ) : isTallys ? (
@@ -523,24 +516,13 @@ const VotePoolPage = () => {
                       width: "auto",
                       objectFit: "contain",
                       display: "block",
-                      filter: "brightness(1.3) saturate(1.4) contrast(1.15)",
-                      transition: "all 0.3s ease",
-                      border: "none",
-                      outline: "none",
-                      borderRadius: "1rem",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.filter = "brightness(1.35) saturate(1.45) contrast(1.18)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.filter = "brightness(1.3) saturate(1.4) contrast(1.15)";
                     }}
                   />
                 ) : isPawtatoHeroes ? (
                   <img 
                     src="/PawtatoHeroes.png" 
                     alt="Pawtato Heroes" 
-            style={{
+                    style={{
                       height: "clamp(2.5rem, 5vw, 3.5rem)",
                       width: "auto",
                       objectFit: "contain",
@@ -679,6 +661,7 @@ const VotePoolPage = () => {
             const isPopkins = poolCollection?.name === "Popkins";
             const isTallys = poolCollection?.name === "Tallys";
             const isPawtatoHeroes = poolCollection?.name === "Pawtato Heroes";
+            const isHero = poolCollection?.name === "Hero";
             
             // Check if poll is active
             const now = new Date();
@@ -693,6 +676,8 @@ const VotePoolPage = () => {
               ? "rgba(255, 20, 147, 0.3), rgba(255, 99, 71, 0.3)" // Pink-Red for Tallys
               : isPawtatoHeroes
               ? "rgba(132, 204, 22, 0.3), rgba(163, 230, 53, 0.3)" // Lime green for Pawtato Heroes
+              : isHero
+              ? "rgba(139, 92, 246, 0.3), rgba(167, 139, 250, 0.3)" // Purple for Hero
               : "transparent";
             
             return (
@@ -710,10 +695,10 @@ const VotePoolPage = () => {
                   flexDirection: "column",
                   position: "relative",
                   boxShadow: glowColor !== "transparent" 
-                    ? `0 0 20px ${isPopkins ? "rgba(255, 165, 0, 0.4)" : isTallys ? "rgba(255, 20, 147, 0.4)" : "rgba(132, 204, 22, 0.4)"}, 0 0 40px ${isPopkins ? "rgba(50, 205, 50, 0.3)" : isTallys ? "rgba(255, 99, 71, 0.3)" : "rgba(163, 230, 53, 0.3)"}`
+                    ? `0 0 20px ${isPopkins ? "rgba(255, 165, 0, 0.4)" : isTallys ? "rgba(255, 20, 147, 0.4)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.4)" : "rgba(139, 92, 246, 0.4)"}, 0 0 40px ${isPopkins ? "rgba(50, 205, 50, 0.3)" : isTallys ? "rgba(255, 99, 71, 0.3)" : isPawtatoHeroes ? "rgba(163, 230, 53, 0.3)" : "rgba(167, 139, 250, 0.3)"}`
                     : undefined,
                   border: glowColor !== "transparent"
-                    ? `1px solid ${isPopkins ? "rgba(255, 165, 0, 0.5)" : isTallys ? "rgba(255, 20, 147, 0.5)" : "rgba(132, 204, 22, 0.5)"}`
+                    ? `1px solid ${isPopkins ? "rgba(255, 165, 0, 0.5)" : isTallys ? "rgba(255, 20, 147, 0.5)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.5)" : "rgba(139, 92, 246, 0.5)"}`
                     : undefined,
                 }}
               >
@@ -735,7 +720,7 @@ const VotePoolPage = () => {
                 />
 
                 {/* NFT Collection Badge - Ribbon Style Top Right */}
-                {(isPopkins || isTallys || isPawtatoHeroes) && (
+                {(isPopkins || isTallys || isPawtatoHeroes || isHero) && (
                   <div
                     style={{
                       position: "absolute",
@@ -757,8 +742,8 @@ const VotePoolPage = () => {
                         height: "0",
                         borderStyle: "solid",
                         borderWidth: `0 clamp(55px, 7.5vw, 75px) clamp(55px, 7.5vw, 75px) 0`,
-                        borderColor: `transparent ${isPopkins ? "rgba(255, 165, 0, 0.95)" : isTallys ? "rgba(255, 20, 147, 0.95)" : "rgba(132, 204, 22, 0.95)"} transparent transparent`,
-                        filter: `drop-shadow(0 2px 8px ${isPopkins ? "rgba(255, 165, 0, 0.7)" : isTallys ? "rgba(255, 20, 147, 0.7)" : "rgba(132, 204, 22, 0.7)"})`,
+                        borderColor: `transparent ${isPopkins ? "rgba(255, 165, 0, 0.95)" : isTallys ? "rgba(255, 20, 147, 0.95)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.95)" : "rgba(139, 92, 246, 0.95)"} transparent transparent`,
+                        filter: `drop-shadow(0 2px 8px ${isPopkins ? "rgba(255, 165, 0, 0.7)" : isTallys ? "rgba(255, 20, 147, 0.7)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.7)" : "rgba(139, 92, 246, 0.7)"})`,
                       }}
                     />
                     {/* Ribbon Fold Shadow */}
@@ -771,7 +756,7 @@ const VotePoolPage = () => {
                         height: "0",
                         borderStyle: "solid",
                         borderWidth: `0 clamp(40px, 5.5vw, 55px) clamp(40px, 5.5vw, 55px) 0`,
-                        borderColor: `transparent ${isPopkins ? "rgba(255, 140, 0, 0.8)" : isTallys ? "rgba(255, 0, 100, 0.8)" : "rgba(101, 163, 13, 0.8)"} transparent transparent`,
+                        borderColor: `transparent ${isPopkins ? "rgba(255, 140, 0, 0.8)" : isTallys ? "rgba(255, 0, 100, 0.8)" : isPawtatoHeroes ? "rgba(101, 163, 13, 0.8)" : "rgba(124, 58, 237, 0.8)"} transparent transparent`,
                         transform: "translate(4px, 4px)",
                       }}
                     />
@@ -790,17 +775,44 @@ const VotePoolPage = () => {
                         transform: "rotate(45deg)",
                       }}
                     >
-                      <img
-                        src={isPopkins ? "/popkins.png" : isTallys ? "/tallys.png" : "/PawtatoHeroes.png"}
-                        alt={poolCollection?.name}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "contain",
-                          filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6))",
-                          transform: "rotate(-45deg)",
-                        }}
-                      />
+                      {isHero ? (
+                        <div
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "rgba(139, 92, 246, 0.2)",
+                            borderRadius: "50%",
+                            border: "2px solid rgba(139, 92, 246, 0.8)",
+                            transform: "rotate(-45deg)",
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: "#a78bfa",
+                              fontSize: "clamp(0.6rem, 1.5vw, 0.9rem)",
+                              fontWeight: "bold",
+                              textShadow: "0 2px 4px rgba(0, 0, 0, 0.8)",
+                            }}
+                          >
+                            HERO
+                          </span>
+                        </div>
+                      ) : (
+                        <img
+                          src={isPopkins ? "/popkins.png" : isTallys ? "/tallys.png" : "/PawtatoHeroes.png"}
+                          alt={poolCollection?.name}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                            filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6))",
+                            transform: "rotate(-45deg)",
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
                 )}
