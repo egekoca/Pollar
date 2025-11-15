@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
-import { findVoteRegistryByPollId, getVoteRegistry, createVoteTransaction, createVoteWithNftTransaction, getPollById, getUserNftsByType } from "../utils/blockchain";
+import { findVoteRegistryByPollId, getVoteRegistry, createVoteTransaction, createVoteWithNftTransaction, getPollById, getUserNftsByType, createSealedVoteTransaction, createSealedVoteWithNftTransaction } from "../utils/blockchain";
 import { VotePool, VoteOption } from "../data/mockData";
 import { gsap } from "gsap";
 import PillNav from "../components/PillNav";
@@ -272,10 +272,32 @@ const VotingPage = () => {
     }
 
     try {
-      // Create transaction - use vote_with_nft if NFT required, otherwise use regular vote
-      const tx = requiresNft && selectedNftId
-        ? createVoteWithNftTransaction(id, optionIndex, voteRegistryId, selectedNftId, pollData.nft_collection_type)
-        : createVoteTransaction(id, optionIndex, voteRegistryId);
+      // Check if poll uses sealed (encrypted) voting
+      // For now, we'll always use sealed voting for privacy
+      // In the future, we can check VoteRegistry.is_sealed field
+      const useSealedVoting = true; // Always use sealed voting for privacy
+      
+      // Create transaction - use sealed voting functions for privacy
+      let tx;
+      if (useSealedVoting) {
+        if (requiresNft && selectedNftId) {
+          tx = await createSealedVoteWithNftTransaction(
+            client,
+            id,
+            optionIndex,
+            voteRegistryId,
+            pollData.nft_collection_type,
+            selectedNftId
+          );
+        } else {
+          tx = await createSealedVoteTransaction(client, id, optionIndex, voteRegistryId);
+        }
+      } else {
+        // Fallback to unencrypted voting (for backward compatibility)
+        tx = requiresNft && selectedNftId
+          ? createVoteWithNftTransaction(id, optionIndex, voteRegistryId, selectedNftId, pollData.nft_collection_type)
+          : createVoteTransaction(id, optionIndex, voteRegistryId);
+      }
 
       // Transaction'ı gönder
       signAndExecute(

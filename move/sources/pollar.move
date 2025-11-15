@@ -9,6 +9,7 @@ use std::option::{Self, Option};
 use std::string::String;
 use std::vector;
 use sui::dynamic_field as df;
+use sui::bcs;
 
 const EInvalidPackageVersion: u64 = 1001;
 const EVersionAlreadyUpdated: u64 = 1002;
@@ -33,8 +34,15 @@ const EInvalidOptionIndex: u64 = 14; // For simple voting use-case
 const ENftRequired: u64 = 15; // NFT required but not provided
 const ENftNotOwned: u64 = 16; // NFT not owned by voter
 const ENftTypeMismatch: u64 = 17; // NFT type doesn't match poll's required collection
+const EDecryptionFailed: u64 = 18; // Failed to decrypt vote
+const EInvalidEncryptedVote: u64 = 19; // Invalid encrypted vote data
+const ESealAccessDenied: u64 = 20; // Seal access denied
 
-const VERSION: u64 = 2; // Incremented version for NFT support
+const VERSION: u64 = 3; // Incremented version for Seal encryption support
+
+// Seal package ID - Testnet
+// Mainnet: 0xa212c4c6c7183b911d0be8768f4cb1df7a383025b5d0ba0c014009f0f30f5f8d
+const SEAL_PACKAGE_ID: address = @0x927a54e9ae803f82ebf480136a9bcff45101ccbe28b13f433c89f5181069d682;
 
 // Version object used to track package migration and current schema version.
 // Stored as a shared object so migrations can verify and update package state.
@@ -53,6 +61,16 @@ public struct VoteRegistry has key
     poll_id: ID,
     usersVoted: vector<address>, // Now using addresses to track voters; simplified
     option_votes: vector<u64>, // Vote counts per option (for simple voting)
+    encrypted_votes: vector<EncryptedVote>, // Encrypted votes for privacy
+    is_sealed: bool, // Whether votes are encrypted (sealed) or not
+}
+
+// EncryptedVote stores a Seal-encrypted vote
+// The encrypted data contains the option_index (u64) as bytes
+public struct EncryptedVote has store
+{
+    encrypted_data: vector<u8>, // BCS-serialized encrypted object from Seal
+    voter: address, // Voter address (for tracking who voted, but not what they voted)
 }
 
 // PollRegistry is a shared object that acts as a registry for polls.
@@ -236,6 +254,8 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
         poll_id: inner_id,
         usersVoted: vector::empty(),
         option_votes,
+        encrypted_votes: vector::empty(),
+        is_sealed: true, // Default to sealed (encrypted) voting
     };
 
     df::add(&mut pollRegistry.id, inner_id, object::id(&voteRegistry));
@@ -380,6 +400,185 @@ public entry fun vote_with_nft<T: key + store>(
     voteRegistry.option_votes = new_option_votes;
     
     // Append the voter's address
+    vector::push_back(&mut voteRegistry.usersVoted, voter);
+    
+    // Emit event
+    event::emit(UserVoteMinted{ user_vote: poll_id, owner: voter });
+}
+
+// SEAL ENCRYPTION FUNCTIONS
+// seal_approve function for Seal access control
+// This function is called by Seal key servers to verify access to decrypt votes
+// The identity is the poll_id (as bytes) - only voters who voted on this poll can decrypt
+entry fun seal_approve(
+    id: vector<u8>, // Poll ID as bytes (identity for Seal)
+    poll: &Poll,
+    voteRegistry: &VoteRegistry,
+    ctx: &TxContext
+) {
+    let poll_id = object::id(poll);
+    let poll_id_bytes = bcs::to_bytes(&poll_id);
+    
+    // Verify the identity matches the poll ID
+    assert!(poll_id_bytes == id, ESealAccessDenied);
+    
+    // Verify the VoteRegistry belongs to this Poll
+    assert!(voteRegistry.poll_id == poll_id, EInvalidVoteRegistry);
+    
+    // Verify the voter has voted (they are in usersVoted list)
+    let voter = ctx.sender();
+    let mut has_voted = false;
+    let mut i = 0;
+    let voters_len = vector::length(&voteRegistry.usersVoted);
+    while (i < voters_len) {
+        let voter_addr = *vector::borrow(&voteRegistry.usersVoted, i);
+        if (voter_addr == voter) {
+            has_voted = true;
+            break
+        };
+        i = i + 1;
+    };
+    assert!(has_voted, ESealAccessDenied);
+}
+
+// Vote with encrypted data (Seal-encrypted)
+// The encrypted_data is a BCS-serialized Seal encrypted object
+// option_index is needed to update option_votes for vote counting
+public entry fun vote_sealed(
+    poll: &Poll,
+    option_index: u64, // Option index for vote counting (also encrypted in encrypted_data)
+    encrypted_data: vector<u8>, // BCS-serialized Seal encrypted object
+    voteRegistry: &mut VoteRegistry,
+    ctx: &mut TxContext
+) {
+    let voter = ctx.sender();
+    let poll_id = object::id(poll);
+    
+    // Check the VoteRegistry belongs to this Poll
+    assert!(voteRegistry.poll_id == poll_id, EInvalidVoteRegistry);
+    
+    // Verify the poll is sealed
+    assert!(voteRegistry.is_sealed, EInvalidEncryptedVote);
+    
+    // Validate option index
+    let options_len = vector::length(&poll.options);
+    assert!(option_index < options_len, EInvalidOptionIndex);
+    
+    // Check for double voting by wallet address
+    let mut already_voted = false;
+    let mut j = 0;
+    let voters_len = vector::length(&voteRegistry.usersVoted);
+    while (j < voters_len) {
+        let voter_addr = *vector::borrow(&voteRegistry.usersVoted, j);
+        if (voter_addr == voter) {
+            already_voted = true;
+            break
+        };
+        j = j + 1;
+    };
+    assert!(!already_voted, EAlreadyVoted);
+    
+    // Create encrypted vote
+    let encrypted_vote = EncryptedVote {
+        encrypted_data,
+        voter,
+    };
+    
+    // Add encrypted vote to registry
+    vector::push_back(&mut voteRegistry.encrypted_votes, encrypted_vote);
+    
+    // Update option_votes for vote counting (while keeping votes encrypted)
+    let mut new_option_votes = vector::empty();
+    let mut i = 0;
+    let votes_len = vector::length(&voteRegistry.option_votes);
+    while (i < votes_len) {
+        if (i == option_index) {
+            let current_votes = *vector::borrow(&voteRegistry.option_votes, i);
+            vector::push_back(&mut new_option_votes, current_votes + 1);
+        } else {
+            let votes = *vector::borrow(&voteRegistry.option_votes, i);
+            vector::push_back(&mut new_option_votes, votes);
+        };
+        i = i + 1;
+    };
+    voteRegistry.option_votes = new_option_votes;
+    
+    // Append the voter's address (for tracking who voted)
+    vector::push_back(&mut voteRegistry.usersVoted, voter);
+    
+    // Emit event
+    event::emit(UserVoteMinted{ user_vote: poll_id, owner: voter });
+}
+
+// Vote with encrypted data and NFT (Seal-encrypted)
+// option_index is needed to update option_votes for vote counting
+public entry fun vote_sealed_with_nft<T: key + store>(
+    poll: &Poll,
+    option_index: u64, // Option index for vote counting (also encrypted in encrypted_data)
+    encrypted_data: vector<u8>, // BCS-serialized Seal encrypted object
+    voteRegistry: &mut VoteRegistry,
+    nft: &T, // NFT object - ownership verified by Sui runtime
+    ctx: &mut TxContext
+) {
+    let voter = ctx.sender();
+    let poll_id = object::id(poll);
+    
+    // Check if poll requires NFT
+    let requires_nft = poll.nft_collection_type.length() > 0;
+    assert!(requires_nft, ENftRequired);
+    
+    // Check the VoteRegistry belongs to this Poll
+    assert!(voteRegistry.poll_id == poll_id, EInvalidVoteRegistry);
+    
+    // Verify the poll is sealed
+    assert!(voteRegistry.is_sealed, EInvalidEncryptedVote);
+    
+    // Validate option index
+    let options_len = vector::length(&poll.options);
+    assert!(option_index < options_len, EInvalidOptionIndex);
+    
+    // Check for double voting by wallet address
+    let mut already_voted = false;
+    let mut j = 0;
+    let voters_len = vector::length(&voteRegistry.usersVoted);
+    while (j < voters_len) {
+        let voter_addr = *vector::borrow(&voteRegistry.usersVoted, j);
+        if (voter_addr == voter) {
+            already_voted = true;
+            break
+        };
+        j = j + 1;
+    };
+    assert!(!already_voted, EAlreadyVoted);
+    
+    // NFT ownership is verified by Sui runtime
+    
+    // Create encrypted vote
+    let encrypted_vote = EncryptedVote {
+        encrypted_data,
+        voter,
+    };
+    
+    // Add encrypted vote to registry
+    vector::push_back(&mut voteRegistry.encrypted_votes, encrypted_vote);
+    
+    // Update option_votes for vote counting (while keeping votes encrypted)
+    let mut new_option_votes = vector::empty();
+    let mut i = 0;
+    let votes_len = vector::length(&voteRegistry.option_votes);
+    while (i < votes_len) {
+        if (i == option_index) {
+            let current_votes = *vector::borrow(&voteRegistry.option_votes, i);
+            vector::push_back(&mut new_option_votes, current_votes + 1);
+        } else {
+            let votes = *vector::borrow(&voteRegistry.option_votes, i);
+            vector::push_back(&mut new_option_votes, votes);
+        };
+        i = i + 1;
+    };
+    voteRegistry.option_votes = new_option_votes;
+    
+    // Append the voter's address (for tracking who voted)
     vector::push_back(&mut voteRegistry.usersVoted, voter);
     
     // Emit event

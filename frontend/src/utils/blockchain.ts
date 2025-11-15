@@ -1,6 +1,8 @@
 import { SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
+import { SealClient } from "@mysten/seal";
 import { contractConfig } from "../config/contractConfig";
+import { SEAL_KEY_SERVERS, SEAL_THRESHOLD } from "../config/sealConfig";
 
 /**
  * PollRegistry'yi bulmak için package'dan shared object'leri query eder
@@ -464,6 +466,11 @@ export async function getVoteRegistry(
   poll_id: string;
   usersVoted: string[];
   option_votes: number[];
+  encrypted_votes?: Array<{
+    encrypted_data: string; // Hex string olarak şifreli veri
+    voter: string;
+  }>;
+  is_sealed?: boolean;
 } | null> {
   try {
     const voteRegistry = await client.getObject({
@@ -527,20 +534,134 @@ export async function getVoteRegistry(
       }
     }
 
+    // encrypted_votes bir vector<EncryptedVote> - Seal şifreli oylar
+    let encrypted_votes: Array<{ encrypted_data: string; voter: string }> = [];
+    if (fields.encrypted_votes) {
+      if (Array.isArray(fields.encrypted_votes)) {
+        encrypted_votes = fields.encrypted_votes.map((encryptedVote: any) => {
+          let encryptedData = "";
+          let voter = "";
+          
+          // encrypted_data bir vector<u8> - hex string'e çevir
+          if (encryptedVote.encrypted_data) {
+            if (Array.isArray(encryptedVote.encrypted_data)) {
+              // Byte array'i hex string'e çevir
+              encryptedData = "0x" + encryptedVote.encrypted_data
+                .map((byte: number) => byte.toString(16).padStart(2, "0"))
+                .join("");
+            } else if (typeof encryptedVote.encrypted_data === "string") {
+              encryptedData = encryptedVote.encrypted_data;
+            }
+          }
+          
+          // voter bir address
+          if (encryptedVote.voter) {
+            voter = typeof encryptedVote.voter === "string" 
+              ? encryptedVote.voter 
+              : (encryptedVote.voter.fields?.value || "");
+          }
+          
+          return { encrypted_data: encryptedData, voter };
+        });
+      }
+    }
+
+    // is_sealed bir bool - poll'un şifreli olup olmadığını gösterir
+    const is_sealed = fields.is_sealed === true || fields.is_sealed === "true";
+
     console.log("Parsed VoteRegistry:", {
       poll_id: pollId,
       usersVoted,
       option_votes,
+      encrypted_votes: encrypted_votes.length > 0 ? `${encrypted_votes.length} encrypted votes` : "none",
+      is_sealed,
     });
 
     return {
       poll_id: pollId,
       usersVoted,
       option_votes,
+      encrypted_votes: encrypted_votes.length > 0 ? encrypted_votes : undefined,
+      is_sealed,
     };
   } catch (error) {
     console.error("Error reading VoteRegistry:", error);
     return null;
+  }
+}
+
+/**
+ * Transaction'ın Seal ile şifreli oy verme işlemi olup olmadığını kontrol eder
+ */
+export async function checkIfTransactionIsSealed(
+  client: SuiClient,
+  transactionDigest: string
+): Promise<{
+  isSealed: boolean;
+  functionName?: string;
+  voteRegistryId?: string;
+  encryptedDataLength?: number;
+}> {
+  try {
+    const tx = await client.getTransactionBlock({
+      digest: transactionDigest,
+      options: {
+        showInput: true,
+        showEffects: true,
+        showEvents: true,
+      },
+    });
+
+    // Transaction'daki Move call'ları kontrol et
+    const txData = tx.transaction?.data;
+    if (txData && "transactions" in txData) {
+      const transactions = (txData as any).transactions || [];
+      for (const txn of transactions) {
+        if (txn.kind === "MoveCall") {
+          const moveCall = txn as any;
+          const functionName = moveCall.target?.split("::").pop();
+          
+          // Seal ile şifreli oy verme fonksiyonlarını kontrol et
+          if (functionName === "vote_sealed" || functionName === "vote_sealed_with_nft") {
+            // encrypted_data argument'ını bul
+            const args = moveCall.arguments || [];
+            let encryptedDataLength = 0;
+            let voteRegistryId: string | undefined;
+            
+            // Inputs'u kontrol et
+            const inputs = (txData as any).inputs || [];
+            for (const arg of args) {
+              if (arg.kind === "Input") {
+                const inputIndex = arg.index;
+                if (inputs[inputIndex]) {
+                  const input = inputs[inputIndex];
+                  // encrypted_data bir vector<u8> olmalı
+                  if (input.type === "pure" && Array.isArray(input.value)) {
+                    encryptedDataLength = input.value.length;
+                  }
+                  // VoteRegistry ID'sini bul (object type)
+                  if (input.type === "object" && input.objectId) {
+                    voteRegistryId = input.objectId;
+                  }
+                }
+              }
+            }
+            
+            return {
+              isSealed: true,
+              functionName,
+              voteRegistryId,
+              encryptedDataLength,
+            };
+          }
+        }
+      }
+    }
+
+    return { isSealed: false };
+  } catch (error) {
+    console.error("Error checking transaction:", error);
+    return { isSealed: false };
   }
 }
 
@@ -569,6 +690,192 @@ export function createVoteTransaction(
   });
 
   return tx;
+}
+
+/**
+ * Seal client'ı initialize eder
+ */
+export function createSealClient(client: SuiClient): SealClient {
+  return new SealClient({
+    suiClient: client as any, // Type compatibility workaround
+    serverConfigs: SEAL_KEY_SERVERS.map((id) => ({
+      objectId: id,
+      weight: 1,
+    })),
+    verifyKeyServers: false, // Performance için false, production'da true yapılabilir
+  });
+}
+
+/**
+ * Seal ile şifreli oy verme fonksiyonu - vote_sealed(poll, encrypted_data, voteRegistry) çağırır
+ */
+export async function createSealedVoteTransaction(
+  client: SuiClient,
+  pollId: string,
+  optionIndex: number,
+  voteRegistryId: string
+): Promise<Transaction> {
+  const sealClient = createSealClient(client);
+  
+  // Poll ID'yi identity olarak kullan (bytes olarak)
+  // Convert hex string to bytes - ensure pollId is a string
+  if (!pollId || typeof pollId !== 'string') {
+    throw new Error(`Invalid pollId: ${pollId} (type: ${typeof pollId})`);
+  }
+  
+  const pollIdStr = String(pollId).trim();
+  if (!pollIdStr) {
+    throw new Error("Poll ID is empty");
+  }
+  
+  // Poll ID'yi hex string olarak normalize et - Seal SDK id'yi string olarak bekliyor
+  const pollIdHex = pollIdStr.startsWith("0x") ? pollIdStr : "0x" + pollIdStr;
+  if (!pollIdHex || pollIdHex.length === 0) {
+    throw new Error("Invalid poll ID format");
+  }
+  
+  // Option index'i bytes olarak şifrele (u64 = 8 bytes, little-endian)
+  const optionIndexBytes = new Uint8Array(8);
+  const view = new DataView(optionIndexBytes.buffer);
+  view.setBigUint64(0, BigInt(optionIndex), true); // little-endian
+  
+  // Package ID kontrolü ve normalize etme
+  let packageId = contractConfig.packageId;
+  if (!packageId || typeof packageId !== 'string') {
+    throw new Error(`Invalid packageId: ${packageId} (type: ${typeof packageId})`);
+  }
+  
+  // Package ID'yi normalize et - Seal SDK hex string bekliyor
+  packageId = packageId.trim();
+  if (!packageId.startsWith("0x")) {
+    packageId = "0x" + packageId;
+  }
+  
+  // Seal ile şifrele
+  // Seal SDK expects: packageId as string, id as string (hex), data as Uint8Array
+  try {
+    const { encryptedObject } = await sealClient.encrypt({
+      threshold: SEAL_THRESHOLD,
+      packageId: packageId, // Hex string formatında gönder
+      id: pollIdHex, // Hex string formatında gönder (Seal SDK string bekliyor, Uint8Array değil!)
+      data: optionIndexBytes, // Uint8Array
+    });
+    
+    // BCS serialize edilmiş encrypted object'i al
+    // encryptedObject is a Uint8Array, convert to array
+    const encryptedBytes: number[] = encryptedObject instanceof Uint8Array 
+      ? Array.from(encryptedObject) 
+      : Array.from((encryptedObject as any).toBytes?.() || []);
+    
+    // Transaction oluştur
+    const tx = new Transaction();
+
+    tx.moveCall({
+      target: `${packageId}::${contractConfig.moduleName}::vote_sealed`,
+      arguments: [
+        tx.object(pollIdStr), // Poll object - use the string version
+        tx.pure.u64(optionIndex), // option_index for vote counting
+        tx.pure.vector("u8", encryptedBytes), // encrypted_data
+        tx.object(voteRegistryId), // VoteRegistry
+      ],
+    });
+
+    return tx;
+  } catch (error: any) {
+    console.error("Seal encryption error:", error);
+    throw new Error(`Seal encryption failed: ${error?.message || String(error)}`);
+  }
+}
+
+/**
+ * Seal ile şifreli oy verme fonksiyonu (NFT ile) - vote_sealed_with_nft(poll, encrypted_data, voteRegistry, nft) çağırır
+ */
+export async function createSealedVoteWithNftTransaction(
+  client: SuiClient,
+  pollId: string,
+  optionIndex: number,
+  voteRegistryId: string,
+  nftType: string,
+  nftId: string
+): Promise<Transaction> {
+  const sealClient = createSealClient(client);
+  
+  // Poll ID'yi identity olarak kullan (bytes olarak)
+  // Convert hex string to bytes - ensure pollId is a string
+  if (!pollId || typeof pollId !== 'string') {
+    throw new Error(`Invalid pollId: ${pollId} (type: ${typeof pollId})`);
+  }
+  
+  const pollIdStr = String(pollId).trim();
+  if (!pollIdStr) {
+    throw new Error("Poll ID is empty");
+  }
+  
+  // Poll ID'yi hex string olarak normalize et - Seal SDK id'yi string olarak bekliyor
+  const pollIdHex = pollIdStr.startsWith("0x") ? pollIdStr : "0x" + pollIdStr;
+  if (!pollIdHex || pollIdHex.length === 0) {
+    throw new Error("Invalid poll ID format");
+  }
+  
+  // Option index'i bytes olarak şifrele (u64 = 8 bytes, little-endian)
+  const optionIndexBytes = new Uint8Array(8);
+  const view = new DataView(optionIndexBytes.buffer);
+  view.setBigUint64(0, BigInt(optionIndex), true); // little-endian
+  
+  // Package ID kontrolü ve normalize etme
+  let packageId = contractConfig.packageId;
+  if (!packageId || typeof packageId !== 'string') {
+    throw new Error(`Invalid packageId: ${packageId} (type: ${typeof packageId})`);
+  }
+  
+  // Package ID'yi normalize et - Seal SDK hex string bekliyor
+  packageId = packageId.trim();
+  if (!packageId.startsWith("0x")) {
+    packageId = "0x" + packageId;
+  }
+  
+  // NFT type'ı parse et (örn: "0x...::module::Type")
+  const typeParts = nftType.split("::");
+  if (typeParts.length !== 3) {
+    throw new Error("Invalid NFT type format");
+  }
+  
+  // Seal ile şifrele
+  // Seal SDK expects: packageId as string, id as string (hex), data as Uint8Array
+  try {
+    const { encryptedObject } = await sealClient.encrypt({
+      threshold: SEAL_THRESHOLD,
+      packageId: packageId, // Hex string formatında gönder
+      id: pollIdHex, // Hex string formatında gönder (Seal SDK string bekliyor, Uint8Array değil!)
+      data: optionIndexBytes, // Uint8Array
+    });
+    
+    // BCS serialize edilmiş encrypted object'i al
+    // encryptedObject is a Uint8Array, convert to array
+    const encryptedBytes: number[] = encryptedObject instanceof Uint8Array 
+      ? Array.from(encryptedObject) 
+      : Array.from((encryptedObject as any).toBytes?.() || []);
+    
+    // Transaction oluştur
+    const tx = new Transaction();
+
+    tx.moveCall({
+      target: `${packageId}::${contractConfig.moduleName}::vote_sealed_with_nft`,
+      typeArguments: [nftType],
+      arguments: [
+        tx.object(pollIdStr), // Poll object - use the string version
+        tx.pure.u64(optionIndex), // option_index for vote counting
+        tx.pure.vector("u8", encryptedBytes), // encrypted_data
+        tx.object(voteRegistryId), // VoteRegistry
+        tx.object(nftId), // NFT object
+      ],
+    });
+
+    return tx;
+  } catch (error: any) {
+    console.error("Seal encryption error:", error);
+    throw new Error(`Seal encryption failed: ${error?.message || String(error)}`);
+  }
 }
 
 /**

@@ -45,7 +45,29 @@ const VotePoolPage = () => {
   // Show all defined NFT collections, not just ones with existing polls
   // This ensures all collection buttons are visible even if no polls exist yet
   const allCollectionTypes = NFT_COLLECTIONS.map(col => col.type);
-  const uniqueCollectionTypes = Array.from(new Set([...uniqueCollectionTypesFromPolls, ...allCollectionTypes]));
+  const uniqueCollectionTypesUnsorted = Array.from(new Set([...uniqueCollectionTypesFromPolls, ...allCollectionTypes]));
+  
+  // Sort collections in desired order: Hero, Popkins, Tallys, Pawtato Heroes
+  const collectionOrder = [
+    "0xc6726b1b8f40ed882c5d7b7bb2e6fec36a4f19017dd9354268068473de37464e::hero::Hero", // Hero
+    "0xb908f3c6fea6865d32e2048c520cdfe3b5c5bbcebb658117c41bad70f52b7ccc::popkins_nft::Popkins", // Popkins
+    "0x75888defd3f392d276643932ae204cd85337a5b8f04335f9f912b6291149f423::nft::Tally", // Tallys
+    "0x0000000000000000000000000000000000000000000000000000000000000000::pawtato_heroes::PawtatoHero", // Pawtato Heroes
+  ];
+  
+  const uniqueCollectionTypes = uniqueCollectionTypesUnsorted.sort((a, b) => {
+    const indexA = collectionOrder.indexOf(a);
+    const indexB = collectionOrder.indexOf(b);
+    // If both are in the order list, sort by their position
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB;
+    }
+    // If only one is in the order list, prioritize it
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    // If neither is in the order list, maintain original order
+    return 0;
+  });
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
