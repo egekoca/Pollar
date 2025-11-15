@@ -256,7 +256,7 @@ const VotePoolPage = () => {
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     borderRadius: "16px",
-                    filter: "blur(1.5px)",
+                    filter: "blur(0.7px)",
                     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                     border: "1px solid rgba(255, 255, 255, 0.1)",
                     transform: `rotate(${index * 3 - 3}deg)`,
@@ -289,7 +289,7 @@ const VotePoolPage = () => {
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     borderRadius: "16px",
-                    filter: "blur(1.5px)",
+                    filter: "blur(0.7px)",
                     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                     border: "1px solid rgba(255, 255, 255, 0.1)",
                     transform: `rotate(${index * -3 + 3}deg)`,
@@ -603,6 +603,12 @@ const VotePoolPage = () => {
             const isPopkins = poolCollection?.name === "Popkins";
             const isTallys = poolCollection?.name === "Tallys";
             
+            // Check if poll is active
+            const now = new Date();
+            const startDate = new Date(pool.startTime);
+            const endDate = new Date(pool.endTime);
+            const isActive = now >= startDate && now <= endDate;
+            
             // Glow colors based on collection
             const glowColor = isPopkins 
               ? "rgba(255, 165, 0, 0.3), rgba(50, 205, 50, 0.3)" // Orange-Green for Popkins
@@ -632,6 +638,23 @@ const VotePoolPage = () => {
                     : undefined,
                 }}
               >
+                {/* Active/Inactive Status Badge - Top Left (Just Dot) */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "0.5rem",
+                    left: "0.5rem",
+                    zIndex: 10,
+                    width: "10px",
+                    height: "10px",
+                    borderRadius: "50%",
+                    background: isActive ? "#22c55e" : "#ef4444",
+                    boxShadow: `0 0 8px ${isActive ? "#22c55e" : "#ef4444"}, 0 0 16px ${isActive ? "rgba(34, 197, 94, 0.8)" : "rgba(239, 68, 68, 0.8)"}`,
+                    animation: isActive ? "pulse 2s ease-in-out infinite" : "none",
+                    border: `2px solid ${isActive ? "#16a34a" : "#dc2626"}`,
+                  }}
+                />
+
                 {/* NFT Collection Badge - Ribbon Style Top Right */}
                 {(isPopkins || isTallys) && (
                   <div
