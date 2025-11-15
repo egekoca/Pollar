@@ -44,6 +44,16 @@
   }
 }
 
+/* Spin Animation for Loading */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -228,6 +238,17 @@ img {
   
   .card {
     border-radius: 0.5rem;
+  }
+}
+
+/* Voting Page Layout Responsive */
+.voting-layout-responsive {
+  grid-template-columns: 2fr 1fr !important;
+}
+
+@media (max-width: 1024px) {
+  .voting-layout-responsive {
+    grid-template-columns: 1fr !important;
   }
 }
 

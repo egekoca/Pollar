@@ -459,8 +459,8 @@ const VotingPage = () => {
               Loading...
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: "clamp(0.85rem, 1.5vw, 0.9rem)" }}>
-              Poll ID: {id}
-            </p>
+            Poll ID: {id}
+          </p>
           </div>
         </div>
       </div>
@@ -933,19 +933,97 @@ const VotingPage = () => {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 400px), 1fr))", gap: "clamp(1rem, 3vw, 2rem)" }}>
-          {/* Voting Options */}
-          <div className="card">
+        <div 
+          className="voting-layout-responsive"
+          style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "clamp(1.5rem, 3vw, 2rem)", alignItems: "start" }}
+        >
+          {/* Chart - Left Section */}
+          <div className="card" style={{
+            background: "linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(27, 27, 27, 0.95) 100%)",
+            border: "1px solid rgba(96, 165, 250, 0.2)",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(96, 165, 250, 0.1)",
+          }}>
+            <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
             <h3
               style={{
                 fontSize: "clamp(1.5rem, 3vw, 1.75rem)",
-                fontWeight: "600",
-                marginBottom: "clamp(1rem, 2.5vw, 1.5rem)",
+                  fontWeight: "700",
+                  marginBottom: "0.5rem",
                 color: "var(--text-primary)",
-              }}
-            >
-              Cast Your Vote
-            </h3>
+                  background: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                Voting Trends
+              </h3>
+              <p style={{ color: "var(--text-muted)", fontSize: "clamp(0.9rem, 1.5vw, 1rem)" }}>
+                Track how votes have changed over time
+              </p>
+            </div>
+            <div style={{
+              background: "rgba(0, 0, 0, 0.2)",
+              borderRadius: "0.75rem",
+              padding: "1rem",
+              border: "1px solid rgba(255, 255, 255, 0.05)",
+            }}>
+              <ResponsiveContainer width="100%" height={350}>
+                <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                  <CartesianGrid 
+                    strokeDasharray="3 3" 
+                    stroke="rgba(255, 255, 255, 0.1)" 
+                    strokeOpacity={0.3}
+                  />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="var(--text-secondary)"
+                    style={{ fontSize: "0.875rem" }}
+                    tick={{ fill: "var(--text-muted)" }}
+                  />
+                  <YAxis 
+                    stroke="var(--text-secondary)" 
+                    domain={[0, 100]}
+                    style={{ fontSize: "0.875rem" }}
+                    tick={{ fill: "var(--text-muted)" }}
+                    label={{ value: "Percentage (%)", angle: -90, position: "insideLeft", fill: "var(--text-muted)", style: { fontSize: "0.875rem" } }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(27, 27, 27, 0.95)",
+                      border: "1px solid rgba(96, 165, 250, 0.3)",
+                      borderRadius: "0.75rem",
+                      color: "var(--text-primary)",
+                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+                      padding: "0.75rem 1rem",
+                    }}
+                    labelStyle={{ color: "var(--text-primary)", fontWeight: "600", marginBottom: "0.5rem" }}
+                    itemStyle={{ color: "var(--text-secondary)", padding: "0.25rem 0" }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: "1rem" }}
+                    iconType="line"
+                    formatter={(value) => <span style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}>{value}</span>}
+                  />
+                  {localPool.options.map((option, index) => (
+                    <Line
+                      key={option.id}
+                      type="monotone"
+                      dataKey={option.name}
+                      stroke={colors[index % colors.length]}
+                      strokeWidth={3}
+                      dot={{ fill: colors[index % colors.length], r: 5, strokeWidth: 2, stroke: "rgba(0, 0, 0, 0.2)" }}
+                      activeDot={{ r: 7, stroke: colors[index % colors.length], strokeWidth: 2, fill: "#fff" }}
+                      strokeDasharray={index === 0 ? "0" : "5 5"}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Voting Options - Right Section */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "clamp(1.5rem, 3vw, 2rem)" }}>
             {!account?.address && (
               <div
                 style={{
@@ -954,7 +1032,6 @@ const VotingPage = () => {
                   border: "1px solid rgba(59, 130, 246, 0.3)",
                   borderRadius: "0.5rem",
                   color: "var(--color-light-blue)",
-                  marginBottom: "1rem",
                   fontSize: "0.9rem",
                 }}
               >
@@ -969,7 +1046,6 @@ const VotingPage = () => {
                   border: "1px solid rgba(251, 191, 36, 0.3)",
                   borderRadius: "0.5rem",
                   color: "#fbbf24",
-                  marginBottom: "1rem",
                   fontSize: "0.9rem",
                 }}
               >
@@ -984,7 +1060,6 @@ const VotingPage = () => {
                   border: "1px solid rgba(239, 68, 68, 0.3)",
                   borderRadius: "0.5rem",
                   color: "#ef4444",
-                  marginBottom: "1rem",
                 }}
               >
                 {error}
@@ -999,7 +1074,6 @@ const VotingPage = () => {
                   background: "rgba(59, 130, 246, 0.1)",
                   border: "1px solid rgba(59, 130, 246, 0.3)",
                   borderRadius: "0.5rem",
-                  marginBottom: "1rem",
                 }}
               >
                 <div style={{ fontSize: "0.9rem", color: "var(--text-primary)", marginBottom: "0.5rem", fontWeight: "600" }}>
@@ -1033,8 +1107,38 @@ const VotingPage = () => {
               </div>
             )}
             
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              {localPool.options.map((option, index) => (
+            <div style={{ 
+              display: "flex", 
+              flexDirection: "column",
+              gap: "1rem" 
+            }}>
+              {localPool.options.map((option, index) => {
+                const isSelected = selectedOption === index;
+                const isDisabled = !account?.address || isVoting || hasVoted;
+                
+                // Calculate percentage difference for color logic
+                const maxPercentage = Math.max(...localPool.options.map(opt => opt.percentage));
+                const minPercentage = Math.min(...localPool.options.map(opt => opt.percentage));
+                const percentageDiff = maxPercentage - option.percentage;
+                const totalDiff = maxPercentage - minPercentage;
+                
+                // Color logic: açık ara öndeki yeşil, gerideki kırmızı, denkse turuncu
+                let percentageColor = "#60a5fa"; // default blue
+                if (totalDiff > 0) {
+                  const diffRatio = percentageDiff / totalDiff;
+                  if (diffRatio === 0) {
+                    // Açık ara öndeki
+                    percentageColor = "#10b981"; // green
+                  } else if (diffRatio > 0.3) {
+                    // Gerideki
+                    percentageColor = "#ef4444"; // red
+                  } else {
+                    // Denkse (yakın)
+                    percentageColor = "#f59e0b"; // orange/amber
+                  }
+                }
+                
+                return (
                 <div
                   key={option.id}
                   onClick={() => {
@@ -1051,38 +1155,72 @@ const VotingPage = () => {
                     }
                   }}
                   style={{
-                    padding: "1.5rem",
-                    background: selectedOption === index ? "var(--bg-secondary)" : "var(--bg-card)",
-                    border:
-                      selectedOption === index
-                        ? "2px solid var(--color-light-blue)"
-                        : "1px solid var(--border-color)",
-                    borderRadius: "0.75rem",
-                    cursor: !account?.address || isVoting || hasVoted ? "not-allowed" : "pointer",
-                    opacity: !account?.address || isVoting || hasVoted ? 0.6 : 1,
-                    transition: "all 0.3s ease",
+                    padding: "1.25rem",
+                    background: isSelected 
+                      ? "linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%)"
+                      : "rgba(27, 27, 27, 0.6)",
+                    border: isSelected
+                      ? "2px solid rgba(96, 165, 250, 0.6)"
+                      : "1px solid rgba(255, 255, 255, 0.1)",
+                    borderRadius: "0.875rem",
+                    cursor: isDisabled ? "not-allowed" : "pointer",
+                    opacity: isDisabled ? 0.6 : 1,
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    position: "relative",
+                    overflow: "hidden",
+                    boxShadow: isSelected 
+                      ? "0 4px 20px rgba(96, 165, 250, 0.3), 0 0 0 1px rgba(96, 165, 250, 0.2)"
+                      : "0 2px 8px rgba(0, 0, 0, 0.2)",
                   }}
                   onMouseEnter={(e) => {
-                    if (!account?.address || isVoting || hasVoted) return;
-                    if (selectedOption !== index) {
-                      e.currentTarget.style.borderColor = "var(--color-navy-light)";
+                    if (isDisabled) return;
+                    if (!isSelected) {
+                      e.currentTarget.style.borderColor = "rgba(96, 165, 250, 0.5)";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 6px 20px rgba(96, 165, 250, 0.25)";
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (selectedOption !== index) {
-                      e.currentTarget.style.borderColor = selectedOption === index ? "var(--color-light-blue)" : "var(--border-color)";
+                    if (!isSelected) {
+                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.2)";
                     }
                   }}
                 >
+                  {/* Selected Indicator */}
+                  {isSelected && (
+                    <div style={{
+                      position: "absolute",
+                      top: "0.75rem",
+                      right: "0.75rem",
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      zIndex: 1,
+                      boxShadow: "0 0 10px rgba(96, 165, 250, 0.6)",
+                    }}>
+                      <span style={{ color: "#fff", fontSize: "0.875rem" }}>✓</span>
+                    </div>
+                  )}
+
+                  {/* Option Header with Image and Info */}
+                  <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", alignItems: "flex-start" }}>
                   {option.image && (
                     <div
                       style={{
-                        width: "100%",
-                        height: "150px",
-                        borderRadius: "0.5rem",
-                        marginBottom: "1rem",
+                          width: "80px",
+                          height: "80px",
+                          minWidth: "80px",
+                          borderRadius: "0.75rem",
                         overflow: "hidden",
                         background: "var(--bg-secondary)",
+                          border: "1px solid rgba(255, 255, 255, 0.1)",
+                          flexShrink: 0,
                       }}
                     >
                       <img
@@ -1092,106 +1230,127 @@ const VotingPage = () => {
                           width: "100%",
                           height: "100%",
                           objectFit: "cover",
+                            transition: "transform 0.3s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isDisabled) {
+                              e.currentTarget.style.transform = "scale(1.1)";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "scale(1)";
                         }}
                       />
                     </div>
                   )}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                    
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem", gap: "1rem" }}>
                     <h4
                       style={{
                         fontSize: "clamp(1.1rem, 2vw, 1.25rem)",
-                        fontWeight: "600",
+                            fontWeight: "700",
                         color: "var(--text-primary)",
+                            flex: 1,
+                            lineHeight: "1.3",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
                       }}
                     >
                       {option.name}
                     </h4>
+                        <div style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: "0.25rem",
+                          flexShrink: 0,
+                        }}>
                     <span
                       style={{
-                        fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)",
-                        fontWeight: "bold",
-                        color: "var(--color-light-blue)",
+                              fontSize: "clamp(1.5rem, 3vw, 2rem)",
+                              fontWeight: "800",
+                              color: percentageColor,
+                              lineHeight: "1",
                       }}
                     >
                       {option.percentage.toFixed(1)}%
                     </span>
+                          <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                            {option.voteCount.toLocaleString()} {option.voteCount === 1 ? "vote" : "votes"}
                   </div>
+                        </div>
+                      </div>
+                      
+                      {/* Enhanced Progress Bar */}
                   <div
                     style={{
                       height: "10px",
-                      background: "var(--bg-secondary)",
-                      borderRadius: "5px",
+                          background: "rgba(255, 255, 255, 0.05)",
+                          borderRadius: "9999px",
                       overflow: "hidden",
-                      marginBottom: "0.5rem",
+                          position: "relative",
+                          border: "1px solid rgba(255, 255, 255, 0.1)",
                     }}
                   >
                     <div
                       style={{
                         width: `${option.percentage}%`,
                         height: "100%",
-                        background: `linear-gradient(90deg, ${colors[index % colors.length]} 0%, var(--color-light-blue) 100%)`,
-                        transition: "width 0.5s ease",
+                        background: `linear-gradient(90deg, ${percentageColor} 0%, ${percentageColor}CC 100%)`,
+                        transition: "width 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+                        borderRadius: "9999px",
+                        boxShadow: `0 0 8px ${percentageColor}40, inset 0 1px 0 rgba(255, 255, 255, 0.2)`,
+                        position: "relative",
                       }}
-                    />
+                    >
+                          {/* Shine effect */}
+                          <div style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: "50%",
+                            background: "linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 100%)",
+                            borderRadius: "9999px",
+                          }} />
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontSize: "0.9rem", color: "var(--text-muted)" }}>
-                      {option.voteCount.toLocaleString()} {option.voteCount === 1 ? "vote" : "votes"}
                     </div>
+                    </div>
+                  </div>
+                  
+                  {/* Status Messages */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: "1.5rem" }}>
+                    <div style={{ flex: 1 }} />
                     {!account?.address && (
-                      <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontStyle: "italic" }}>
+                      <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontStyle: "italic" }}>
                         Connect wallet to vote
                       </div>
                     )}
-                    {isVoting && selectedOption === index && (
-                      <div style={{ fontSize: "0.75rem", color: "var(--color-light-blue)" }}>
+                    {isVoting && isSelected && (
+                      <div style={{ 
+                        fontSize: "0.8rem", 
+                        color: "#60a5fa",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                      }}>
+                        <div style={{
+                          width: "12px",
+                          height: "12px",
+                          border: "2px solid #60a5fa",
+                          borderTopColor: "transparent",
+                          borderRadius: "50%",
+                          animation: "spin 0.8s linear infinite",
+                        }} />
                         Processing...
                       </div>
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
-          </div>
-
-          {/* Chart */}
-          <div className="card">
-            <h3
-              style={{
-                fontSize: "clamp(1.5rem, 3vw, 1.75rem)",
-                fontWeight: "600",
-                marginBottom: "clamp(1rem, 2.5vw, 1.5rem)",
-                color: "var(--text-primary)",
-              }}
-            >
-              Voting Trends
-            </h3>
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                <XAxis dataKey="date" stroke="var(--text-secondary)" />
-                <YAxis stroke="var(--text-secondary)" domain={[0, 100]} />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--bg-card)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "0.5rem",
-                    color: "var(--text-primary)",
-                  }}
-                />
-                <Legend />
-                {localPool.options.map((option, index) => (
-                  <Line
-                    key={option.id}
-                    type="monotone"
-                    dataKey={option.name}
-                    stroke={colors[index % colors.length]}
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
           </div>
         </div>
       </main>
