@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { contractConfig } from "../config/contractConfig";
-import { findPollRegistry } from "../utils/blockchain";
+import { findPollRegistry, getUserNftsByType } from "../utils/blockchain";
 import { NFT_COLLECTIONS } from "../config/nftCollections";
 import "../styles/theme.css";
 
@@ -44,6 +44,55 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
     { name: "", image: "" },
   ]);
   const [error, setError] = useState<string>("");
+  const [userOwnsNft, setUserOwnsNft] = useState<boolean>(true); // Default true for public polls
+  const [checkingNft, setCheckingNft] = useState<boolean>(false);
+  const [nftOwnershipError, setNftOwnershipError] = useState<string>("");
+
+  // Check NFT ownership when collection is selected
+  useEffect(() => {
+    const checkNftOwnership = async () => {
+      // Reset states
+      setUserOwnsNft(true);
+      setNftOwnershipError("");
+
+      // If public poll, no need to check
+      if (selectedCollection === "public" || !formData.nftCollectionType) {
+        setUserOwnsNft(true);
+        return;
+      }
+
+      // If no account, can't check
+      if (!account?.address) {
+        setUserOwnsNft(false);
+        setNftOwnershipError("Please connect your wallet to create an NFT-gated poll.");
+        return;
+      }
+
+      // Check NFT ownership
+      setCheckingNft(true);
+      try {
+        const nfts = await getUserNftsByType(client, account.address, formData.nftCollectionType);
+        if (nfts.length === 0) {
+          setUserOwnsNft(false);
+          const collection = NFT_COLLECTIONS.find((col) => col.name === selectedCollection);
+          setNftOwnershipError(
+            `You don't own any ${selectedCollection} NFTs. You must own at least one ${selectedCollection} NFT to create a poll for this collection.`
+          );
+        } else {
+          setUserOwnsNft(true);
+          setNftOwnershipError("");
+        }
+      } catch (error) {
+        console.error("Error checking NFT ownership:", error);
+        setUserOwnsNft(false);
+        setNftOwnershipError("Error checking NFT ownership. Please try again.");
+      } finally {
+        setCheckingNft(false);
+      }
+    };
+
+    checkNftOwnership();
+  }, [selectedCollection, formData.nftCollectionType, account?.address, client]);
 
   if (!isOpen) return null;
 
@@ -89,6 +138,21 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
     if (new Date(formData.startTime) >= new Date(formData.endTime)) {
       setError("End time must be after start time");
       return;
+    }
+
+    // Check NFT ownership if NFT-gated poll
+    if (selectedCollection !== "public" && formData.nftCollectionType) {
+      if (!userOwnsNft) {
+        const collection = NFT_COLLECTIONS.find((col) => col.name === selectedCollection);
+        setError(
+          `You don't own any ${selectedCollection} NFTs. You must own at least one ${selectedCollection} NFT to create a poll for this collection.`
+        );
+        return;
+      }
+      if (checkingNft) {
+        setError("Please wait while we verify your NFT ownership...");
+        return;
+      }
     }
 
     // Check if package ID is configured
@@ -528,6 +592,31 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
                 ? "Anyone can vote in this poll."
                 : `Only ${selectedCollection} NFT holders can vote in this poll.`}
             </p>
+            {checkingNft && selectedCollection !== "public" && (
+              <p style={{ fontSize: "0.85rem", color: "var(--color-light-blue)", marginTop: "0.5rem" }}>
+                Checking NFT ownership...
+              </p>
+            )}
+            {nftOwnershipError && (
+              <div
+                style={{
+                  marginTop: "0.5rem",
+                  padding: "0.75rem",
+                  background: "rgba(239, 68, 68, 0.1)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  borderRadius: "0.5rem",
+                  color: "#ef4444",
+                  fontSize: "0.85rem",
+                }}
+              >
+                {nftOwnershipError}
+              </div>
+            )}
+            {userOwnsNft && selectedCollection !== "public" && !checkingNft && (
+              <p style={{ fontSize: "0.85rem", color: "#10b981", marginTop: "0.5rem" }}>
+                ✓ You own {selectedCollection} NFT(s). You can create this poll.
+              </p>
+            )}
           </div>
 
           {/* Date Times */}
@@ -603,10 +692,13 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
             <button 
               type="submit" 
               className="button button-primary"
-              disabled={isPending}
-              style={{ cursor: isPending ? "not-allowed" : "pointer" }}
+              disabled={isPending || checkingNft || (!userOwnsNft && selectedCollection !== "public")}
+              style={{ 
+                cursor: (isPending || checkingNft || (!userOwnsNft && selectedCollection !== "public")) ? "not-allowed" : "pointer",
+                opacity: (isPending || checkingNft || (!userOwnsNft && selectedCollection !== "public")) ? 0.6 : 1
+              }}
             >
-              {isPending ? "Creating..." : "Create Pool"}
+              {isPending ? "Creating..." : checkingNft ? "Checking NFT..." : "Create Pool"}
             </button>
           </div>
         </form>
