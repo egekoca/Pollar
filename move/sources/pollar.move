@@ -78,7 +78,8 @@ public struct UserMinted has copy, drop
 
 // Poll holds metadata for a poll: title, description, media, date strings,
 // and the list of PollOption objects available for voting.
-public struct Poll has key, store 
+// Poll is a shared object so anyone can read it and vote on it.
+public struct Poll has key 
 {
     id: UID,
     name: String,
@@ -87,6 +88,7 @@ public struct Poll has key, store
     start_date: String,
     end_date: String,
     options: vector<PollOption>,
+    creator: address, // Address of the poll creator
 }
 
 // Event payload emitted when a Poll is minted. Contains the Poll ID and the
@@ -107,12 +109,12 @@ public struct PollOption has key, store
 }
 
 // UserVote is a legacy object representing a user's vote, retained for
-// backwards compatibility. It stores the User, Poll, and selected PollOption.
+// backwards compatibility. Since Poll is now shared, we store poll_id instead of Poll.
 public struct UserVote has key, store 
 {
     id: UID,
     user: User,
-    poll: Poll,
+    poll_id: ID, // Changed from Poll to ID since Poll is now shared
     poll_option: PollOption
 }
 
@@ -152,7 +154,8 @@ public fun create_poll(name: String, description: String, image_url: String, sta
         image_url,
         start_date,
         end_date,
-        options
+        options,
+        creator: ctx.sender(), // Store creator address
     };
     poll
 }
@@ -169,13 +172,16 @@ public fun create_user(name: String, icon_url: String, ctx: &mut TxContext): Use
     user
 }
 
-public fun create_user_vote(poll: Poll, poll_option: PollOption, user: User, ctx: &mut TxContext): UserVote
+// NOTE: This function has been updated to work with shared Poll objects.
+// It now stores poll_id instead of the Poll object itself.
+public fun create_user_vote(poll: &Poll, poll_option: PollOption, user: User, ctx: &mut TxContext): UserVote
 {
+    let poll_id = object::id(poll);
     let userVote = UserVote 
     {
         id: object::new(ctx),
         user,
-        poll,
+        poll_id, // Store poll ID instead of Poll object
         poll_option
     };
     userVote
@@ -228,7 +234,9 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
 
     df::add(&mut pollRegistry.id, inner_id, object::id(&voteRegistry));
     event::emit(PollMinted{ poll: inner_id, owner: ctx.sender() });
-    transfer::transfer(poll, ctx.sender());
+    
+    // Make Poll a shared object so anyone can read it and vote on it
+    transfer::share_object(poll);
     transfer::share_object(voteRegistry);
 }
 
@@ -303,9 +311,12 @@ public entry fun vote(
 }
 
 // Eski karmaşık oy verme fonksiyonu - geriye dönük uyumluluk için korundu
-public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User, voteRegistry: &mut VoteRegistry, ctx: &mut TxContext)
+// NOTE: This function requires owned Poll, but Poll is now shared.
+// This function may not work correctly with shared Poll objects.
+// Use the simple vote() function instead.
+public entry fun mint_user_vote(poll: &Poll, poll_option: PollOption, user: User, voteRegistry: &mut VoteRegistry, ctx: &mut TxContext)
 {
-    let poll_id = object::id(&poll);
+    let poll_id = object::id(poll);
     let inner_user_id = object::id(&user);
     let inner_poll_option_id = object::id(&poll_option);
 
@@ -331,6 +342,9 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
         i = i + 1;
     };
     assert!(option_exists, EInvalidPollOption);
+    
+    // Note: Since Poll is now shared, we cannot transfer it to create UserVote.
+    // This legacy function may need to be refactored or removed.
 
     // 4. Check whether the user has already voted (by wallet address)
     let voter = ctx.sender();
@@ -386,18 +400,22 @@ public entry fun mint_user_vote(poll: Poll, poll_option: PollOption, user: User,
     transfer::transfer(user_vote, ctx.sender());
 }
 
-public entry fun delete_poll(poll: Poll, ctx: &mut TxContext)
-{
-    let Poll { id, name: _, description: _, image_url: _, start_date: _, end_date: _, options: mut options } = poll;
-    while (!vector::is_empty(&options)) 
-    {
-        let pollOption = vector::pop_back(&mut options);
-        let PollOption { id: pid, name: _, image_url: _ } = pollOption;
-        object::delete(pid);
-    };
-    vector::destroy_empty(options);
-    object::delete(id);
-}
+// Note: Poll is now a shared object, so it cannot be deleted.
+// Shared objects in Sui are permanent and cannot be deleted.
+// If you need to mark a poll as closed, consider adding a 'closed' or 'active' field to the Poll struct.
+// This function is kept for backward compatibility but will not work with shared Poll objects.
+// public entry fun delete_poll(poll: Poll, ctx: &mut TxContext)
+// {
+//     let Poll { id, name: _, description: _, image_url: _, start_date: _, end_date: _, options: mut options, creator: _ } = poll;
+//     while (!vector::is_empty(&options)) 
+//     {
+//         let pollOption = vector::pop_back(&mut options);
+//         let PollOption { id: pid, name: _, image_url: _ } = pollOption;
+//         object::delete(pid);
+//     };
+//     vector::destroy_empty(options);
+//     object::delete(id);
+// }
 
 public entry fun delete_user(user: User, ctx: &mut TxContext)
 {
