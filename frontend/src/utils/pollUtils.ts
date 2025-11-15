@@ -13,6 +13,7 @@ export async function convertBlockchainPollToVotePool(
   blockchainPoll: {
     pollId: string;
     owner: string;
+    creator?: string; // Optional creator field
     name: string;
     description: string;
     image_url: string;

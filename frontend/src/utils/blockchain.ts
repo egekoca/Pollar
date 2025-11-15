@@ -71,6 +71,7 @@ export async function getAllPolls(client: SuiClient): Promise<
   Array<{
     pollId: string;
     owner: string;
+    creator: string; // Address of the poll creator
     name: string;
     description: string;
     image_url: string;
@@ -102,6 +103,7 @@ export async function getAllPolls(client: SuiClient): Promise<
     const polls: Array<{
       pollId: string;
       owner: string;
+      creator: string;
       name: string;
       description: string;
       image_url: string;
@@ -165,6 +167,7 @@ export async function getAllPolls(client: SuiClient): Promise<
             polls.push({
               pollId,
               owner: pollMinted.owner,
+              creator: fields.creator || pollMinted.owner, // Creator field, fallback to owner
               name: fields.name || "",
               description: fields.description || "",
               image_url: fields.image_url || "",
@@ -196,6 +199,7 @@ export async function getPollById(
 ): Promise<{
   pollId: string;
   owner: string;
+  creator: string; // Address of the poll creator
   name: string;
   description: string;
   image_url: string;
@@ -246,6 +250,7 @@ export async function getPollById(
       return {
         pollId,
         owner,
+        creator: fields.creator || owner, // Creator field, fallback to owner
         name: fields.name || "",
         description: fields.description || "",
         image_url: fields.image_url || "",
@@ -625,6 +630,196 @@ export async function getUserNftsByType(
     })).filter((obj) => obj.objectId && obj.type);
   } catch (error) {
     console.error("Error getting user NFTs:", error);
+    return [];
+  }
+}
+
+/**
+ * Kullanıcının attığı oyları getirir
+ * Not: vote() ve vote_with_nft() fonksiyonları UserVote object'i oluşturmuyor,
+ * bu yüzden tüm poll'ları kontrol edip VoteRegistry'den kullanıcının oylarını buluyoruz
+ */
+export async function getUserVotes(
+  client: SuiClient,
+  userAddress: string
+): Promise<Array<{
+  pollId: string;
+  pollName: string;
+  pollImage: string;
+  optionName: string;
+  optionIndex: number;
+}>> {
+  try {
+    const packageId = contractConfig.packageId;
+    if (!packageId) {
+      console.log("Package ID not configured");
+      return [];
+    }
+
+    console.log("Getting user votes for address:", userAddress);
+
+    // Önce UserVote object'lerini kontrol et (mint_user_vote kullanılmışsa)
+    const userVoteType = `${packageId}::${contractConfig.moduleName}::UserVote`;
+    let ownedUserVotes: Array<{
+      pollId: string;
+      pollName: string;
+      pollImage: string;
+      optionName: string;
+      optionIndex: number;
+    }> = [];
+
+    try {
+      const ownedObjects = await client.getOwnedObjects({
+        owner: userAddress,
+        filter: {
+          StructType: userVoteType,
+        },
+        options: {
+          showContent: true,
+          showType: true,
+        },
+      });
+
+      console.log(`Found ${ownedObjects.data.length} UserVote objects`);
+
+      for (const obj of ownedObjects.data) {
+        if (obj.data?.content && "fields" in obj.data.content) {
+          const fields = (obj.data.content as any).fields;
+          
+          // poll_id'yi al
+          let pollId = "";
+          if (fields.poll_id) {
+            if (typeof fields.poll_id === "string") {
+              pollId = fields.poll_id;
+            } else if (fields.poll_id.id) {
+              pollId = typeof fields.poll_id.id === "string" 
+                ? fields.poll_id.id 
+                : (fields.poll_id.id.id || "");
+            }
+          }
+
+          if (!pollId) {
+            console.log("Skipping UserVote - no poll_id");
+            continue;
+          }
+
+          // Poll bilgilerini al
+          const poll = await getPollById(client, pollId);
+          if (!poll) {
+            console.log(`Poll not found for ID: ${pollId}`);
+            continue;
+          }
+
+          // poll_option bilgisini al
+          let optionName = "Unknown";
+          let optionIndex = -1;
+          
+          if (fields.poll_option && typeof fields.poll_option === "object" && "fields" in fields.poll_option) {
+            const optionFields = fields.poll_option.fields;
+            optionName = optionFields.name || "Unknown";
+            
+            // Poll'daki seçenekler arasında bu seçeneği bul
+            optionIndex = poll.options.findIndex(opt => opt.name === optionName);
+          }
+
+          ownedUserVotes.push({
+            pollId,
+            pollName: poll.name,
+            pollImage: poll.image_url,
+            optionName,
+            optionIndex,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error getting UserVote objects:", error);
+    }
+
+    // Şimdi tüm poll'ları al ve VoteRegistry'den kullanıcının oylarını kontrol et
+    const allPolls = await getAllPolls(client);
+    console.log(`Found ${allPolls.length} total polls`);
+
+    const votesFromRegistry: Array<{
+      pollId: string;
+      pollName: string;
+      pollImage: string;
+      optionName: string;
+      optionIndex: number;
+    }> = [];
+
+    // Her poll için VoteRegistry'yi kontrol et
+    for (const poll of allPolls) {
+      // Bu poll için zaten UserVote object'i varsa atla
+      if (ownedUserVotes.some(v => v.pollId === poll.pollId)) {
+        continue;
+      }
+
+      try {
+        const voteRegistryId = await findVoteRegistryByPollId(client, poll.pollId);
+        if (!voteRegistryId) {
+          continue;
+        }
+
+        const voteData = await getVoteRegistry(client, voteRegistryId);
+        if (!voteData) {
+          continue;
+        }
+
+        // Kullanıcı bu poll'a oy vermiş mi?
+        const userHasVoted = voteData.usersVoted.some(
+          (addr: string) => addr.toLowerCase() === userAddress.toLowerCase()
+        );
+
+        if (!userHasVoted) {
+          continue;
+        }
+
+        // Kullanıcının hangi seçeneğe oy verdiğini bulmak için:
+        // VoteRegistry'de usersVoted array'indeki index'i kullanarak option_votes array'indeki artışı bulamayız
+        // Çünkü bu bilgi VoteRegistry'de yok. 
+        // Alternatif: Event'lerden option_index bilgisini almayı deneyelim
+        // Veya sadece poll bilgilerini gösterelim, seçenek bilgisi olmadan
+
+        // Şimdilik "Voted" olarak gösterelim, seçenek bilgisini event'lerden almaya çalışalım
+        votesFromRegistry.push({
+          pollId: poll.pollId,
+          pollName: poll.name,
+          pollImage: poll.image_url,
+          optionName: "Voted", // Seçenek bilgisi VoteRegistry'de yok
+          optionIndex: -1,
+        });
+      } catch (error) {
+        console.error(`Error checking poll ${poll.pollId}:`, error);
+        continue;
+      }
+    }
+
+    // UserVoteMinted event'lerini kontrol et - option_index bilgisi için
+    try {
+      const events = await client.queryEvents({
+        query: {
+          MoveEventType: `${packageId}::${contractConfig.moduleName}::UserVoteMinted`,
+        },
+        limit: 1000,
+        order: "descending",
+      });
+
+      console.log(`Found ${events.data.length} UserVoteMinted events`);
+
+      // Event'lerden kullanıcının oylarını bul ve seçenek bilgisini güncelle
+      // Not: Event'lerde option_index bilgisi yok, bu yüzden sadece poll ID'si var
+      // Bu yüzden event'lerden seçenek bilgisini alamıyoruz
+    } catch (error) {
+      console.error("Error querying events:", error);
+    }
+
+    // UserVote object'leri varsa onları kullan, yoksa VoteRegistry'den gelenleri kullan
+    const allVotes = ownedUserVotes.length > 0 ? ownedUserVotes : votesFromRegistry;
+    
+    console.log(`Returning ${allVotes.length} votes`);
+    return allVotes;
+  } catch (error) {
+    console.error("Error getting user votes:", error);
     return [];
   }
 }
