@@ -75,6 +75,28 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
       overlayOpacity: 0.12,
     },
   },
+  {
+    name: "Pawtato Heroes",
+    type: "0x0000000000000000000000000000000000000000000000000000000000000000::pawtato_heroes::PawtatoHero", // TODO: Update with actual type
+    packageId: "0x0000000000000000000000000000000000000000000000000000000000000000", // TODO: Update with actual package ID
+    moduleName: "pawtato_heroes",
+    structName: "PawtatoHero",
+    description: "Pawtato Heroes NFT Collection",
+    theme: {
+      backgroundGradient: "linear-gradient(180deg, #1a2e1a 0%, #2d4a2d 30%, #1a3d1a 60%, #1a2e1a 100%)",
+      backgroundImages: [
+        "https://img.tradeport.gg/?url=https%3A%2F%2Fimg.pawtato.app%2Fhero%2F25233.png&profile=d8b9bf7b-5f08-4b49-8bbf-81871e35c8ea&mime-type=png",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Fimg.pawtato.app%2Fhero%2F28879.png&profile=d8b9bf7b-5f08-4b49-8bbf-81871e35c8ea&mime-type=png",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Fimg.pawtato.app%2Fhero%2F13915.png&profile=d8b9bf7b-5f08-4b49-8bbf-81871e35c8ea&mime-type=png",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Fimg.pawtato.app%2Fhero%2F29310.png&profile=d8b9bf7b-5f08-4b49-8bbf-81871e35c8ea&mime-type=png",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Fimg.pawtato.app%2Fhero%2F18083.png&profile=d8b9bf7b-5f08-4b49-8bbf-81871e35c8ea&mime-type=png",
+        "https://img.tradeport.gg/?url=https%3A%2F%2Fimg.pawtato.app%2Fhero%2F22331.png&profile=d8b9bf7b-5f08-4b49-8bbf-81871e35c8ea&mime-type=png",
+      ],
+      primaryColor: "#84cc16", // Lime green for potato theme
+      secondaryColor: "#a3e635",
+      overlayOpacity: 0.12,
+    },
+  },
 ];
 
 // Helper function to get collection by type
