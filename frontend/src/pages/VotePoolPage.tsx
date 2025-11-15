@@ -472,7 +472,7 @@ const VotePoolPage = () => {
                   background: hasImage ? "transparent" : (isSelected ? "var(--color-light-blue)" : "transparent"),
                   color: hasImage ? "transparent" : (isSelected ? "#000000" : "var(--text-primary)"),
                   border: hasImage ? "none" : "1.5px solid var(--color-light-blue)",
-                  borderRadius: "0.5rem",
+                  borderRadius: hasImage ? "1rem" : "0.5rem",
                   fontWeight: "600",
                   cursor: "pointer",
                   transition: "all 0.3s ease",
@@ -481,6 +481,14 @@ const VotePoolPage = () => {
                   justifyContent: "center",
                   opacity: hasImage && isSelected ? 1 : (hasImage ? 0.7 : 1),
                   transform: hasImage && isSelected ? "scale(1.05)" : "scale(1)",
+                  boxShadow: hasImage && isSelected 
+                    ? (isPopkins 
+                        ? "0 0 20px rgba(255, 140, 0, 0.8), 0 0 40px rgba(255, 165, 0, 0.6), 0 0 60px rgba(255, 140, 0, 0.4)"
+                        : isTallys
+                        ? "0 0 20px rgba(255, 20, 147, 0.8), 0 0 40px rgba(255, 105, 180, 0.6), 0 0 60px rgba(255, 20, 147, 0.4)"
+                        : "none")
+                    : "none",
+                  overflow: hasImage ? "hidden" : "visible",
                 }}
               >
                 {isPopkins ? (
@@ -492,6 +500,17 @@ const VotePoolPage = () => {
                       width: "auto",
                       objectFit: "contain",
                       display: "block",
+                      filter: "brightness(1.3) saturate(1.4) contrast(1.15)",
+                      transition: "all 0.3s ease",
+                      border: "none",
+                      outline: "none",
+                      borderRadius: "1rem",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.filter = "brightness(1.35) saturate(1.45) contrast(1.18)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.filter = "brightness(1.3) saturate(1.4) contrast(1.15)";
                     }}
                   />
                 ) : isTallys ? (
@@ -503,6 +522,17 @@ const VotePoolPage = () => {
                       width: "auto",
                       objectFit: "contain",
                       display: "block",
+                      filter: "brightness(1.3) saturate(1.4) contrast(1.15)",
+                      transition: "all 0.3s ease",
+                      border: "none",
+                      outline: "none",
+                      borderRadius: "1rem",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.filter = "brightness(1.35) saturate(1.45) contrast(1.18)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.filter = "brightness(1.3) saturate(1.4) contrast(1.15)";
                     }}
                   />
                 ) : (
@@ -564,7 +594,7 @@ const VotePoolPage = () => {
               fontSize: "clamp(1rem, 2vw, 1.2rem)",
               fontWeight: "500"
             }}>
-              Loading polls...
+            Loading polls...
             </p>
           </div>
         )}
@@ -808,7 +838,7 @@ const VotePoolPage = () => {
                             transition: "width 0.3s ease",
                           }}
                         />
-                      </div>
+                  </div>
                 </div>
 
                     {/* Second Option */}
