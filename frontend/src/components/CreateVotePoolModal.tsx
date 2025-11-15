@@ -3,6 +3,7 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@
 import { Transaction } from "@mysten/sui/transactions";
 import { contractConfig } from "../config/contractConfig";
 import { findPollRegistry } from "../utils/blockchain";
+import { NFT_COLLECTIONS } from "../config/nftCollections";
 import "../styles/theme.css";
 
 interface Option {
@@ -35,7 +36,9 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
     image: "",
     startTime: "",
     endTime: "",
+    nftCollectionType: "", // NFT collection type (e.g., "0x...::popkins_nft::Popkins"). Empty = no NFT required
   });
+  const [selectedCollection, setSelectedCollection] = useState<string>("public"); // "public" or collection name
   const [options, setOptions] = useState<Option[]>([
     { name: "", image: "" },
     { name: "", image: "" },
@@ -148,6 +151,7 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
             type: `${contractConfig.packageId}::${contractConfig.moduleName}::PollOption`,
             elements: optionResults 
           }),
+          tx.pure.string(formData.nftCollectionType.trim()), // NFT collection type
           tx.object(pollRegistryId), // PollRegistry shared object
         ],
       });
@@ -180,7 +184,9 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
               image: "",
               startTime: "",
               endTime: "",
+              nftCollectionType: "",
             });
+            setSelectedCollection("public"); // Reset to public
             setOptions([
               { name: "", image: "" },
               { name: "", image: "" },
@@ -470,6 +476,58 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
                 />
               </div>
             ))}
+          </div>
+
+          {/* NFT Collection Selection */}
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "0.5rem",
+                color: "var(--text-primary)",
+                fontWeight: "500",
+              }}
+            >
+              Poll Type *
+            </label>
+            <select
+              value={selectedCollection}
+              onChange={(e) => {
+                const collectionName = e.target.value;
+                setSelectedCollection(collectionName);
+                // If "public" is selected, set empty string. Otherwise, find the collection and set its type.
+                if (collectionName === "public") {
+                  setFormData({ ...formData, nftCollectionType: "" });
+                } else {
+                  const collection = NFT_COLLECTIONS.find((col) => col.name === collectionName);
+                  if (collection) {
+                    setFormData({ ...formData, nftCollectionType: collection.type });
+                  }
+                }
+              }}
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border-color)",
+                borderRadius: "0.5rem",
+                color: "var(--text-primary)",
+                fontSize: "1rem",
+                cursor: "pointer",
+              }}
+            >
+              <option value="public">Public (Anyone can vote)</option>
+              {NFT_COLLECTIONS.map((collection) => (
+                <option key={collection.name} value={collection.name}>
+                  {collection.name} (NFT Required)
+                </option>
+              ))}
+            </select>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
+              {selectedCollection === "public"
+                ? "Anyone can vote in this poll."
+                : `Only ${selectedCollection} NFT holders can vote in this poll.`}
+            </p>
           </div>
 
           {/* Date Times */}

@@ -18,6 +18,7 @@ export async function convertBlockchainPollToVotePool(
     image_url: string;
     start_date: string;
     end_date: string;
+    nft_collection_type: string;
     options: Array<{
       id: string;
       name: string;
@@ -63,6 +64,7 @@ export async function convertBlockchainPollToVotePool(
     endTime: blockchainPoll.end_date,
     options: sortedOptions,
     totalVotes,
+    nft_collection_type: blockchainPoll.nft_collection_type,
     history: [
       {
         timestamp: blockchainPoll.start_date,

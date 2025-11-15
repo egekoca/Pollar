@@ -80,6 +80,7 @@ use sui::dynamic_field;
             string::utf8(TEST_START_DATE),
             string::utf8(TEST_END_DATE),
             options,
+            string::utf8(b""), // No NFT required for test poll
             ctx
         )
     }
@@ -108,6 +109,7 @@ use sui::dynamic_field;
             string::utf8(TEST_START_DATE),
             string::utf8(TEST_END_DATE),
             options,
+            string::utf8(b""), // No NFT required for test poll
             &mut poll_registry,
             scenario.ctx()
         );

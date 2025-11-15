@@ -76,6 +76,7 @@ export async function getAllPolls(client: SuiClient): Promise<
     image_url: string;
     start_date: string;
     end_date: string;
+    nft_collection_type: string; // NFT collection type (empty string = no NFT required)
     options: Array<{
       id: string;
       name: string;
@@ -106,6 +107,7 @@ export async function getAllPolls(client: SuiClient): Promise<
       image_url: string;
       start_date: string;
       end_date: string;
+      nft_collection_type: string;
       options: Array<{ id: string; name: string; image_url: string }>;
     }> = [];
 
@@ -168,6 +170,7 @@ export async function getAllPolls(client: SuiClient): Promise<
               image_url: fields.image_url || "",
               start_date: fields.start_date || "",
               end_date: fields.end_date || "",
+              nft_collection_type: fields.nft_collection_type || "",
               options: pollOptions,
             });
           }
@@ -198,6 +201,7 @@ export async function getPollById(
   image_url: string;
   start_date: string;
   end_date: string;
+  nft_collection_type: string; // NFT collection type (empty string = no NFT required)
   options: Array<{
     id: string;
     name: string;
@@ -247,6 +251,7 @@ export async function getPollById(
         image_url: fields.image_url || "",
         start_date: fields.start_date || "",
         end_date: fields.end_date || "",
+        nft_collection_type: fields.nft_collection_type || "",
         options: pollOptions,
       };
     }
@@ -559,5 +564,68 @@ export function createVoteTransaction(
   });
 
   return tx;
+}
+
+/**
+ * NFT ile oy verme fonksiyonu - vote_with_nft(poll, option_index, voteRegistry, nft) çağırır
+ * NFT ownership kontrolü Sui runtime tarafından yapılır
+ */
+export function createVoteWithNftTransaction(
+  pollId: string,
+  optionIndex: number,
+  voteRegistryId: string,
+  nftId: string,
+  nftType: string // Full NFT type (e.g., "0x...::popkins_nft::Popkins")
+): Transaction {
+  const tx = new Transaction();
+  const packageId = contractConfig.packageId;
+
+  if (!packageId) {
+    throw new Error("Package ID not configured");
+  }
+
+  tx.moveCall({
+    target: `${packageId}::${contractConfig.moduleName}::vote_with_nft`,
+    typeArguments: [nftType], // Generic type argument for NFT
+    arguments: [
+      tx.object(pollId), // Poll object
+      tx.pure.u64(optionIndex), // option_index
+      tx.object(voteRegistryId), // VoteRegistry
+      tx.object(nftId), // NFT object - ownership verified by Sui runtime
+    ],
+  });
+
+  return tx;
+}
+
+/**
+ * Kullanıcının sahip olduğu NFT'leri belirli bir collection type için getirir
+ */
+export async function getUserNftsByType(
+  client: SuiClient,
+  ownerAddress: string,
+  nftType: string
+): Promise<Array<{ objectId: string; type: string }>> {
+  try {
+    const objects = await client.getOwnedObjects({
+      owner: ownerAddress,
+      filter: {
+        StructType: nftType,
+      },
+      options: {
+        showType: true,
+        showContent: false,
+        showOwner: false,
+      },
+    });
+
+    return (objects.data || []).map((obj) => ({
+      objectId: obj.data?.objectId || "",
+      type: obj.data?.type || "",
+    })).filter((obj) => obj.objectId && obj.type);
+  } catch (error) {
+    console.error("Error getting user NFTs:", error);
+    return [];
+  }
 }
 

@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
-import { findVoteRegistryByPollId, getVoteRegistry, createVoteTransaction, getPollById } from "../utils/blockchain";
+import { findVoteRegistryByPollId, getVoteRegistry, createVoteTransaction, createVoteWithNftTransaction, getPollById, getUserNftsByType } from "../utils/blockchain";
 import { VotePool, VoteOption } from "../data/mockData";
 import { gsap } from "gsap";
 import PillNav from "../components/PillNav";
@@ -33,6 +33,8 @@ const VotingPage = () => {
   const [pollData, setPollData] = useState<any>(null);
   const [hasVoted, setHasVoted] = useState<boolean>(false);
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
+  const [userNfts, setUserNfts] = useState<Array<{ objectId: string; type: string }>>([]);
+  const [selectedNftId, setSelectedNftId] = useState<string | null>(null);
 
   const handleLogoHover = () => {
     if (logoRef.current) {
@@ -200,6 +202,29 @@ const VotingPage = () => {
     loadData();
   }, [id, client, account?.address]);
 
+  // Load user NFTs if poll requires NFT
+  useEffect(() => {
+    const loadUserNfts = async () => {
+      if (!account?.address || !pollData?.nft_collection_type || pollData.nft_collection_type.length === 0) {
+        setUserNfts([]);
+        return;
+      }
+
+      try {
+        const nfts = await getUserNftsByType(client, account.address, pollData.nft_collection_type);
+        setUserNfts(nfts);
+        if (nfts.length > 0) {
+          setSelectedNftId(nfts[0].objectId); // Auto-select first NFT
+        }
+      } catch (error) {
+        console.error("Error loading user NFTs:", error);
+        setUserNfts([]);
+      }
+    };
+
+    loadUserNfts();
+  }, [account?.address, pollData?.nft_collection_type, client]);
+
   const handleVote = async (optionIndex: number) => {
     if (!account?.address) {
       setError("Please connect your wallet");
@@ -228,9 +253,28 @@ const VotingPage = () => {
     setError("");
     setSelectedOption(optionIndex);
 
+    // Check if poll requires NFT
+    const requiresNft = pollData?.nft_collection_type && pollData.nft_collection_type.length > 0;
+    
+    if (requiresNft) {
+      if (userNfts.length === 0) {
+        setError("This poll requires an NFT from the collection. You don't own any NFTs from this collection.");
+        setSelectedOption(null);
+        return;
+      }
+      
+      if (!selectedNftId) {
+        setError("Please select an NFT to vote with.");
+        setSelectedOption(null);
+        return;
+      }
+    }
+
     try {
-      // Create transaction
-      const tx = createVoteTransaction(id, optionIndex, voteRegistryId);
+      // Create transaction - use vote_with_nft if NFT required, otherwise use regular vote
+      const tx = requiresNft && selectedNftId
+        ? createVoteWithNftTransaction(id, optionIndex, voteRegistryId, selectedNftId, pollData.nft_collection_type)
+        : createVoteTransaction(id, optionIndex, voteRegistryId);
 
       // Transaction'ı gönder
       signAndExecute(
@@ -660,6 +704,49 @@ const VotingPage = () => {
                 {error}
               </div>
             )}
+            
+            {/* NFT Selection (if poll requires NFT) */}
+            {pollData?.nft_collection_type && pollData.nft_collection_type.length > 0 && account?.address && (
+              <div
+                style={{
+                  padding: "1rem",
+                  background: "rgba(59, 130, 246, 0.1)",
+                  border: "1px solid rgba(59, 130, 246, 0.3)",
+                  borderRadius: "0.5rem",
+                  marginBottom: "1rem",
+                }}
+              >
+                <div style={{ fontSize: "0.9rem", color: "var(--text-primary)", marginBottom: "0.5rem", fontWeight: "600" }}>
+                  Select NFT to Vote With:
+                </div>
+                {userNfts.length === 0 ? (
+                  <div style={{ color: "#ef4444", fontSize: "0.85rem" }}>
+                    You don't own any NFTs from this collection. You cannot vote in this poll.
+                  </div>
+                ) : (
+                  <select
+                    value={selectedNftId || ""}
+                    onChange={(e) => setSelectedNftId(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem",
+                      background: "var(--bg-secondary)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "0.5rem",
+                      color: "var(--text-primary)",
+                      fontSize: "1rem",
+                    }}
+                  >
+                    {userNfts.map((nft) => (
+                      <option key={nft.objectId} value={nft.objectId}>
+                        NFT #{nft.objectId.slice(0, 8)}...{nft.objectId.slice(-6)}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+            
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               {localPool.options.map((option, index) => (
                 <div

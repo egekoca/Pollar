@@ -7,6 +7,7 @@ import CreateVotePoolModal from "../components/CreateVotePoolModal";
 import UserProfileDropdown from "../components/UserProfileDropdown";
 import { getUserProfile, UserProfile } from "../utils/userProfile";
 import { useBlockchainPolls } from "../utils/pollUtils";
+import { NFT_COLLECTIONS, getUniqueCollectionTypes, getCollectionByType } from "../config/nftCollections";
 import "../styles/theme.css";
 
 const VotePoolPage = () => {
@@ -16,6 +17,7 @@ const VotePoolPage = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const account = useCurrentAccount();
   const { mutate: disconnect } = useDisconnectWallet();
+  const [selectedCollectionType, setSelectedCollectionType] = useState<string | null>(null); // null = all polls, string = specific collection
 
   const handleLogoHover = () => {
     if (logoRef.current) {
@@ -28,7 +30,17 @@ const VotePoolPage = () => {
   };
   
   // Blockchain'den poll'ları oku
-  const { data: pools = [], isLoading: isLoadingPools, refetch } = useBlockchainPolls();
+  const { data: allPools = [], isLoading: isLoadingPools, refetch } = useBlockchainPolls();
+  
+  // Filter pools by selected collection
+  // null = "All Polls" (shows all polls including public and NFT-required)
+  // string = specific collection type (shows only polls for that collection)
+  const pools = selectedCollectionType === null
+    ? allPools // Show all polls when "All Polls" is selected
+    : allPools.filter((pool) => pool.nft_collection_type === selectedCollectionType);
+  
+  // Get unique collection types from all polls
+  const uniqueCollectionTypes = getUniqueCollectionTypes(allPools);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -219,6 +231,58 @@ const VotePoolPage = () => {
 
         {/* İçerik - Mevcut yapı */}
         <div style={{ position: "relative", zIndex: 2 }}>
+        
+        {/* NFT Collection Filter Bar */}
+        <div style={{ 
+          marginBottom: "clamp(1.5rem, 3vw, 2rem)",
+          display: "flex",
+          gap: "1rem",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "1rem",
+          background: "rgba(59, 130, 246, 0.1)",
+          borderRadius: "0.75rem",
+          border: "1px solid rgba(59, 130, 246, 0.3)",
+        }}>
+          <button
+            onClick={() => setSelectedCollectionType(null)}
+            style={{
+              padding: "0.75rem 1.5rem",
+              background: selectedCollectionType === null ? "var(--color-light-blue)" : "transparent",
+              color: selectedCollectionType === null ? "#000000" : "var(--text-primary)",
+              border: "1.5px solid var(--color-light-blue)",
+              borderRadius: "0.5rem",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+            }}
+          >
+            All Polls
+          </button>
+          {uniqueCollectionTypes.map((collectionType) => {
+            const collection = getCollectionByType(collectionType);
+            return (
+              <button
+                key={collectionType}
+                onClick={() => setSelectedCollectionType(collectionType)}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  background: selectedCollectionType === collectionType ? "var(--color-light-blue)" : "transparent",
+                  color: selectedCollectionType === collectionType ? "#000000" : "var(--text-primary)",
+                  border: "1.5px solid var(--color-light-blue)",
+                  borderRadius: "0.5rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                }}
+              >
+                {collection?.name || collectionType.split("::").pop() || "Unknown"}
+              </button>
+            );
+          })}
+        </div>
+        
         <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)", textAlign: "center" }}>
           <h2 
             className="active-pools-animated-text"

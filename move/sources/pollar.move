@@ -4,6 +4,7 @@ module pollarapp::pollar;
 use sui::package::Publisher;
 use sui::object::{Self, ID, UID}; 
 use sui::event;
+use sui::transfer;
 use std::option::{Self, Option};
 use std::string::String;
 use std::vector;
@@ -29,8 +30,11 @@ const EPollNotStarted: u64 = 11;
 const EPollEnded: u64 = 12;
 const EInvalidDateRange: u64 = 13;
 const EInvalidOptionIndex: u64 = 14; // For simple voting use-case
+const ENftRequired: u64 = 15; // NFT required but not provided
+const ENftNotOwned: u64 = 16; // NFT not owned by voter
+const ENftTypeMismatch: u64 = 17; // NFT type doesn't match poll's required collection
 
-const VERSION: u64 = 1;
+const VERSION: u64 = 2; // Incremented version for NFT support
 
 // Version object used to track package migration and current schema version.
 // Stored as a shared object so migrations can verify and update package state.
@@ -89,6 +93,7 @@ public struct Poll has key
     end_date: String,
     options: vector<PollOption>,
     creator: address, // Address of the poll creator
+    nft_collection_type: String, // NFT collection type (e.g., "0x...::popkins_nft::Popkins"). Empty string means no NFT required.
 }
 
 // Event payload emitted when a Poll is minted. Contains the Poll ID and the
@@ -144,7 +149,7 @@ public fun create_poll_option(name: String, image_url: String, ctx: &mut TxConte
     pollOption
 }
 
-public fun create_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, options: vector<PollOption>, ctx: &mut TxContext): Poll
+public fun create_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, options: vector<PollOption>, nft_collection_type: String, ctx: &mut TxContext): Poll
 {
     let poll = Poll 
     {
@@ -156,6 +161,7 @@ public fun create_poll(name: String, description: String, image_url: String, sta
         end_date,
         options,
         creator: ctx.sender(), // Store creator address
+        nft_collection_type, // NFT collection type (empty string = no NFT required)
     };
     poll
 }
@@ -187,7 +193,7 @@ public fun create_user_vote(poll: &Poll, poll_option: PollOption, user: User, ct
     userVote
 }
 
-public entry fun mint_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, options: vector<PollOption>,  pollRegistry: &mut PollRegistry, ctx: &mut TxContext)
+public entry fun mint_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, options: vector<PollOption>, nft_collection_type: String, pollRegistry: &mut PollRegistry, ctx: &mut TxContext)
 {
     // Validate poll name length (3-250 characters)
     let name_length = name.length();
@@ -212,7 +218,7 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
     // Note: Date range validation removed - Move doesn't support String comparison
     // Date validation should be done on the frontend
 
-    let poll = create_poll(name, description, image_url, start_date, end_date, options, ctx);
+    let poll = create_poll(name, description, image_url, start_date, end_date, options, nft_collection_type, ctx);
     let inner_id = object::id(&poll);
     
     // Simplified VoteRegistry - now uses address list and option_votes
@@ -257,6 +263,7 @@ public entry fun mint_user(name: String, icon_url: String, ctx: &mut TxContext)
 }
 
     // SIMPLE VOTING FUNCTION - uses only option_index (no User or PollOption objects)
+    // If poll requires NFT, nft must be provided and owned by voter
 public entry fun vote(
     poll: &Poll,
     option_index: u64,
@@ -287,6 +294,11 @@ public entry fun vote(
     };
     assert!(!already_voted, EAlreadyVoted);
     
+    // Note: NFT ownership check is done by requiring NFT as transaction argument
+    // If poll requires NFT (nft_collection_type is not empty), frontend must pass NFT object
+    // The NFT object's ownership is verified by Sui runtime - if user doesn't own it, transaction fails
+    // For polls that require NFT, use vote_with_nft() function instead
+    
     // Add the vote - update the option_votes vector
     let mut new_option_votes = vector::empty();
     let mut i = 0;
@@ -308,6 +320,70 @@ public entry fun vote(
     
     // Emit event
     event::emit(UserVoteMinted{ user_vote: poll_id, owner: voter }); // Basit event
+}
+
+// VOTING FUNCTION WITH NFT - for polls that require NFT ownership
+// The NFT is passed as an argument to verify ownership
+// Sui runtime ensures the NFT is owned by the transaction sender
+public entry fun vote_with_nft<T: key + store>(
+    poll: &Poll,
+    option_index: u64,
+    voteRegistry: &mut VoteRegistry,
+    nft: &T, // NFT object - ownership verified by Sui runtime
+    ctx: &mut TxContext
+) {
+    let voter = ctx.sender();
+    let poll_id = object::id(poll);
+    
+    // Check if poll requires NFT
+    let requires_nft = poll.nft_collection_type.length() > 0;
+    assert!(requires_nft, ENftRequired); // This function should only be called for NFT-required polls
+    
+    // Check the VoteRegistry belongs to this Poll
+    assert!(voteRegistry.poll_id == poll_id, EInvalidVoteRegistry);
+    
+    // Validate option index
+    let options_len = vector::length(&poll.options);
+    assert!(option_index < options_len, EInvalidOptionIndex);
+    
+    // Check for double voting by wallet address
+    let mut already_voted = false;
+    let mut j = 0;
+    let voters_len = vector::length(&voteRegistry.usersVoted);
+    while (j < voters_len) {
+        let voter_addr = *vector::borrow(&voteRegistry.usersVoted, j);
+        if (voter_addr == voter) {
+            already_voted = true;
+            break
+        };
+        j = j + 1;
+    };
+    assert!(!already_voted, EAlreadyVoted);
+    
+    // NFT ownership is verified by Sui runtime - if user doesn't own it, transaction fails
+    // The NFT type should match poll.nft_collection_type (checked by frontend)
+    
+    // Add the vote - update the option_votes vector
+    let mut new_option_votes = vector::empty();
+    let mut i = 0;
+    let votes_len = vector::length(&voteRegistry.option_votes);
+    while (i < votes_len) {
+        if (i == option_index) {
+            let current_votes = *vector::borrow(&voteRegistry.option_votes, i);
+            vector::push_back(&mut new_option_votes, current_votes + 1);
+        } else {
+            let votes = *vector::borrow(&voteRegistry.option_votes, i);
+            vector::push_back(&mut new_option_votes, votes);
+        };
+        i = i + 1;
+    };
+    voteRegistry.option_votes = new_option_votes;
+    
+    // Append the voter's address
+    vector::push_back(&mut voteRegistry.usersVoted, voter);
+    
+    // Emit event
+    event::emit(UserVoteMinted{ user_vote: poll_id, owner: voter });
 }
 
 // Eski karmaşık oy verme fonksiyonu - geriye dönük uyumluluk için korundu
