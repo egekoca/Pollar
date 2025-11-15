@@ -206,26 +206,46 @@ const MyProfilePage = () => {
       </header>
 
       {/* Main Content */}
-      <main style={{ padding: "clamp(1rem, 3vw, 2rem)", maxWidth: "800px", margin: "0 auto" }}>
-        <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
-          <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.5rem)", marginBottom: "0.5rem", color: "var(--text-primary)" }}>
-            My Profile
-          </h2>
-          <p style={{ color: "var(--text-muted)", fontSize: "clamp(1rem, 2vw, 1.1rem)" }}>
-            Manage your profile information
-          </p>
-        </div>
+      <main style={{ 
+        padding: "clamp(1rem, 3vw, 2rem)", 
+        maxWidth: "1400px", 
+        margin: "0 auto",
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 400px), 1fr))",
+        gap: "clamp(1.5rem, 3vw, 2.5rem)",
+        alignItems: "start",
+      }}>
+        {/* Left Column - My Profile */}
+        <div>
+          <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
+            <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.5rem)", marginBottom: "0.5rem", color: "var(--text-primary)" }}>
+              My Profile
+            </h2>
+            <p style={{ color: "var(--text-muted)", fontSize: "clamp(1rem, 2vw, 1.1rem)" }}>
+              Manage your profile information
+            </p>
+          </div>
 
-        <div className="card">
+        <div 
+          className="card"
+          style={{
+            background: "linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(27, 27, 27, 0.95) 100%)",
+            border: "1px solid rgba(96, 165, 250, 0.2)",
+            borderRadius: "1rem",
+            padding: "2rem",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+          }}
+        >
           {error && (
             <div
               style={{
                 padding: "1rem",
-                background: "rgba(239, 68, 68, 0.1)",
-                border: "1px solid rgba(239, 68, 68, 0.3)",
-                borderRadius: "0.5rem",
+                background: "rgba(239, 68, 68, 0.15)",
+                border: "1px solid rgba(239, 68, 68, 0.4)",
+                borderRadius: "0.75rem",
                 color: "#ef4444",
                 marginBottom: "1.5rem",
+                fontSize: "0.9rem",
               }}
             >
               {error}
@@ -233,97 +253,118 @@ const MyProfilePage = () => {
           )}
 
           {/* Avatar Section */}
-          <div style={{ textAlign: "center", marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
-            {isEditing ? (
-              <div>
+          <div style={{ textAlign: "center", marginBottom: "clamp(2rem, 4vw, 2.5rem)" }}>
+            <div style={{ position: "relative", display: "inline-block" }}>
+              {isEditing ? (
                 <img
                   src={avatarUrl || profile.avatarUrl}
                   alt="Avatar"
                   style={{
-                    width: "clamp(100px, 20vw, 120px)",
-                    height: "clamp(100px, 20vw, 120px)",
+                    width: "clamp(120px, 25vw, 140px)",
+                    height: "clamp(120px, 25vw, 140px)",
                     borderRadius: "50%",
                     objectFit: "cover",
-                    border: "3px solid var(--color-light-blue)",
+                    border: "4px solid #60a5fa",
+                    boxShadow: "0 0 30px rgba(96, 165, 250, 0.5), 0 8px 24px rgba(0, 0, 0, 0.4)",
                     marginBottom: "1rem",
                   }}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = profile.avatarUrl;
                   }}
                 />
-              </div>
-            ) : (
-              <img
-                src={profile.avatarUrl}
-                alt={profile.username}
-                style={{
-                  width: "clamp(100px, 20vw, 120px)",
-                  height: "clamp(100px, 20vw, 120px)",
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  border: "3px solid var(--color-light-blue)",
-                  marginBottom: "1rem",
-                }}
-              />
-            )}
+              ) : (
+                <img
+                  src={profile.avatarUrl}
+                  alt={profile.username}
+                  style={{
+                    width: "clamp(120px, 25vw, 140px)",
+                    height: "clamp(120px, 25vw, 140px)",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "4px solid #60a5fa",
+                    boxShadow: "0 0 30px rgba(96, 165, 250, 0.5), 0 8px 24px rgba(0, 0, 0, 0.4)",
+                    marginBottom: "1rem",
+                  }}
+                />
+              )}
+            </div>
             {!isEditing && (
-              <h3 style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", fontWeight: "600", color: "var(--text-primary)" }}>
+              <h3 style={{ 
+                fontSize: "clamp(1.5rem, 3vw, 2rem)", 
+                fontWeight: "700", 
+                color: "#ffffff",
+                marginTop: "0.5rem",
+                background: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}>
                 {profile.username}
               </h3>
             )}
           </div>
 
           {/* Wallet Address (Read-only with Copy) */}
-          <div style={{ marginBottom: "1.5rem" }}>
+          <div style={{ marginBottom: "1.75rem" }}>
             <label
               style={{
                 display: "block",
-                marginBottom: "0.5rem",
-                color: "var(--text-primary)",
-                fontWeight: "500",
+                marginBottom: "0.75rem",
+                color: "rgba(255, 255, 255, 0.9)",
+                fontWeight: "600",
+                fontSize: "0.9rem",
+                letterSpacing: "0.5px",
               }}
             >
               Wallet Address
             </label>
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
               <input
                 type="text"
                 value={formatAddress(account.address)}
                 disabled
                 style={{
                   flex: "1",
-                  padding: "0.75rem",
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "0.5rem",
-                  color: "var(--text-muted)",
-                  fontSize: "1rem",
+                  padding: "0.875rem 1rem",
+                  background: "rgba(0, 0, 0, 0.3)",
+                  border: "1px solid rgba(96, 165, 250, 0.3)",
+                  borderRadius: "0.75rem",
+                  color: "rgba(255, 255, 255, 0.8)",
+                  fontSize: "0.95rem",
                   fontFamily: "monospace",
                   cursor: "not-allowed",
+                  transition: "all 0.2s ease",
                 }}
               />
               <button
                 onClick={handleCopyAddress}
                 style={{
-                  padding: "0.75rem 1rem",
-                  background: copiedAddress ? "#10b981" : "var(--bg-button-primary)",
-                  color: "var(--text-primary)",
+                  padding: "0.875rem 1.25rem",
+                  background: copiedAddress 
+                    ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" 
+                    : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                  color: "#ffffff",
                   border: "none",
-                  borderRadius: "0.5rem",
+                  borderRadius: "0.75rem",
                   cursor: "pointer",
                   fontSize: "0.875rem",
-                  fontWeight: "500",
+                  fontWeight: "600",
                   transition: "all 0.2s ease",
                   whiteSpace: "nowrap",
+                  boxShadow: copiedAddress 
+                    ? "0 4px 12px rgba(16, 185, 129, 0.4)" 
+                    : "0 4px 12px rgba(59, 130, 246, 0.3)",
                 }}
                 onMouseEnter={(e) => {
                   if (!copiedAddress) {
-                    e.currentTarget.style.background = "var(--bg-button-primary-hover)";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 16px rgba(59, 130, 246, 0.4)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!copiedAddress) {
-                    e.currentTarget.style.background = "var(--bg-button-primary)";
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.3)";
                   }
                 }}
               >
@@ -333,13 +374,15 @@ const MyProfilePage = () => {
           </div>
 
           {/* Username */}
-          <div style={{ marginBottom: "1.5rem" }}>
+          <div style={{ marginBottom: "1.75rem" }}>
             <label
               style={{
                 display: "block",
-                marginBottom: "0.5rem",
-                color: "var(--text-primary)",
-                fontWeight: "500",
+                marginBottom: "0.75rem",
+                color: "rgba(255, 255, 255, 0.9)",
+                fontWeight: "600",
+                fontSize: "0.9rem",
+                letterSpacing: "0.5px",
               }}
             >
               Username
@@ -352,23 +395,32 @@ const MyProfilePage = () => {
                 placeholder="Enter your username"
                 style={{
                   width: "100%",
-                  padding: "0.75rem",
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "0.5rem",
-                  color: "var(--text-primary)",
-                  fontSize: "1rem",
+                  padding: "0.875rem 1rem",
+                  background: "rgba(0, 0, 0, 0.3)",
+                  border: "1px solid rgba(96, 165, 250, 0.3)",
+                  borderRadius: "0.75rem",
+                  color: "#ffffff",
+                  fontSize: "0.95rem",
+                  transition: "all 0.2s ease",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(96, 165, 250, 0.6)";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(96, 165, 250, 0.1)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(96, 165, 250, 0.3)";
+                  e.currentTarget.style.boxShadow = "none";
                 }}
               />
             ) : (
               <div
                 style={{
-                  padding: "0.75rem",
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "0.5rem",
-                  color: "var(--text-primary)",
-                  fontSize: "1rem",
+                  padding: "0.875rem 1rem",
+                  background: "rgba(0, 0, 0, 0.3)",
+                  border: "1px solid rgba(96, 165, 250, 0.2)",
+                  borderRadius: "0.75rem",
+                  color: "rgba(255, 255, 255, 0.9)",
+                  fontSize: "0.95rem",
                 }}
               >
                 {profile.username}
@@ -377,13 +429,15 @@ const MyProfilePage = () => {
           </div>
 
           {/* Avatar URL */}
-          <div style={{ marginBottom: "1.5rem" }}>
+          <div style={{ marginBottom: "1.75rem" }}>
             <label
               style={{
                 display: "block",
-                marginBottom: "0.5rem",
-                color: "var(--text-primary)",
-                fontWeight: "500",
+                marginBottom: "0.75rem",
+                color: "rgba(255, 255, 255, 0.9)",
+                fontWeight: "600",
+                fontSize: "0.9rem",
+                letterSpacing: "0.5px",
               }}
             >
               Avatar URL
@@ -396,22 +450,31 @@ const MyProfilePage = () => {
                 placeholder="https://example.com/avatar.jpg"
                 style={{
                   width: "100%",
-                  padding: "0.75rem",
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "0.5rem",
-                  color: "var(--text-primary)",
-                  fontSize: "1rem",
+                  padding: "0.875rem 1rem",
+                  background: "rgba(0, 0, 0, 0.3)",
+                  border: "1px solid rgba(96, 165, 250, 0.3)",
+                  borderRadius: "0.75rem",
+                  color: "#ffffff",
+                  fontSize: "0.95rem",
+                  transition: "all 0.2s ease",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(96, 165, 250, 0.6)";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(96, 165, 250, 0.1)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(96, 165, 250, 0.3)";
+                  e.currentTarget.style.boxShadow = "none";
                 }}
               />
             ) : (
               <div
                 style={{
-                  padding: "0.75rem",
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "0.5rem",
-                  color: "var(--text-muted)",
+                  padding: "0.875rem 1rem",
+                  background: "rgba(0, 0, 0, 0.3)",
+                  border: "1px solid rgba(96, 165, 250, 0.2)",
+                  borderRadius: "0.75rem",
+                  color: "rgba(255, 255, 255, 0.7)",
                   fontSize: "0.9rem",
                   wordBreak: "break-all",
                 }}
@@ -422,34 +485,126 @@ const MyProfilePage = () => {
           </div>
 
           {/* Action Buttons */}
-          <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end", marginTop: "2rem" }}>
+          <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end", marginTop: "2.5rem", paddingTop: "2rem", borderTop: "1px solid rgba(96, 165, 250, 0.2)" }}>
             {isEditing ? (
               <>
-                <button onClick={handleCancel} className="button button-secondary">
+                <button 
+                  onClick={handleCancel} 
+                  style={{
+                    padding: "0.875rem 1.75rem",
+                    background: "rgba(255, 255, 255, 0.05)",
+                    color: "rgba(255, 255, 255, 0.8)",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "0.75rem",
+                    fontSize: "0.95rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
+                  }}
+                >
                   Cancel
                 </button>
-                <button onClick={handleSave} className="button button-primary">
+                <button 
+                  onClick={handleSave}
+                  style={{
+                    padding: "0.875rem 1.75rem",
+                    background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "0.75rem",
+                    fontSize: "0.95rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 16px rgba(59, 130, 246, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.3)";
+                  }}
+                >
                   Save Changes
                 </button>
               </>
             ) : (
               <>
-                <button onClick={handleLogout} className="button button-secondary" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.3)" }}>
+                <button 
+                  onClick={handleLogout}
+                  style={{
+                    padding: "0.875rem 1.75rem",
+                    background: "rgba(239, 68, 68, 0.1)",
+                    color: "#ef4444",
+                    border: "1px solid rgba(239, 68, 68, 0.3)",
+                    borderRadius: "0.75rem",
+                    fontSize: "0.95rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(239, 68, 68, 0.15)";
+                    e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+                    e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
+                  }}
+                >
                   Log out
                 </button>
-                <button onClick={() => setIsEditing(true)} className="button button-primary">
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  style={{
+                    padding: "0.875rem 1.75rem",
+                    background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "0.75rem",
+                    fontSize: "0.95rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 16px rgba(59, 130, 246, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.3)";
+                  }}
+                >
                   Edit Profile
                 </button>
               </>
             )}
           </div>
         </div>
+        </div>
 
-        {/* My Pools Section */}
-        <div style={{ marginTop: "clamp(2rem, 4vw, 3rem)" }}>
-          <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "var(--text-primary)" }}>
-            My Pools
-          </h2>
+        {/* Right Column - My Pools */}
+        <div>
+          <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
+            <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.5rem)", marginBottom: "0.5rem", color: "var(--text-primary)" }}>
+              My Pools
+            </h2>
+            <p style={{ color: "var(--text-muted)", fontSize: "clamp(1rem, 2vw, 1.1rem)" }}>
+              Polls you've created
+            </p>
+          </div>
           
           {isLoadingPools ? (
             <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
