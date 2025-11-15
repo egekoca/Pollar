@@ -74,7 +74,6 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
         const nfts = await getUserNftsByType(client, account.address, formData.nftCollectionType);
         if (nfts.length === 0) {
           setUserOwnsNft(false);
-          const collection = NFT_COLLECTIONS.find((col) => col.name === selectedCollection);
           setNftOwnershipError(
             `You don't own any ${selectedCollection} NFTs. You must own at least one ${selectedCollection} NFT to create a poll for this collection.`
           );
@@ -143,7 +142,6 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
     // Check NFT ownership if NFT-gated poll
     if (selectedCollection !== "public" && formData.nftCollectionType) {
       if (!userOwnsNft) {
-        const collection = NFT_COLLECTIONS.find((col) => col.name === selectedCollection);
         setError(
           `You don't own any ${selectedCollection} NFTs. You must own at least one ${selectedCollection} NFT to create a poll for this collection.`
         );

@@ -16,6 +16,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import pollarWalkVideo from "/pollar-walk.mp4";
+import huggingVideo from "/hugging.mp4";
 import "../styles/theme.css";
 
 const VotingPage = () => {
@@ -468,7 +470,7 @@ const VotingPage = () => {
               maxWidth: "100%",
             }}
           >
-            <source src="/pollar-walk.mp4" type="video/mp4" />
+            <source src={pollarWalkVideo} type="video/mp4" />
           </video>
           <div style={{ textAlign: "center" }}>
             <p style={{ 
@@ -1438,7 +1440,7 @@ const VotingPage = () => {
 
             {/* Video */}
             <video
-              src="/hugging.mp4"
+              src={huggingVideo}
               autoPlay
               loop
               muted

@@ -167,7 +167,8 @@ export function useBlockchainPolls() {
 export const getVoteRegistryByPoll = async (client: any, pollId: string): Promise<string> =>
 {
   try {
-    const pollRegistryId = import.meta.env.VITE_POLL_REGISTRY_ID;
+    // Vite replaces import.meta.env.VITE_POLL_REGISTRY_ID at build time
+    const pollRegistryId = import.meta.env.VITE_POLL_REGISTRY_ID as string;
     if (!pollRegistryId) {
       console.error("VITE_POLL_REGISTRY_ID is not configured in environment variables");
       return "";

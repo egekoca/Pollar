@@ -8,6 +8,7 @@ import UserProfileDropdown from "../components/UserProfileDropdown";
 import { getUserProfile, UserProfile } from "../utils/userProfile";
 import { useBlockchainPolls } from "../utils/pollUtils";
 import { NFT_COLLECTIONS, getUniqueCollectionTypes, getCollectionByType } from "../config/nftCollections";
+import pollarWalkVideo from "/pollar-walk.mp4";
 import "../styles/theme.css";
 
 const VotePoolPage = () => {
@@ -713,7 +714,7 @@ const VotePoolPage = () => {
                 maxWidth: "100%",
               }}
             >
-              <source src="/pollar-walk.mp4" type="video/mp4" />
+              <source src={pollarWalkVideo} type="video/mp4" />
             </video>
             <p style={{ 
               color: "var(--text-muted)", 

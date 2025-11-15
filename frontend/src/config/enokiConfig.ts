@@ -1,18 +1,7 @@
 // Enoki Configuration
 // Get your API key from: https://portal.enoki.mystenlabs.com
 // Get your Google Client ID from: https://console.cloud.google.com/
-
-const getEnvVar = (key: string): string => {
-  try {
-    const value = import.meta.env[key];
-    if (value && typeof value === "string") {
-      return value.trim();
-    }
-    return "";
-  } catch {
-    return "";
-  }
-};
+// Environment variables are replaced at build time by Vite
 
 // Get the current origin for redirect URI
 const getRedirectUri = () => {
@@ -22,12 +11,14 @@ const getRedirectUri = () => {
   return "http://localhost:5173/login";
 };
 
+// Vite automatically replaces import.meta.env.VITE_* at build time
+// Direct property access ensures Vite can replace it properly
 export const enokiConfig = {
-  apiKey: getEnvVar("VITE_ENOKI_API_KEY"),
+  apiKey: (import.meta.env.VITE_ENOKI_API_KEY as string) || "",
   network: "testnet" as const,
   providers: {
     google: {
-      clientId: getEnvVar("VITE_GOOGLE_CLIENT_ID"),
+      clientId: (import.meta.env.VITE_GOOGLE_CLIENT_ID as string) || "",
       redirectUri: getRedirectUri(),
     },
   },

@@ -54,7 +54,8 @@ export async function findPollRegistry(client: SuiClient): Promise<string | null
     console.warn("PollRegistry not found via query. You may need to add VITE_POLL_REGISTRY_ID to .env");
     
     // Environment variable'dan almayı dene
-    const envRegistryId = import.meta.env.VITE_POLL_REGISTRY_ID;
+    // Vite replaces import.meta.env.VITE_POLL_REGISTRY_ID at build time
+    const envRegistryId = import.meta.env.VITE_POLL_REGISTRY_ID as string;
     if (envRegistryId) {
       return envRegistryId;
     }

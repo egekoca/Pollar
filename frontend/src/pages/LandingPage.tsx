@@ -4,6 +4,7 @@ import { gsap } from "gsap";
 import Lightning from "../components/Lightning";
 import PillNav from "../components/PillNav";
 import ElectricBorder from "../components/ElectricBorder";
+import pollarWalkVideo from "/pollar-walk.mp4";
 import "../styles/theme.css";
 
 const LandingPage = () => {
@@ -234,7 +235,7 @@ const LandingPage = () => {
               borderRadius: "1rem",
             }}
           >
-            <source src="/pollar-walk.mp4" type="video/mp4" />
+            <source src={pollarWalkVideo} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </div>

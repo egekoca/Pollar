@@ -1,24 +1,12 @@
 // Contract Configuration
 // This file contains the deployed contract package ID and module name
-// You need to update PACKAGE_ID after deploying the contract
+// Environment variables are replaced at build time by Vite
 
-const getEnvVar = (key: string): string => {
-  try {
-    const value = import.meta.env[key];
-    if (value && typeof value === "string") {
-      return value.trim();
-    }
-    return "";
-  } catch {
-    return "";
-  }
-};
-
+// Vite automatically replaces import.meta.env.VITE_* at build time
+// Direct property access ensures Vite can replace it properly
 export const contractConfig = {
-  // Update this with your deployed package ID
-  // After deploying: sui client publish --gas-budget 10000000
-  // Then copy the package ID from the output
-  packageId: getEnvVar("VITE_PACKAGE_ID") || "",
+  // Vite replaces import.meta.env.VITE_PACKAGE_ID at build time
+  packageId: (import.meta.env.VITE_PACKAGE_ID as string) || "",
   moduleName: "pollar",
   functionNames: {
     mintUser: "mint_user",
