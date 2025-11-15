@@ -425,12 +425,43 @@ const VotingPage = () => {
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: "100vh", background: backgroundGradient, padding: "2rem", position: "relative" }}>
-        <div className="container" style={{ textAlign: "center", position: "relative", zIndex: 1 }}>
-          <p style={{ color: "var(--text-secondary)", fontSize: "1.2rem" }}>Loading...</p>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginTop: "0.5rem" }}>
-            Poll ID: {id}
-          </p>
+      <div style={{ minHeight: "100vh", background: "#000000", padding: "2rem", position: "relative" }}>
+        <div style={{ 
+          display: "flex", 
+          flexDirection: "column", 
+          alignItems: "center", 
+          justifyContent: "center", 
+          minHeight: "80vh",
+          gap: "1.5rem",
+          position: "relative",
+          zIndex: 1
+        }}>
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{
+              width: "clamp(200px, 30vw, 400px)",
+              height: "auto",
+              maxWidth: "100%",
+            }}
+          >
+            <source src="/pollar-walk.mp4" type="video/mp4" />
+          </video>
+          <div style={{ textAlign: "center" }}>
+            <p style={{ 
+              color: "var(--text-secondary)", 
+              fontSize: "clamp(1rem, 2vw, 1.2rem)",
+              fontWeight: "500",
+              marginBottom: "0.5rem"
+            }}>
+              Loading...
+            </p>
+            <p style={{ color: "var(--text-muted)", fontSize: "clamp(0.85rem, 1.5vw, 0.9rem)" }}>
+              Poll ID: {id}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -502,7 +533,119 @@ const VotingPage = () => {
         overflow: "hidden",
       }}
     >
-      {/* Background NFT Images - Left and Right Sides */}
+      {/* Background Character Images - Left and Right Sides (For Public polls and Hero) */}
+      {(!pollData?.nft_collection_type || 
+        pollData.nft_collection_type.length === 0 || 
+        pollData.nft_collection_type === "0xc6726b1b8f40ed882c5d7b7bb2e6fec36a4f19017dd9354268068473de37464e::hero::Hero") && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 0,
+            pointerEvents: "none",
+            overflow: "hidden",
+          }}
+        >
+          {/* Left Side Characters */}
+          <div
+            className="character-side-left"
+            style={{
+              position: "absolute",
+              left: "clamp(0.5rem, 2vw, 2rem)",
+              top: "50%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "clamp(1rem, 2vw, 2rem)",
+            }}
+          >
+            <img
+              src="/pollarpng.png"
+              alt="Pollar Character"
+              className="character-card"
+              style={{
+                width: "clamp(80px, 12vw, 200px)",
+                height: "clamp(80px, 12vw, 200px)",
+                objectFit: "contain",
+                borderRadius: "16px",
+                filter: "blur(1.5px)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                transform: "rotate(-3deg)",
+                background: "rgba(0, 0, 0, 0.2)",
+              }}
+            />
+            <img
+              src="/sealpng.png"
+              alt="Seal Character"
+              className="character-card"
+              style={{
+                width: "clamp(80px, 12vw, 200px)",
+                height: "clamp(80px, 12vw, 200px)",
+                objectFit: "contain",
+                borderRadius: "16px",
+                filter: "blur(1.5px)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                transform: "rotate(3deg)",
+                background: "rgba(0, 0, 0, 0.2)",
+              }}
+            />
+          </div>
+
+          {/* Right Side Characters */}
+          <div
+            className="character-side-right"
+            style={{
+              position: "absolute",
+              right: "clamp(0.5rem, 2vw, 2rem)",
+              top: "50%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "clamp(1rem, 2vw, 2rem)",
+            }}
+          >
+            <img
+              src="/walruspng.png"
+              alt="Walrus Character"
+              className="character-card"
+              style={{
+                width: "clamp(80px, 12vw, 200px)",
+                height: "clamp(80px, 12vw, 200px)",
+                objectFit: "contain",
+                borderRadius: "16px",
+                filter: "blur(1.5px)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                transform: "rotate(3deg)",
+                background: "rgba(0, 0, 0, 0.2)",
+              }}
+            />
+            <img
+              src="/friends.png"
+              alt="Friends Character"
+              className="character-card"
+              style={{
+                width: "clamp(80px, 12vw, 200px)",
+                height: "clamp(80px, 12vw, 200px)",
+                objectFit: "contain",
+                borderRadius: "16px",
+                filter: "blur(1.5px)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                transform: "rotate(-3deg)",
+                background: "rgba(0, 0, 0, 0.2)",
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Background NFT Images - Left and Right Sides (Only for Popkins and Tallys) */}
       {theme?.backgroundImages && theme.backgroundImages.length > 0 && (
         <>
           <div
@@ -586,7 +729,9 @@ const VotingPage = () => {
           <style>{`
             @media (max-width: 1024px) {
               .nft-side-left,
-              .nft-side-right {
+              .nft-side-right,
+              .character-side-left,
+              .character-side-right {
                 display: none !important;
               }
               .main-content-responsive {
@@ -595,7 +740,8 @@ const VotingPage = () => {
               }
             }
             @media (min-width: 1025px) and (max-width: 1400px) {
-              .nft-card {
+              .nft-card,
+              .character-card {
                 width: clamp(100px, 10vw, 150px) !important;
                 height: clamp(100px, 10vw, 150px) !important;
               }

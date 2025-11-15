@@ -7,7 +7,7 @@ import CreateVotePoolModal from "../components/CreateVotePoolModal";
 import UserProfileDropdown from "../components/UserProfileDropdown";
 import { getUserProfile, UserProfile } from "../utils/userProfile";
 import { useBlockchainPolls } from "../utils/pollUtils";
-import { NFT_COLLECTIONS, getUniqueCollectionTypes, getCollectionByType, getCollectionByName } from "../config/nftCollections";
+import { NFT_COLLECTIONS, getUniqueCollectionTypes, getCollectionByType } from "../config/nftCollections";
 import "../styles/theme.css";
 
 const VotePoolPage = () => {
@@ -82,6 +82,10 @@ const VotePoolPage = () => {
     refetch();
   };
 
+  const handlePollClick = (pollId: string) => {
+    navigate(`/voting/${pollId}`);
+  };
+
 
   const handleLogout = () => {
     disconnect();
@@ -107,7 +111,117 @@ const VotePoolPage = () => {
         overflow: "hidden",
       }}
     >
-      {/* Background NFT Images - Left and Right Sides */}
+      {/* Background Character Images - Left and Right Sides (For All Polls and Hero) */}
+      {(!selectedCollectionType || selectedCollectionType === "0xc6726b1b8f40ed882c5d7b7bb2e6fec36a4f19017dd9354268068473de37464e::hero::Hero") && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 0,
+            pointerEvents: "none",
+            overflow: "hidden",
+          }}
+        >
+          {/* Left Side Characters */}
+          <div
+            className="character-side-left"
+            style={{
+              position: "absolute",
+              left: "clamp(0.5rem, 2vw, 2rem)",
+              top: "50%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "clamp(1rem, 2vw, 2rem)",
+            }}
+          >
+            <img
+              src="/pollarpng.png"
+              alt="Pollar Character"
+              className="character-card"
+              style={{
+                width: "clamp(80px, 12vw, 200px)",
+                height: "clamp(80px, 12vw, 200px)",
+                objectFit: "contain",
+                borderRadius: "16px",
+                filter: "blur(1.5px)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                transform: "rotate(-3deg)",
+                background: "rgba(0, 0, 0, 0.2)",
+              }}
+            />
+            <img
+              src="/sealpng.png"
+              alt="Seal Character"
+              className="character-card"
+              style={{
+                width: "clamp(80px, 12vw, 200px)",
+                height: "clamp(80px, 12vw, 200px)",
+                objectFit: "contain",
+                borderRadius: "16px",
+                filter: "blur(1.5px)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                transform: "rotate(3deg)",
+                background: "rgba(0, 0, 0, 0.2)",
+              }}
+            />
+          </div>
+
+          {/* Right Side Characters */}
+          <div
+            className="character-side-right"
+            style={{
+              position: "absolute",
+              right: "clamp(0.5rem, 2vw, 2rem)",
+              top: "50%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "clamp(1rem, 2vw, 2rem)",
+            }}
+          >
+            <img
+              src="/walruspng.png"
+              alt="Walrus Character"
+              className="character-card"
+              style={{
+                width: "clamp(80px, 12vw, 200px)",
+                height: "clamp(80px, 12vw, 200px)",
+                objectFit: "contain",
+                borderRadius: "16px",
+                filter: "blur(1.5px)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                transform: "rotate(3deg)",
+                background: "rgba(0, 0, 0, 0.2)",
+              }}
+            />
+            <img
+              src="/friends.png"
+              alt="Friends Character"
+              className="character-card"
+              style={{
+                width: "clamp(80px, 12vw, 200px)",
+                height: "clamp(80px, 12vw, 200px)",
+                objectFit: "contain",
+                borderRadius: "16px",
+                filter: "blur(1.5px)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                transform: "rotate(-3deg)",
+                background: "rgba(0, 0, 0, 0.2)",
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Background NFT Images - Left and Right Sides (Only for Popkins and Tallys) */}
       {theme?.backgroundImages && theme.backgroundImages.length > 0 && (
         <>
           <div
@@ -191,7 +305,9 @@ const VotePoolPage = () => {
           <style>{`
             @media (max-width: 1024px) {
               .nft-side-left,
-              .nft-side-right {
+              .nft-side-right,
+              .character-side-left,
+              .character-side-right {
                 display: none !important;
               }
               .main-content-responsive {
@@ -200,7 +316,8 @@ const VotePoolPage = () => {
               }
             }
             @media (min-width: 1025px) and (max-width: 1400px) {
-              .nft-card {
+              .nft-card,
+              .character-card {
                 width: clamp(100px, 10vw, 150px) !important;
                 height: clamp(100px, 10vw, 150px) !important;
               }
@@ -306,7 +423,7 @@ const VotePoolPage = () => {
       {/* Main Content */}
       <main 
         className="main-content-responsive"
-        style={{ 
+          style={{
           padding: "clamp(1rem, 3vw, 2rem)",
           paddingLeft: "clamp(1rem, calc(12vw + 2rem), calc(200px + 4rem))",
           paddingRight: "clamp(1rem, calc(12vw + 2rem), calc(200px + 4rem))",
@@ -355,7 +472,7 @@ const VotePoolPage = () => {
               <button
                 key={collectionType}
                 onClick={() => setSelectedCollectionType(collectionType)}
-                style={{
+          style={{
                   padding: hasImage ? "0" : "0.75rem 1.5rem",
                   background: hasImage ? "transparent" : (isSelected ? "var(--color-light-blue)" : "transparent"),
                   color: hasImage ? "transparent" : (isSelected ? "#000000" : "var(--text-primary)"),
@@ -386,7 +503,7 @@ const VotePoolPage = () => {
                   <img 
                     src="/tallys.png" 
                     alt="Tallys" 
-                    style={{
+            style={{
                       height: "clamp(2rem, 4vw, 3rem)",
                       width: "auto",
                       objectFit: "contain",
@@ -400,7 +517,7 @@ const VotePoolPage = () => {
             );
           })}
         </div>
-        
+
         <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)", textAlign: "center" }}>
           <h2 
             className="active-pools-animated-text"
@@ -426,8 +543,34 @@ const VotePoolPage = () => {
 
         {/* Loading State */}
         {isLoadingPools && (
-          <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
-            Loading polls...
+          <div style={{ 
+            display: "flex", 
+            flexDirection: "column", 
+            alignItems: "center", 
+            justifyContent: "center", 
+            minHeight: "60vh",
+            gap: "1.5rem"
+          }}>
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{
+                width: "clamp(200px, 30vw, 400px)",
+                height: "auto",
+                maxWidth: "100%",
+              }}
+            >
+              <source src="/pollar-walk.mp4" type="video/mp4" />
+            </video>
+            <p style={{ 
+              color: "var(--text-muted)", 
+              fontSize: "clamp(1rem, 2vw, 1.2rem)",
+              fontWeight: "500"
+            }}>
+              Loading polls...
+            </p>
           </div>
         )}
 
@@ -448,28 +591,30 @@ const VotePoolPage = () => {
         {/* Vote Pool Grid */}
         {!isLoadingPools && pools.length > 0 && (
         <div
+          className="poll-grid-responsive"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 320px), 1fr))",
-            gap: "clamp(1rem, 3vw, 2rem)",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "clamp(1rem, 2vw, 1.5rem)",
+            maxWidth: "100%",
           }}
         >
           {pools.map((pool) => (
-            <Link
+            <div
               key={pool.id}
-              to={`/voting/${pool.id}`}
-              style={{ textDecoration: "none", color: "inherit" }}
+              onClick={() => handlePollClick(pool.id)}
+              style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}
             >
-              <div className="vote-pool-card" style={{ cursor: "pointer", height: "100%" }}>
-                {/* Pool Image */}
+              <div className="vote-pool-card" style={{ cursor: "pointer", height: "100%", display: "flex", flexDirection: "column" }}>
+                {/* Pool Image - Full Width at Top */}
                 <div
                   style={{
                     width: "100%",
-                    height: "200px",
+                    height: "140px",
                     borderRadius: "0.5rem 0.5rem 0 0",
-                    marginBottom: "1rem",
                     overflow: "hidden",
                     background: "var(--bg-secondary)",
+                    flexShrink: 0,
                   }}
                 >
                   <img
@@ -483,121 +628,119 @@ const VotePoolPage = () => {
                   />
                 </div>
 
-                {/* Pool Info */}
-                <div style={{ padding: "0 1rem" }}>
+                {/* Content */}
+                <div style={{ padding: "1rem", flex: "1", display: "flex", flexDirection: "column" }}>
+                  {/* Title and Description */}
+                  <div style={{ marginBottom: "1rem" }}>
                   <h3
                     style={{
-                      fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)",
+                        fontSize: "clamp(1rem, 1.8vw, 1.2rem)",
                       fontWeight: "700",
-                      marginBottom: "0.5rem",
+                        marginBottom: "0.25rem",
                       color: "#ffffff",
+                        lineHeight: "1.3",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                     }}
                   >
                     {pool.name}
                   </h3>
                   <p
                     style={{
-                      color: "#ffffff",
-                      marginBottom: "1rem",
-                      lineHeight: "1.6",
-                      fontSize: "clamp(0.9rem, 1.5vw, 0.95rem)",
-                      opacity: 0.9,
+                        color: "rgba(255, 255, 255, 0.7)",
+                        lineHeight: "1.4",
+                        fontSize: "clamp(0.8rem, 1.2vw, 0.85rem)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                     }}
                   >
                     {pool.description}
                   </p>
-
-                  {/* Options Preview */}
-                  <div style={{ marginBottom: "1rem" }}>
-                    <div style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.6)", marginBottom: "0.5rem" }}>
-                      Options:
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                      {pool.options.slice(0, 3).map((option) => (
-                        <span
-                          key={option.id}
-                          style={{
-                            padding: "0.4rem 0.9rem",
-                            background: "transparent",
-                            borderRadius: "9999px",
-                            fontSize: "0.85rem",
-                            border: "1px solid rgba(255, 255, 255, 0.3)",
-                            color: "rgba(255, 255, 255, 0.9)",
-                          }}
-                        >
-                          {option.name}
-                        </span>
-                      ))}
-                      {pool.options.length > 3 && (
-                        <span
-                          style={{
-                            padding: "0.4rem 0.9rem",
-                            background: "transparent",
-                            borderRadius: "9999px",
-                            fontSize: "0.85rem",
-                            border: "1px solid rgba(255, 255, 255, 0.3)",
-                            color: "rgba(255, 255, 255, 0.9)",
-                          }}
-                        >
-                          +{pool.options.length - 3} more
-                        </span>
-                      )}
-                    </div>
                   </div>
+
+                {/* Options with Progress Bars */}
+                {pool.options && pool.options.length >= 2 && (
+                  <div style={{ marginBottom: "1rem", flex: "1" }}>
+                    {/* First Option */}
+                    <div style={{ marginBottom: "0.75rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+                        <span style={{ fontSize: "0.875rem", fontWeight: "500", color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1", marginRight: "0.5rem" }}>
+                          {pool.options[0].name}
+                        </span>
+                        <span style={{ fontSize: "0.875rem", color: "#60a5fa", fontWeight: "bold", flexShrink: 0 }}>
+                          {pool.options[0].percentage.toFixed(1)}%
+                        </span>
+                    </div>
+                      <div
+                          style={{
+                          height: "8px",
+                          background: "rgba(255, 255, 255, 0.1)",
+                          borderRadius: "4px",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${pool.options[0].percentage}%`,
+                            height: "100%",
+                            background: "linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)",
+                            transition: "width 0.3s ease",
+                          }}
+                        />
+                      </div>
                 </div>
 
-                {/* Vote Statistics */}
+                    {/* Second Option */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+                        <span style={{ fontSize: "0.875rem", fontWeight: "500", color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1", marginRight: "0.5rem" }}>
+                          {pool.options[1].name}
+                        </span>
+                        <span style={{ fontSize: "0.875rem", color: pool.options[1].percentage > pool.options[0].percentage ? "#60a5fa" : "#ef4444", fontWeight: "bold", flexShrink: 0 }}>
+                          {pool.options[1].percentage.toFixed(1)}%
+                        </span>
+                      </div>
                 <div
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "1rem",
-                    borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-                    marginTop: "auto",
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.6)" }}>Total Votes</div>
-                    <div style={{ fontSize: "1.25rem", fontWeight: "bold", color: "#60a5fa" }}>
-                      {pool.totalVotes.toLocaleString()}
+                          height: "8px",
+                          background: "rgba(255, 255, 255, 0.1)",
+                          borderRadius: "4px",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${pool.options[1].percentage}%`,
+                            height: "100%",
+                            background: pool.options[1].percentage > pool.options[0].percentage 
+                              ? "linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)"
+                              : "linear-gradient(90deg, #dc2626 0%, #ef4444 100%)",
+                            transition: "width 0.3s ease",
+                          }}
+                        />
+                  </div>
                     </div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.6)" }}>Ends</div>
-                    <div style={{ fontSize: "0.9rem", color: "#ffffff" }}>
-                      {formatDate(pool.endTime)}
-                    </div>
-                  </div>
-                </div>
+                )}
 
-                {/* Top Option */}
-                {pool.options && pool.options.length > 0 && (
-                <div
-                  style={{
-                    marginTop: "0",
-                    padding: "0.75rem 1rem 1rem 1rem",
-                    background: "transparent",
-                    borderRadius: "0",
-                  }}
-                >
-                  <div style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.6)", marginBottom: "0.25rem" }}>
-                    Leading Option
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                    <span style={{ fontWeight: "600", color: "#ffffff" }}>
+                {/* Single Option Fallback */}
+                {pool.options && pool.options.length === 1 && (
+                  <div style={{ marginBottom: "1rem", flex: "1" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+                      <span style={{ fontSize: "0.875rem", fontWeight: "500", color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1", marginRight: "0.5rem" }}>
                       {pool.options[0].name}
                     </span>
-                    <span style={{ color: "#60a5fa", fontWeight: "bold" }}>
+                      <span style={{ fontSize: "0.875rem", color: "#60a5fa", fontWeight: "bold", flexShrink: 0 }}>
                       {pool.options[0].percentage.toFixed(1)}%
                     </span>
                   </div>
                   <div
                     style={{
-                      marginTop: "0.5rem",
-                      height: "6px",
+                        height: "8px",
                       background: "rgba(255, 255, 255, 0.1)",
-                      borderRadius: "3px",
+                        borderRadius: "4px",
                       overflow: "hidden",
                     }}
                   >
@@ -612,8 +755,35 @@ const VotePoolPage = () => {
                   </div>
                 </div>
                 )}
+
+                  {/* Vote Statistics */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      paddingTop: "0.75rem",
+                      borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                      marginTop: "auto",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.6)", marginBottom: "0.25rem" }}>Total Votes</div>
+                      <div style={{ fontSize: "1rem", fontWeight: "bold", color: "#60a5fa" }}>
+                        {pool.totalVotes.toLocaleString()}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.6)", marginBottom: "0.25rem" }}>Ends</div>
+                      <div style={{ fontSize: "0.85rem", color: "#ffffff" }}>
+                        {formatDate(pool.endTime)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
         )}
@@ -632,4 +802,5 @@ const VotePoolPage = () => {
 };
 
 export default VotePoolPage;
+
 

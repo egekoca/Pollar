@@ -198,6 +198,23 @@ img {
   height: auto;
 }
 
+/* Poll Grid Responsive */
+.poll-grid-responsive {
+  grid-template-columns: repeat(3, 1fr) !important;
+}
+
+@media (max-width: 1200px) {
+  .poll-grid-responsive {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .poll-grid-responsive {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* Mobile Optimizations */
 @media (max-width: 640px) {
   body {
