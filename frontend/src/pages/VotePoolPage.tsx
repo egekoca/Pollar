@@ -147,7 +147,6 @@ const VotePoolPage = () => {
                 height: "clamp(80px, 12vw, 200px)",
                 objectFit: "contain",
                 borderRadius: "16px",
-                filter: "blur(1.5px)",
                 boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
                 transform: "rotate(-3deg)",
@@ -163,7 +162,6 @@ const VotePoolPage = () => {
                 height: "clamp(80px, 12vw, 200px)",
                 objectFit: "contain",
                 borderRadius: "16px",
-                filter: "blur(1.5px)",
                 boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
                 transform: "rotate(3deg)",
@@ -194,7 +192,6 @@ const VotePoolPage = () => {
                 height: "clamp(80px, 12vw, 200px)",
                 objectFit: "contain",
                 borderRadius: "16px",
-                filter: "blur(1.5px)",
                 boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
                 transform: "rotate(3deg)",
@@ -210,7 +207,6 @@ const VotePoolPage = () => {
                 height: "clamp(80px, 12vw, 200px)",
                 objectFit: "contain",
                 borderRadius: "16px",
-                filter: "blur(1.5px)",
                 boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
                 transform: "rotate(-3deg)",
@@ -599,13 +595,114 @@ const VotePoolPage = () => {
             maxWidth: "100%",
           }}
         >
-          {pools.map((pool) => (
+          {pools.map((pool) => {
+            // Check if pool belongs to Popkins or Tallys
+            const poolCollection = pool.nft_collection_type 
+              ? getCollectionByType(pool.nft_collection_type)
+              : null;
+            const isPopkins = poolCollection?.name === "Popkins";
+            const isTallys = poolCollection?.name === "Tallys";
+            
+            // Glow colors based on collection
+            const glowColor = isPopkins 
+              ? "rgba(255, 165, 0, 0.3), rgba(50, 205, 50, 0.3)" // Orange-Green for Popkins
+              : isTallys
+              ? "rgba(255, 20, 147, 0.3), rgba(255, 99, 71, 0.3)" // Pink-Red for Tallys
+              : "transparent";
+            
+            return (
             <div
               key={pool.id}
               onClick={() => handlePollClick(pool.id)}
               style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}
             >
-              <div className="vote-pool-card" style={{ cursor: "pointer", height: "100%", display: "flex", flexDirection: "column" }}>
+              <div 
+                className="vote-pool-card" 
+                style={{ 
+                  cursor: "pointer", 
+                  height: "100%", 
+                  display: "flex", 
+                  flexDirection: "column",
+                  position: "relative",
+                  boxShadow: glowColor !== "transparent" 
+                    ? `0 0 20px ${isPopkins ? "rgba(255, 165, 0, 0.4)" : "rgba(255, 20, 147, 0.4)"}, 0 0 40px ${isPopkins ? "rgba(50, 205, 50, 0.3)" : "rgba(255, 99, 71, 0.3)"}`
+                    : undefined,
+                  border: glowColor !== "transparent"
+                    ? `1px solid ${isPopkins ? "rgba(255, 165, 0, 0.5)" : "rgba(255, 20, 147, 0.5)"}`
+                    : undefined,
+                }}
+              >
+                {/* NFT Collection Badge - Ribbon Style Top Right */}
+                {(isPopkins || isTallys) && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "0",
+                      right: "0",
+                      zIndex: 10,
+                      width: "clamp(55px, 7.5vw, 75px)",
+                      height: "clamp(55px, 7.5vw, 75px)",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {/* Ribbon Corner Triangle */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "0",
+                        right: "0",
+                        width: "0",
+                        height: "0",
+                        borderStyle: "solid",
+                        borderWidth: `0 clamp(55px, 7.5vw, 75px) clamp(55px, 7.5vw, 75px) 0`,
+                        borderColor: `transparent ${isPopkins ? "rgba(255, 165, 0, 0.95)" : "rgba(255, 20, 147, 0.95)"} transparent transparent`,
+                        filter: `drop-shadow(0 2px 8px ${isPopkins ? "rgba(255, 165, 0, 0.7)" : "rgba(255, 20, 147, 0.7)"})`,
+                      }}
+                    />
+                    {/* Ribbon Fold Shadow */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "0",
+                        right: "0",
+                        width: "0",
+                        height: "0",
+                        borderStyle: "solid",
+                        borderWidth: `0 clamp(40px, 5.5vw, 55px) clamp(40px, 5.5vw, 55px) 0`,
+                        borderColor: `transparent ${isPopkins ? "rgba(255, 140, 0, 0.8)" : "rgba(255, 0, 100, 0.8)"} transparent transparent`,
+                        transform: "translate(4px, 4px)",
+                      }}
+                    />
+                    {/* Image Container - Centered on Ribbon, Larger and More to Top Right */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "clamp(6px, 1vw, 10px)",
+                        right: "clamp(6px, 1vw, 10px)",
+                        width: "clamp(50px, 7.5vw, 70px)",
+                        height: "clamp(50px, 7.5vw, 70px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 11,
+                        transform: "rotate(45deg)",
+                      }}
+                    >
+                      <img
+                        src={isPopkins ? "/popkins.png" : "/tallys.png"}
+                        alt={poolCollection?.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "contain",
+                          filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6))",
+                          transform: "rotate(-45deg)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Pool Image - Full Width at Top */}
                 <div
                   style={{
@@ -784,7 +881,8 @@ const VotePoolPage = () => {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
         )}
         </div>
