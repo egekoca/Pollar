@@ -57,8 +57,8 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
   },
   {
     name: "Sui Workshop",
-    type: "0xe7a8f41cd0edef5431cf713dc6446f0bd80e394cba191741aa40ae5bd5d72326::simple_nft::SimpleNFT",
-    packageId: "0xe7a8f41cd0edef5431cf713dc6446f0bd80e394cba191741aa40ae5bd5d72326",
+    type: "0x22739e8c5f587927462590822f418a673e6435fe8a427f892132ab160a72fd83::simple_nft::SimpleNFT",
+    packageId: "0x22739e8c5f587927462590822f418a673e6435fe8a427f892132ab160a72fd83",
     moduleName: "simple_nft",
     structName: "SimpleNFT",
     description: "Sui Workshop NFT Collection",
@@ -66,7 +66,7 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
     theme: {
       backgroundGradient: "linear-gradient(180deg, #0a0e27 0%, #1a1f3a 30%, #2a2f4a 60%, #0a0e27 100%)",
       backgroundImages: [
-        "https://cryptopotato.com/tr/wp-content/uploads/2025/05/Sui_Header_1717037160BNVlLeLycn.jpg",
+        "/suiworkshop.png",
         "https://cdn.prod.website-files.com/6683c774a6e7a5003c5889c3/6763f7b7b0899fd3cffe2b3d_6763f572866fbd04f1767cbb_sui_banner_backpack_exchange.jpeg",
         "https://uzmancoin.com/wp-content/uploads/2023/05/sui-coin-nedir-nasil-alinir-1120x670.jpg",
         "https://99bitcoins.com/tr/wp-content/uploads/sites/7/2025/05/kapak-resmi-2-15.png",

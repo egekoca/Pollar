@@ -37,6 +37,7 @@ const ENftTypeMismatch: u64 = 17; // NFT type doesn't match poll's required coll
 const EDecryptionFailed: u64 = 18; // Failed to decrypt vote
 const EInvalidEncryptedVote: u64 = 19; // Invalid encrypted vote data
 const ESealAccessDenied: u64 = 20; // Seal access denied
+const EInvalidVotePower: u64 = 21; // Vote power must be positive
 
 const VERSION: u64 = 3; // Incremented version for Seal encryption support
 
@@ -147,6 +148,12 @@ public struct UserVoteMinted has copy, drop
 {
     user_vote: ID,
     owner: address
+}
+
+#[test_only]
+public fun share_poll_for_tests(poll: Poll)
+{
+    transfer::share_object(poll);
 }
 
 fun init(ctx: &mut TxContext) 
@@ -308,6 +315,7 @@ entry fun seal_approve(
 public entry fun vote_sealed(
     poll: &Poll,
     option_index: u64, // Option index for vote counting (also encrypted in encrypted_data)
+    vote_power: u64, // Dynamic vote weight (>=1)
     encrypted_data: vector<u8>, // BCS-serialized Seal encrypted object
     voteRegistry: &mut VoteRegistry,
     ctx: &mut TxContext
@@ -324,6 +332,7 @@ public entry fun vote_sealed(
     // Validate option index
     let options_len = vector::length(&poll.options);
     assert!(option_index < options_len, EInvalidOptionIndex);
+    assert!(vote_power > 0, EInvalidVotePower);
     
     // Check for double voting by wallet address
     let mut already_voted = false;
@@ -355,7 +364,7 @@ public entry fun vote_sealed(
     while (i < votes_len) {
         if (i == option_index) {
             let current_votes = *vector::borrow(&voteRegistry.option_votes, i);
-            vector::push_back(&mut new_option_votes, current_votes + 1);
+            vector::push_back(&mut new_option_votes, current_votes + vote_power);
         } else {
             let votes = *vector::borrow(&voteRegistry.option_votes, i);
             vector::push_back(&mut new_option_votes, votes);
@@ -376,6 +385,7 @@ public entry fun vote_sealed(
 public entry fun vote_sealed_with_nft<T: key + store>(
     poll: &Poll,
     option_index: u64, // Option index for vote counting (also encrypted in encrypted_data)
+    vote_power: u64, // Dynamic vote weight (>=1)
     encrypted_data: vector<u8>, // BCS-serialized Seal encrypted object
     voteRegistry: &mut VoteRegistry,
     nft: &T, // NFT object - ownership verified by Sui runtime
@@ -397,6 +407,7 @@ public entry fun vote_sealed_with_nft<T: key + store>(
     // Validate option index
     let options_len = vector::length(&poll.options);
     assert!(option_index < options_len, EInvalidOptionIndex);
+    assert!(vote_power > 0, EInvalidVotePower);
     
     // Check for double voting by wallet address
     let mut already_voted = false;
@@ -430,7 +441,7 @@ public entry fun vote_sealed_with_nft<T: key + store>(
     while (i < votes_len) {
         if (i == option_index) {
             let current_votes = *vector::borrow(&voteRegistry.option_votes, i);
-            vector::push_back(&mut new_option_votes, current_votes + 1);
+            vector::push_back(&mut new_option_votes, current_votes + vote_power);
         } else {
             let votes = *vector::borrow(&voteRegistry.option_votes, i);
             vector::push_back(&mut new_option_votes, votes);

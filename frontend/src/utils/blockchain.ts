@@ -687,6 +687,7 @@ export async function createSealedVoteTransaction(
   client: SuiClient,
   pollId: string,
   optionIndex: number,
+  votePower: number,
   voteRegistryId: string
 ): Promise<Transaction> {
   const sealClient = createSealClient(client);
@@ -749,6 +750,7 @@ export async function createSealedVoteTransaction(
       arguments: [
         tx.object(pollIdStr), // Poll object - use the string version
         tx.pure.u64(optionIndex), // option_index for vote counting
+        tx.pure.u64(votePower), // vote_power
         tx.pure.vector("u8", encryptedBytes), // encrypted_data
         tx.object(voteRegistryId), // VoteRegistry
       ],
@@ -768,6 +770,7 @@ export async function createSealedVoteWithNftTransaction(
   client: SuiClient,
   pollId: string,
   optionIndex: number,
+  votePower: number,
   voteRegistryId: string,
   nftType: string,
   nftId: string
@@ -839,6 +842,7 @@ export async function createSealedVoteWithNftTransaction(
       arguments: [
         tx.object(pollIdStr), // Poll object - use the string version
         tx.pure.u64(optionIndex), // option_index for vote counting
+        tx.pure.u64(votePower), // vote_power
         tx.pure.vector("u8", encryptedBytes), // encrypted_data
         tx.object(voteRegistryId), // VoteRegistry
         tx.object(nftId), // NFT object

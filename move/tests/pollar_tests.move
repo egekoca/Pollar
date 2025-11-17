@@ -71,9 +71,9 @@ use sui::dynamic_field;
 
     // Helper function to create a test poll
     #[test_only]
-    fun create_test_poll(ctx: &mut TxContext): Poll {
+    fun create_test_poll(ctx: &mut TxContext) {
         let options = create_test_poll_options(ctx);
-        pollar::create_poll(
+        let poll = pollar::create_poll(
             string::utf8(TEST_POLL_NAME),
             string::utf8(TEST_POLL_DESC),
             string::utf8(TEST_POLL_IMAGE),
@@ -82,20 +82,21 @@ use sui::dynamic_field;
             options,
             string::utf8(b""), // No NFT required for test poll
             ctx
-        )
+        );
+        pollar::share_poll_for_tests(poll);
     }
 
     // Helper function to create test user and poll (backward compatibility)
     #[test_only]
-    fun setup_test(ctx: &mut TxContext): (User, Poll) {
+    fun setup_test(ctx: &mut TxContext): User {
         let test_user = create_test_user(ctx);
-        let test_poll = create_test_poll(ctx);
-        (test_user, test_poll)
+        create_test_poll(ctx);
+        test_user
     }
 
     // Setup function for tests that need shared objects and minted poll
     #[test_only]
-    fun setup_with_minted_poll(scenario: &mut Scenario, sender: address): Poll {
+    fun setup_with_minted_poll(scenario: &mut Scenario, sender: address) {
         pollar::init_for_testing(scenario.ctx());
         
         scenario.next_tx(sender);
@@ -119,8 +120,7 @@ use sui::dynamic_field;
         // NOTE: Poll is now shared, so we need to take it as shared
         scenario.next_tx(sender);
         let poll = scenario.take_shared<Poll>();
-        
-        poll
+        test_scenario::return_shared(poll);
     }
 
   
@@ -144,7 +144,7 @@ use sui::dynamic_field;
         let mut scenario = test_scenario::begin(USER_ADDRESS);
         let ctx = test_scenario::ctx(&mut scenario);
         
-        let (user, _poll) = setup_test(ctx);
+        let user = setup_test(ctx);
         pollar::delete_user(user, ctx);
         // NOTE: Poll is now shared, so we cannot delete it
         // pollar::delete_poll(poll, ctx);
@@ -175,7 +175,7 @@ use sui::dynamic_field;
         
         // NOTE: Poll is now shared, so it cannot be transferred
         // setup_with_minted_poll returns a shared Poll object
-        let _poll = setup_with_minted_poll(&mut scenario, sender);
+        setup_with_minted_poll(&mut scenario, sender);
         // transfer::public_transfer(poll, sender); // Cannot transfer shared objects
         
         scenario.end();
@@ -214,7 +214,7 @@ use sui::dynamic_field;
         let mut scenario = test_scenario::begin(USER_ADDRESS);
         {
             let ctx = test_scenario::ctx(&mut scenario);
-            let _created_poll = create_test_poll(ctx);
+            create_test_poll(ctx);
             // NOTE: Poll is now shared, so we cannot delete it
             // pollar::delete_poll(created_poll, ctx);
         };
@@ -227,7 +227,7 @@ use sui::dynamic_field;
         let sender = USER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
         
-        let _poll = create_test_poll(scenario.ctx());
+        create_test_poll(scenario.ctx());
         // NOTE: Poll is now shared, so we cannot delete it
         // pollar::delete_poll(poll, scenario.ctx());
         

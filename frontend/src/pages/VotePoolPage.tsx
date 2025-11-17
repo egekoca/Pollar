@@ -1,12 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
+import { useCurrentAccount, useDisconnectWallet, useSuiClient } from "@mysten/dapp-kit";
 import { gsap } from "gsap";
 import PillNav from "../components/PillNav";
 import CreateVotePoolModal from "../components/CreateVotePoolModal";
 import UserProfileDropdown from "../components/UserProfileDropdown";
 import { getUserProfile, UserProfile } from "../utils/userProfile";
 import { useBlockchainPolls } from "../utils/pollUtils";
+import { getUserNftsByType } from "../utils/blockchain";
 import { NFT_COLLECTIONS, getUniqueCollectionTypes, getCollectionByType } from "../config/nftCollections";
 import pollarWalkVideo from "/pollar-walk.mp4";
 import "../styles/theme.css";
@@ -17,8 +18,10 @@ const VotePoolPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const account = useCurrentAccount();
+  const client = useSuiClient();
   const { mutate: disconnect } = useDisconnectWallet();
   const [selectedCollectionType, setSelectedCollectionType] = useState<string | null>(null); // null = all polls, string = specific collection
+  const [nftHoldings, setNftHoldings] = useState<Record<string, { count: number; votePower: number }>>({});
 
   const handleLogoHover = () => {
     if (logoRef.current) {
@@ -40,6 +43,41 @@ const VotePoolPage = () => {
     ? allPools // Show all polls when "All Polls" is selected
     : allPools.filter((pool) => pool.nft_collection_type === selectedCollectionType);
   
+  useEffect(() => {
+    const loadHoldings = async () => {
+      if (!account?.address) {
+        setNftHoldings({});
+        return;
+      }
+      const typesToFetch = Array.from(
+        new Set(
+          allPools
+            .map((pool) => pool.nft_collection_type)
+            .filter((type): type is string => !!type && type.length > 0)
+        )
+      );
+      if (typesToFetch.length === 0) {
+        setNftHoldings({});
+        return;
+      }
+      try {
+        const entries = await Promise.all(
+          typesToFetch.map(async (type) => {
+            const nfts = await getUserNftsByType(client, account.address as string, type);
+            const count = nfts.length;
+            const votePower = count > 0 ? count * count : 0;
+            return [type, { count, votePower }] as const;
+          })
+        );
+        setNftHoldings(Object.fromEntries(entries));
+      } catch (err) {
+        console.error("Error loading NFT holdings:", err);
+      }
+    };
+
+    loadHoldings();
+  }, [account?.address, allPools, client]);
+
   // Get unique collection types from all polls
   const uniqueCollectionTypesFromPolls = getUniqueCollectionTypes(allPools);
   
@@ -47,17 +85,18 @@ const VotePoolPage = () => {
   // This ensures all collection buttons are visible even if no polls exist yet
   const allCollectionTypes = NFT_COLLECTIONS.map(col => col.type);
   const uniqueCollectionTypesUnsorted = Array.from(new Set([...uniqueCollectionTypesFromPolls, ...allCollectionTypes]));
+  const validCollectionTypesUnsorted = uniqueCollectionTypesUnsorted.filter((type) => !!getCollectionByType(type));
   
   // Sort collections in desired order: Hero, Sui Workshop, Popkins, Tallys, Pawtato Heroes
   const collectionOrder = [
     "0xc6726b1b8f40ed882c5d7b7bb2e6fec36a4f19017dd9354268068473de37464e::hero::Hero", // Hero
-    "0xe7a8f41cd0edef5431cf713dc6446f0bd80e394cba191741aa40ae5bd5d72326::simple_nft::SimpleNFT", // Sui Workshop
+    "0x22739e8c5f587927462590822f418a673e6435fe8a427f892132ab160a72fd83::simple_nft::SimpleNFT", // Sui Workshop
     "0xb908f3c6fea6865d32e2048c520cdfe3b5c5bbcebb658117c41bad70f52b7ccc::popkins_nft::Popkins", // Popkins
     "0x75888defd3f392d276643932ae204cd85337a5b8f04335f9f912b6291149f423::nft::Tally", // Tallys
     "0x0000000000000000000000000000000000000000000000000000000000000000::pawtato_heroes::PawtatoHero", // Pawtato Heroes
   ];
-  
-  const uniqueCollectionTypes = uniqueCollectionTypesUnsorted.sort((a, b) => {
+
+  const uniqueCollectionTypes = validCollectionTypesUnsorted.sort((a, b) => {
     const indexA = collectionOrder.indexOf(a);
     const indexB = collectionOrder.indexOf(b);
     // If both are in the order list, sort by their position
@@ -290,7 +329,7 @@ const VotePoolPage = () => {
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                         borderRadius: "16px",
-                        filter: "blur(0.7px)",
+                        filter: "blur(0.25px)",
                         boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                         border: "1px solid rgba(255, 255, 255, 0.1)",
                         transform: `rotate(${index * 3 - 3}deg)`,
@@ -323,7 +362,7 @@ const VotePoolPage = () => {
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                         borderRadius: "16px",
-                        filter: "blur(0.7px)",
+                        filter: "blur(0.25px)",
                         boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                         border: "1px solid rgba(255, 255, 255, 0.1)",
                         transform: `rotate(${index * -3 + 3}deg)`,
@@ -761,6 +800,12 @@ const VotePoolPage = () => {
             const isPawtatoHeroes = poolCollection?.name === "Pawtato Heroes";
             const isHero = poolCollection?.name === "Hero";
             const isSuiWorkshop = poolCollection?.name === "Sui Workshop";
+            const requiresCollectionNft = !!pool.nft_collection_type;
+            const holdingStats = requiresCollectionNft && pool.nft_collection_type
+              ? nftHoldings[pool.nft_collection_type]
+              : undefined;
+            const ownedCount = holdingStats?.count ?? 0;
+            const ownedVotePower = holdingStats?.votePower ?? 0;
             
             // Check if poll is active
             const now = new Date();
@@ -1043,7 +1088,7 @@ const VotePoolPage = () => {
                 </div>
                 )}
 
-                  {/* Vote Statistics */}
+                {/* Vote Statistics */}
                   <div
                     style={{
                       display: "flex",

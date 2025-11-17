@@ -39,6 +39,14 @@ const VotingPage = () => {
   const [userNfts, setUserNfts] = useState<Array<{ objectId: string; type: string }>>([]);
   const [selectedNftId, setSelectedNftId] = useState<string | null>(null);
 
+  const pollRequiresNft = !!(pollData?.nft_collection_type && pollData.nft_collection_type.length > 0);
+  const nftCountForPoll = pollRequiresNft ? userNfts.length : 0;
+  const derivedVotePower = pollRequiresNft
+    ? nftCountForPoll > 0
+      ? nftCountForPoll * nftCountForPoll
+      : 0
+    : 1;
+
   const handleLogoHover = () => {
     if (logoRef.current) {
       gsap.to(logoRef.current, {
@@ -256,10 +264,7 @@ const VotingPage = () => {
     setError("");
     setSelectedOption(optionIndex);
 
-    // Check if poll requires NFT
-    const requiresNft = pollData?.nft_collection_type && pollData.nft_collection_type.length > 0;
-    
-    if (requiresNft) {
+    if (pollRequiresNft) {
       if (userNfts.length === 0) {
         setError("This poll requires an NFT from the collection. You don't own any NFTs from this collection.");
         setSelectedOption(null);
@@ -273,6 +278,8 @@ const VotingPage = () => {
       }
     }
 
+    const votePower = pollRequiresNft ? Math.max(1, userNfts.length * userNfts.length) : 1;
+
     try {
       // Check if poll uses sealed (encrypted) voting
       // For now, we'll always use sealed voting for privacy
@@ -282,17 +289,18 @@ const VotingPage = () => {
       // Create transaction - use sealed voting functions for privacy
       let tx;
       if (useSealedVoting) {
-        if (requiresNft && selectedNftId) {
+        if (pollRequiresNft && selectedNftId) {
           tx = await createSealedVoteWithNftTransaction(
             client,
             id,
             optionIndex,
+            votePower,
             voteRegistryId,
             pollData.nft_collection_type,
             selectedNftId
           );
         } else {
-          tx = await createSealedVoteTransaction(client, id, optionIndex, voteRegistryId);
+          tx = await createSealedVoteTransaction(client, id, optionIndex, votePower, voteRegistryId);
         }
       } else {
         // This should never happen as useSealedVoting is always true
@@ -1088,44 +1096,36 @@ const VotingPage = () => {
               </div>
             )}
             
-            {/* NFT Selection (if poll requires NFT) */}
-            {pollData?.nft_collection_type && pollData.nft_collection_type.length > 0 && account?.address && (
+            {/* NFT info (if poll requires NFT) */}
+            {pollRequiresNft && account?.address && userNfts.length === 0 && (
               <div
                 style={{
                   padding: "1rem",
                   background: "rgba(59, 130, 246, 0.1)",
                   border: "1px solid rgba(59, 130, 246, 0.3)",
                   borderRadius: "0.5rem",
+                  color: "#ef4444",
+                  fontSize: "0.9rem",
                 }}
               >
-                <div style={{ fontSize: "0.9rem", color: "var(--text-primary)", marginBottom: "0.5rem", fontWeight: "600" }}>
-                  Select NFT to Vote With:
-                </div>
-                {userNfts.length === 0 ? (
-                  <div style={{ color: "#ef4444", fontSize: "0.85rem" }}>
-                    You don't own any NFTs from this collection. You cannot vote in this poll.
-                  </div>
-                ) : (
-                  <select
-                    value={selectedNftId || ""}
-                    onChange={(e) => setSelectedNftId(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "0.75rem",
-                      background: "var(--bg-secondary)",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: "0.5rem",
-                      color: "var(--text-primary)",
-                      fontSize: "1rem",
-                    }}
-                  >
-                    {userNfts.map((nft) => (
-                      <option key={nft.objectId} value={nft.objectId}>
-                        NFT #{nft.objectId.slice(0, 8)}...{nft.objectId.slice(-6)}
-                      </option>
-                    ))}
-                  </select>
-                )}
+                You don't own any NFTs from this collection. You cannot vote in this poll.
+              </div>
+            )}
+
+            {pollRequiresNft && account?.address && nftCountForPoll > 0 && (
+              <div
+                style={{
+                  padding: "0.85rem 1rem",
+                  background: "rgba(15, 23, 42, 0.6)",
+                  border: "1px solid rgba(148, 163, 184, 0.3)",
+                  borderRadius: "0.5rem",
+                  color: "var(--text-primary)",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                }}
+              >
+                Vote power in this poll:{" "}
+                <span style={{ color: "#34d399" }}>{derivedVotePower}</span>
               </div>
             )}
             
