@@ -125,7 +125,15 @@ const VotePoolPage = () => {
   const theme = selectedCollection?.theme;
   // Always use dark background like other pages
   const defaultBackground = "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)";
-  const backgroundGradient = defaultBackground; // Keep dark background, NFT theme only affects NFT images
+  
+  let backgroundGradient = defaultBackground;
+
+  // Custom background for Popkins
+  if (selectedCollection?.name === "Popkins") {
+    // Green (Left) -> Orange (Center) -> Pink (Right)
+    // Using darker shades to maintain readability while keeping the colors visible
+    backgroundGradient = "linear-gradient(90deg, rgba(16, 185, 129, 0.8) 0%, rgba(245, 158, 11, 0.8) 50%, rgba(236, 72, 153, 0.8) 100%), linear-gradient(180deg, #000000 0%, transparent 50%, #000000 100%)";
+  }
 
   return (
     <div 
@@ -620,7 +628,8 @@ const VotePoolPage = () => {
               if (collection) {
                 if (collection.name === "Popkins") {
                   title = "POPKINS VOTE POLLS";
-                  gradient = "linear-gradient(90deg, #10b981 0%, #34d399 15%, #fbbf24 30%, #f59e0b 45%, #f97316 60%, #ec4899 75%, #f472b6 90%, #10b981 100%)"; // Green → Orange → Pink (buton gradyanı gibi)
+                  // Gradient yerine stroke kullanacağız, o yüzden burada gradient'i boş geçebiliriz veya stil içinde override edebiliriz
+                  gradient = "none"; 
                 } else if (collection.name === "Tallys") {
                   title = "TALLYS VOTE POLLS";
                   gradient = "linear-gradient(90deg, #ec4899 0%, #f472b6 20%, #fb7185 40%, #ef4444 60%, #dc2626 80%, #991b1b 100%)"; // Pink to Red
@@ -637,22 +646,45 @@ const VotePoolPage = () => {
               }
             }
             
+            const isPopkins = title === "POPKINS VOTE POLLS";
+
             return (
               <>
                 <h2 
                   className="active-pools-animated-text"
                   style={{ 
-                    fontSize: "clamp(1.75rem, 4.5vw, 3rem)", 
                     marginBottom: "0.5rem",
                     fontWeight: "900",
                     textTransform: "uppercase",
-                    backgroundImage: gradient,
-                    backgroundSize: "300% auto",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                    color: "transparent",
-                    animation: "smoothFlowingGradient 5s ease-in-out infinite",
+                    // Popkins için özel stil: Graffiti tarzı
+                    ...(isPopkins ? {
+                      fontFamily: '"Titan One", cursive',
+                      fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
+                      letterSpacing: "0.02em",
+                      // İç Renk: Yeşil -> Turuncu Gradyan (Kullanıcı isteği)
+                      backgroundImage: "linear-gradient(180deg, #4ade80 20%, #f97316 80%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      color: "transparent",
+                      // Dış Kontur: Daha ince siyah (Kullanıcı isteği)
+                      WebkitTextStroke: "clamp(2px, 0.5vw, 4px) #000000", 
+                      paintOrder: "stroke fill", // Kontur dışa doğru olsun
+                      // Gölge
+                      filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.2))",
+                      animation: "none",
+                      lineHeight: "1.2",
+                      padding: "0.2em 0" // Stroke'un kesilmemesi için
+                    } : {
+                      fontSize: "clamp(1.75rem, 4.5vw, 3rem)", 
+                      backgroundImage: gradient,
+                      backgroundSize: "300% auto",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      color: "transparent",
+                      animation: "smoothFlowingGradient 5s ease-in-out infinite",
+                    }),
                     display: "block",
                     width: "100%",
                     whiteSpace: "nowrap",
@@ -662,7 +694,13 @@ const VotePoolPage = () => {
                 >
                   {title}
                 </h2>
-          <p style={{ color: "var(--text-muted)", fontSize: "clamp(1rem, 2vw, 1.1rem)", marginBottom: "1rem" }}>
+          <p style={{ 
+            color: isPopkins ? "rgba(0, 0, 0, 0.85)" : "var(--text-muted)", 
+            fontSize: "clamp(1rem, 2vw, 1.1rem)", 
+            marginBottom: "1rem",
+            fontWeight: isPopkins ? "600" : "normal",
+            textShadow: isPopkins ? "0 1px 2px rgba(255,255,255,0.3)" : "none"
+          }}>
             Participate in ongoing polls and make your voice heard
           </p>
           {selectedCollectionType && (() => {
@@ -750,11 +788,25 @@ const VotePoolPage = () => {
         {/* Empty State */}
         {!isLoadingPools && pools.length === 0 && (
           <div style={{ textAlign: "center", padding: "2rem" }}>
-            <p style={{ color: "var(--text-muted)", fontSize: "1.1rem", marginBottom: "1rem" }}>
+            <p style={{ 
+              color: selectedCollection?.name === "Popkins" ? "rgba(0, 0, 0, 0.85)" : "var(--text-muted)", 
+              fontSize: "1.1rem", 
+              marginBottom: "1rem",
+              fontWeight: selectedCollection?.name === "Popkins" ? "600" : "normal"
+            }}>
               No polls found. Create the first poll!
             </p>
             {account && userProfile && (
-              <button onClick={handleCreateVotePool} className="button button-primary">
+              <button 
+                onClick={handleCreateVotePool} 
+                className="button button-primary"
+                style={selectedCollection?.name === "Popkins" ? {
+                  backgroundColor: "#000000",
+                  color: "#ffffff",
+                  fontWeight: "700",
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.3)"
+                } : undefined}
+              >
                 Create First Poll
               </button>
             )}
