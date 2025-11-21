@@ -133,6 +133,12 @@ const VotePoolPage = () => {
     // Green (Left) -> Orange (Center) -> Pink (Right)
     // Using darker shades to maintain readability while keeping the colors visible
     backgroundGradient = "linear-gradient(90deg, rgba(16, 185, 129, 0.8) 0%, rgba(245, 158, 11, 0.8) 50%, rgba(236, 72, 153, 0.8) 100%), linear-gradient(180deg, #000000 0%, transparent 50%, #000000 100%)";
+  } else if (selectedCollection?.name === "Tallys") {
+    // Pink/Magenta (Left) -> Sea Green/Teal (Right)
+    backgroundGradient = "linear-gradient(90deg, rgba(219, 39, 119, 0.8) 0%, rgba(45, 212, 191, 0.8) 100%), linear-gradient(180deg, #000000 0%, transparent 50%, #000000 100%)";
+  } else if (selectedCollection?.name === "Pawtato Heroes") {
+    // Dark Green (Left) -> Yellowish Orange (Center) -> Dark Red (Right)
+    backgroundGradient = "linear-gradient(90deg, rgba(21, 128, 61, 0.9) 0%, rgba(234, 179, 8, 0.9) 50%, rgba(153, 27, 27, 0.9) 100%), linear-gradient(180deg, #000000 0%, transparent 50%, #000000 100%)";
   }
 
   return (
@@ -647,6 +653,9 @@ const VotePoolPage = () => {
             }
             
             const isPopkins = title === "POPKINS VOTE POLLS";
+            const isTallys = title === "TALLYS VOTE POLLS";
+            const isPawtatoHeroes = title === "PAWTATO HEROES VOTE POLLS";
+            const isCustomStyled = isPopkins || isTallys || isPawtatoHeroes;
 
             return (
               <>
@@ -656,25 +665,29 @@ const VotePoolPage = () => {
                     marginBottom: "0.5rem",
                     fontWeight: "900",
                     textTransform: "uppercase",
-                    // Popkins için özel stil: Graffiti tarzı
-                    ...(isPopkins ? {
+                    // Popkins, Tallys ve Pawtato Heroes için özel stil: Graffiti tarzı
+                    ...(isCustomStyled ? {
                       fontFamily: '"Titan One", cursive',
-                      fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
+                      fontSize: "clamp(1.8rem, 5vw, 3.5rem)", // Font boyutu küçültüldü
                       letterSpacing: "0.02em",
-                      // İç Renk: Yeşil -> Turuncu Gradyan (Kullanıcı isteği)
-                      backgroundImage: "linear-gradient(180deg, #4ade80 20%, #f97316 80%)",
+                      // İç Renk Gradyanı
+                      backgroundImage: isTallys 
+                        ? "linear-gradient(180deg, #fde047 20%, #fb923c 80%)" // Tallys: Sarı -> Turuncu
+                        : isPawtatoHeroes
+                        ? "linear-gradient(180deg, #ef4444 20%, #f59e0b 80%)" // Pawtato: Kırmızı -> Turuncu
+                        : "linear-gradient(180deg, #4ade80 20%, #f97316 80%)", // Popkins: Yeşil -> Turuncu
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                       backgroundClip: "text",
                       color: "transparent",
-                      // Dış Kontur: Daha ince siyah (Kullanıcı isteği)
-                      WebkitTextStroke: "clamp(2px, 0.5vw, 4px) #000000", 
+                      // Dış Kontur: İnce Siyah
+                      WebkitTextStroke: "clamp(1.5px, 0.4vw, 3px) #000000", 
                       paintOrder: "stroke fill", // Kontur dışa doğru olsun
                       // Gölge
                       filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.2))",
                       animation: "none",
-                      lineHeight: "1.2",
-                      padding: "0.2em 0" // Stroke'un kesilmemesi için
+                      lineHeight: "1.1", // Satır aralığı sıkılaştırıldı
+                      padding: "0.2em 0 0.3em 0" // Stroke'un kesilmemesi için padding artırıldı
                     } : {
                       fontSize: "clamp(1.75rem, 4.5vw, 3rem)", 
                       backgroundImage: gradient,
@@ -687,19 +700,19 @@ const VotePoolPage = () => {
                     }),
                     display: "block",
                     width: "100%",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    whiteSpace: "normal", // Alt satıra geçmesine izin ver
+                    wordBreak: "break-word", // Uzun kelimeleri kır
+                    textAlign: "center",
                   }}
                 >
                   {title}
                 </h2>
           <p style={{ 
-            color: isPopkins ? "rgba(0, 0, 0, 0.85)" : "var(--text-muted)", 
+            color: isCustomStyled ? "rgba(0, 0, 0, 0.85)" : "var(--text-muted)", 
             fontSize: "clamp(1rem, 2vw, 1.1rem)", 
             marginBottom: "1rem",
-            fontWeight: isPopkins ? "600" : "normal",
-            textShadow: isPopkins ? "0 1px 2px rgba(255,255,255,0.3)" : "none"
+            fontWeight: isCustomStyled ? "600" : "normal",
+            textShadow: isCustomStyled ? "0 1px 2px rgba(255,255,255,0.3)" : "none"
           }}>
             Participate in ongoing polls and make your voice heard
           </p>
@@ -789,10 +802,10 @@ const VotePoolPage = () => {
         {!isLoadingPools && pools.length === 0 && (
           <div style={{ textAlign: "center", padding: "2rem" }}>
             <p style={{ 
-              color: selectedCollection?.name === "Popkins" ? "rgba(0, 0, 0, 0.85)" : "var(--text-muted)", 
+              color: (selectedCollection?.name === "Popkins" || selectedCollection?.name === "Tallys" || selectedCollection?.name === "Pawtato Heroes") ? "rgba(0, 0, 0, 0.85)" : "var(--text-muted)", 
               fontSize: "1.1rem", 
               marginBottom: "1rem",
-              fontWeight: selectedCollection?.name === "Popkins" ? "600" : "normal"
+              fontWeight: (selectedCollection?.name === "Popkins" || selectedCollection?.name === "Tallys" || selectedCollection?.name === "Pawtato Heroes") ? "600" : "normal"
             }}>
               No polls found. Create the first poll!
             </p>
@@ -800,7 +813,7 @@ const VotePoolPage = () => {
               <button 
                 onClick={handleCreateVotePool} 
                 className="button button-primary"
-                style={selectedCollection?.name === "Popkins" ? {
+                style={(selectedCollection?.name === "Popkins" || selectedCollection?.name === "Tallys" || selectedCollection?.name === "Pawtato Heroes") ? {
                   backgroundColor: "#000000",
                   color: "#ffffff",
                   fontWeight: "700",
