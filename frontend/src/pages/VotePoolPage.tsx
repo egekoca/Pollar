@@ -1,13 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { useCurrentAccount, useDisconnectWallet, useSuiClient } from "@mysten/dapp-kit";
+import { useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
 import { gsap } from "gsap";
 import PillNav from "../components/PillNav";
 import CreateVotePoolModal from "../components/CreateVotePoolModal";
 import UserProfileDropdown from "../components/UserProfileDropdown";
 import { getUserProfile, UserProfile } from "../utils/userProfile";
 import { useBlockchainPolls } from "../utils/pollUtils";
-import { getUserNftsByType } from "../utils/blockchain";
 import { NFT_COLLECTIONS, getUniqueCollectionTypes, getCollectionByType } from "../config/nftCollections";
 import pollarWalkVideo from "/pollar-walk.mp4";
 import "../styles/theme.css";
@@ -18,10 +17,8 @@ const VotePoolPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const account = useCurrentAccount();
-  const client = useSuiClient();
   const { mutate: disconnect } = useDisconnectWallet();
   const [selectedCollectionType, setSelectedCollectionType] = useState<string | null>(null); // null = all polls, string = specific collection
-  const [nftHoldings, setNftHoldings] = useState<Record<string, { count: number; votePower: number }>>({});
 
   const handleLogoHover = () => {
     if (logoRef.current) {
@@ -43,41 +40,6 @@ const VotePoolPage = () => {
     ? allPools // Show all polls when "All Polls" is selected
     : allPools.filter((pool) => pool.nft_collection_type === selectedCollectionType);
   
-  useEffect(() => {
-    const loadHoldings = async () => {
-      if (!account?.address) {
-        setNftHoldings({});
-        return;
-      }
-      const typesToFetch = Array.from(
-        new Set(
-          allPools
-            .map((pool) => pool.nft_collection_type)
-            .filter((type): type is string => !!type && type.length > 0)
-        )
-      );
-      if (typesToFetch.length === 0) {
-        setNftHoldings({});
-        return;
-      }
-      try {
-        const entries = await Promise.all(
-          typesToFetch.map(async (type) => {
-            const nfts = await getUserNftsByType(client, account.address as string, type);
-            const count = nfts.length;
-            const votePower = count > 0 ? count * count : 0;
-            return [type, { count, votePower }] as const;
-          })
-        );
-        setNftHoldings(Object.fromEntries(entries));
-      } catch (err) {
-        console.error("Error loading NFT holdings:", err);
-      }
-    };
-
-    loadHoldings();
-  }, [account?.address, allPools, client]);
-
   // Get unique collection types from all polls
   const uniqueCollectionTypesFromPolls = getUniqueCollectionTypes(allPools);
   
@@ -176,6 +138,7 @@ const VotePoolPage = () => {
     >
       {/* Background Character Images - Left and Right Sides (For All Polls and Hero) */}
       {(!selectedCollectionType || selectedCollectionType === "0xc6726b1b8f40ed882c5d7b7bb2e6fec36a4f19017dd9354268068473de37464e::hero::Hero") && (
+        <>
         <div
           style={{
             position: "fixed",
@@ -204,7 +167,7 @@ const VotePoolPage = () => {
             <img
               src="/pollarpng.png"
               alt="Pollar Character"
-              className="character-card"
+              className="character-card float-gentle-up"
               style={{
                 width: "clamp(80px, 12vw, 200px)",
                 height: "clamp(80px, 12vw, 200px)",
@@ -219,7 +182,7 @@ const VotePoolPage = () => {
             <img
               src="/sealpng.png"
               alt="Seal Character"
-              className="character-card"
+              className="character-card float-gentle-down"
               style={{
                 width: "clamp(80px, 12vw, 200px)",
                 height: "clamp(80px, 12vw, 200px)",
@@ -249,7 +212,7 @@ const VotePoolPage = () => {
             <img
               src="/walruspng.png"
               alt="Walrus Character"
-              className="character-card"
+              className="character-card float-gentle-up"
               style={{
                 width: "clamp(80px, 12vw, 200px)",
                 height: "clamp(80px, 12vw, 200px)",
@@ -264,7 +227,7 @@ const VotePoolPage = () => {
             <img
               src="/friends.png"
               alt="Friends Character"
-              className="character-card"
+              className="character-card float-gentle-down"
               style={{
                 width: "clamp(80px, 12vw, 200px)",
                 height: "clamp(80px, 12vw, 200px)",
@@ -278,6 +241,25 @@ const VotePoolPage = () => {
             />
           </div>
         </div>
+        <style>{`
+          @keyframes gentleFloatUp {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            50% { transform: translateY(calc(-50% - 8px)) rotate(-1deg); }
+            100% { transform: translateY(-50%) rotate(0deg); }
+          }
+          @keyframes gentleFloatDown {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            50% { transform: translateY(calc(-50% + 8px)) rotate(1deg); }
+            100% { transform: translateY(-50%) rotate(0deg); }
+          }
+          .float-gentle-up {
+            animation: gentleFloatUp 10s ease-in-out infinite;
+          }
+          .float-gentle-down {
+            animation: gentleFloatDown 11s ease-in-out infinite;
+          }
+        `}</style>
+        </>
       )}
 
       {/* Background NFT Images - Left and Right Sides (Only for Popkins and Tallys) */}
@@ -785,9 +767,9 @@ const VotePoolPage = () => {
           className="poll-grid-responsive"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
             gap: "clamp(1rem, 2vw, 1.5rem)",
             maxWidth: "100%",
+            width: "100%",
           }}
         >
           {pools.map((pool) => {
@@ -800,12 +782,6 @@ const VotePoolPage = () => {
             const isPawtatoHeroes = poolCollection?.name === "Pawtato Heroes";
             const isHero = poolCollection?.name === "Hero";
             const isSuiWorkshop = poolCollection?.name === "Sui Workshop";
-            const requiresCollectionNft = !!pool.nft_collection_type;
-            const holdingStats = requiresCollectionNft && pool.nft_collection_type
-              ? nftHoldings[pool.nft_collection_type]
-              : undefined;
-            const ownedCount = holdingStats?.count ?? 0;
-            const ownedVotePower = holdingStats?.votePower ?? 0;
             
             // Check if poll is active
             const now = new Date();

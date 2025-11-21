@@ -224,13 +224,18 @@ img {
   grid-template-columns: repeat(3, 1fr) !important;
 }
 
-@media (max-width: 1200px) {
+/* Grid child'larının içeriğe göre genişleyip grid yapısını bozmasını engeller */
+.poll-grid-responsive > * {
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
   .poll-grid-responsive {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .poll-grid-responsive {
     grid-template-columns: 1fr !important;
   }
