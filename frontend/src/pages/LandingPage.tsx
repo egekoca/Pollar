@@ -95,14 +95,14 @@ const LandingPage = () => {
       <section
         className="hero-section"
         style={{
-          padding: "4rem 2rem",
+          padding: "0 2rem",
           maxWidth: "1200px",
           margin: "0 auto",
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 500px), 1fr))",
           gap: "4rem",
           alignItems: "center",
-          minHeight: "calc(100vh - 80px)",
+          minHeight: "calc(100vh - 80px)", // Header hariç tam ekran
           position: "relative",
         }}
       >
