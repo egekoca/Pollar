@@ -31,7 +31,11 @@ const LandingPage = () => {
           alignItems: "center",
           flexWrap: "wrap",
           gap: "1rem",
-          position: "relative",
+          position: "sticky",
+          top: 0,
+          zIndex: 1000,
+          backdropFilter: "blur(10px)",
+          background: "rgba(0, 0, 0, 0.05)",
         }}
       >
         {/* Sol Taraf - Logo + Proje İsmi */}
