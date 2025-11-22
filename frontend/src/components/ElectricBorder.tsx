@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, memo } from 'react';
 import './ElectricBorder.css';
 
 interface ElectricBorderProps {
@@ -11,7 +11,7 @@ interface ElectricBorderProps {
   style?: React.CSSProperties;
 }
 
-const ElectricBorder = ({ 
+const ElectricBorder = memo(({ 
   children, 
   color = '#5227FF', 
   speed = 1, 
@@ -25,12 +25,37 @@ const ElectricBorder = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const strokeRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Intersection Observer to optimize performance
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setIsVisible(entry.isIntersecting);
+        });
+      },
+      { threshold: 0.1 } // %10 görünür olduğunda tetikle
+    );
+
+    if (rootRef.current) {
+      observer.observe(rootRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   const updateAnim = () => {
+    // ... (Mevcut animasyon kodu)
+    if (!isVisible) return; // Görünür değilse güncelleme yapma
+
     const svg = svgRef.current;
     const host = rootRef.current;
     if (!svg || !host) return;
 
+    // ... (Geri kalan kod aynı)
     if (strokeRef.current) {
       strokeRef.current.style.filter = `url(#${filterId})`;
     }
@@ -79,18 +104,27 @@ const ElectricBorder = ({
   };
 
   useEffect(() => {
-    updateAnim();
+    if (isVisible) {
+      updateAnim();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [speed, chaos]);
+  }, [speed, chaos, isVisible]);
 
   useLayoutEffect(() => {
     if (!rootRef.current) return;
-    const ro = new ResizeObserver(() => updateAnim());
+    // ResizeObserver sadece görünürse çalışsın optimizasyonu yapılabilir ama
+    // boyut değişince animasyon parametrelerinin güncellenmesi gerekir.
+    // Yine de updateAnim içinde isVisible kontrolü olduğu için sorun olmaz.
+    const ro = new ResizeObserver(() => {
+      if (isVisible) updateAnim();
+    });
     ro.observe(rootRef.current);
-    updateAnim();
+    
+    if (isVisible) updateAnim();
+    
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isVisible]);
 
   const vars: React.CSSProperties = {
     ['--electric-border-color' as string]: color,
@@ -99,25 +133,28 @@ const ElectricBorder = ({
 
   return (
     <div ref={rootRef} className={`electric-border ${className}`} style={{ ...vars, ...style }}>
-      <svg ref={svgRef} className="eb-svg" aria-hidden focusable={false}>
+      {/* SVG içeriğini sadece görünürken veya mount edilince render etmek performansı artırır */}
+      {/* Ancak layout shift olmaması için SVG her zaman DOM'da kalsın ama animasyonları dursun */}
+      <svg ref={svgRef} className="eb-svg" aria-hidden focusable={false} style={{ display: isVisible ? 'block' : 'none' }}>
         <defs>
           <filter id={filterId} colorInterpolationFilters="sRGB" x="-20%" y="-20%" width="140%" height="140%">
-            <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves={10} result="noise1" seed={1} />
+            {/* numOctaves değerini 10'dan 3'e düşürdüm - Performans için kritik */}
+            <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves={3} result="noise1" seed={1} />
             <feOffset in="noise1" dx="0" dy="0" result="offsetNoise1">
               <animate attributeName="dy" values="700; 0" dur="6s" repeatCount="indefinite" calcMode="linear" />
             </feOffset>
 
-            <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves={10} result="noise2" seed={1} />
+            <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves={3} result="noise2" seed={1} />
             <feOffset in="noise2" dx="0" dy="0" result="offsetNoise2">
               <animate attributeName="dy" values="0; -700" dur="6s" repeatCount="indefinite" calcMode="linear" />
             </feOffset>
 
-            <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves={10} result="noise1" seed={2} />
+            <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves={3} result="noise1" seed={2} />
             <feOffset in="noise1" dx="0" dy="0" result="offsetNoise3">
               <animate attributeName="dx" values="490; 0" dur="6s" repeatCount="indefinite" calcMode="linear" />
             </feOffset>
 
-            <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves={10} result="noise2" seed={2} />
+            <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves={3} result="noise2" seed={2} />
             <feOffset in="noise2" dx="0" dy="0" result="offsetNoise4">
               <animate attributeName="dx" values="0; -490" dur="6s" repeatCount="indefinite" calcMode="linear" />
             </feOffset>
@@ -137,7 +174,8 @@ const ElectricBorder = ({
       </svg>
 
       <div className="eb-layers">
-        <div ref={strokeRef} className="eb-stroke" />
+        {/* Stroke filtresi sadece görünürken aktif olsun */}
+        <div ref={strokeRef} className="eb-stroke" style={{ filter: isVisible ? `url(#${filterId})` : 'none' }} />
         <div className="eb-glow-1" />
         <div className="eb-glow-2" />
         <div className="eb-background-glow" />
@@ -146,7 +184,7 @@ const ElectricBorder = ({
       <div className="eb-content">{children}</div>
     </div>
   );
-};
+});
 
 export default ElectricBorder;
 

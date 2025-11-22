@@ -25,7 +25,7 @@ const LandingPage = () => {
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
       {/* Header */}
-      <header className="landing-header">
+      <header className="landing-header" style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 1000 }}>
         {/* Sol Taraf - Logo + Proje İsmi */}
         <Link to="#" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.75rem" }} onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
           <img 
@@ -102,8 +102,10 @@ const LandingPage = () => {
           gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 500px), 1fr))",
           gap: "4rem",
           alignItems: "center",
-          minHeight: "calc(100vh - 80px)", // Header hariç tam ekran
+          height: "100vh", // Tam ekran yüksekliği
+          minHeight: "100vh",
           position: "relative",
+          paddingTop: "80px", // Header için içerik boşluğu, ama section tam ekran
         }}
       >
         {/* Lightning Background */}
