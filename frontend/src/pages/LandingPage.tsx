@@ -240,11 +240,11 @@ const LandingPage = () => {
             style={{
               fontFamily: "'Bevellier', sans-serif",
               textAlign: "center",
-              fontSize: "clamp(2rem, 6vw, 4rem)",
+              fontSize: "clamp(2.5rem, 7vw, 5rem)", // Font boyutu büyütüldü
               marginBottom: "clamp(4rem, 8vw, 6rem)",
-              fontWeight: "700", // Bevellier 700 ile uyumlu
-              letterSpacing: "0.1em", // Harf aralığı artırıldı (INTEGRATIONS gibi)
-              textTransform: "uppercase", // Büyük harf yapıldı
+              fontWeight: "700",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
               background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 15%, #3b82f6 30%, #60a5fa 45%, #87ceeb 60%, #bae6fd 75%, #ffffff 90%, #bae6fd 100%)",
               backgroundSize: "300% auto",
               WebkitBackgroundClip: "text",
@@ -321,7 +321,8 @@ const LandingPage = () => {
       <section
         style={{
           padding: "clamp(4rem, 10vw, 6rem) clamp(1rem, 3vw, 2rem)",
-          background: "var(--bg-primary)",
+          // Siyah ağırlıklı lacivert tema: Üst ve alt tamamen siyah, orta kısım çok koyu lacivert
+          background: "linear-gradient(180deg, #000000 0%, #050a1f 50%, #000000 100%)",
           position: "relative",
           overflow: "hidden"
         }}
@@ -345,10 +346,10 @@ const LandingPage = () => {
             style={{
               fontFamily: "'Bevellier', sans-serif",
               textAlign: "center",
-              fontSize: "clamp(3rem, 8vw, 5rem)", // Daha büyük, görkemli font
+              fontSize: "clamp(3.5rem, 10vw, 6rem)", // Font boyutu büyütüldü
               marginBottom: "clamp(3rem, 6vw, 5rem)",
-              fontWeight: "700", // Bevellier 700 ile uyumlu
-              letterSpacing: "0.1em", // Harf aralığını açarak daha modern görünüm
+              fontWeight: "700",
+              letterSpacing: "0.1em",
               textTransform: "uppercase",
               // Dinamik Gradient Animasyonu
               background: "linear-gradient(90deg, #1e3a8a 0%, #1d4ed8 25%, #3b82f6 50%, #60a5fa 75%, #1e3a8a 100%)",
@@ -462,10 +463,10 @@ const LandingPage = () => {
             style={{
               fontFamily: "'Bevellier', sans-serif",
               textAlign: "center",
-              fontSize: "clamp(2rem, 6vw, 4rem)",
+              fontSize: "clamp(2.5rem, 7vw, 5rem)", // Font boyutu büyütüldü
               marginBottom: "clamp(4rem, 8vw, 6rem)",
-              fontWeight: "700", // Bevellier 700 ile uyumlu
-              letterSpacing: "0.1em", // Harf aralığı eklendi
+              fontWeight: "700",
+              letterSpacing: "0.1em",
               background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 15%, #3b82f6 30%, #60a5fa 45%, #87ceeb 60%, #bae6fd 75%, #ffffff 90%, #bae6fd 100%)",
               backgroundSize: "300% auto",
               WebkitBackgroundClip: "text",
@@ -502,16 +503,16 @@ const LandingPage = () => {
                 </p>
                 <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", textAlign: "left" }}>
                   <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
-                    ✓ Create up to 5 polls
+                    ✓ Create up to 5 General Polls
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ Create 1 NFT-Gated Poll
                   </li>
                   <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
                     ✓ Vote on unlimited polls
                   </li>
-                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
-                    ✓ Basic analytics
-                  </li>
                   <li style={{ color: "var(--text-secondary)", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
-                    ✓ Community support
+                    ✓ Basic analytics
                   </li>
                 </ul>
                 <Link 
@@ -555,7 +556,10 @@ const LandingPage = () => {
                 </p>
                 <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", textAlign: "left" }}>
                   <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
-                    ✓ Unlimited polls
+                    ✓ 20 General Polls / month
+                  </li>
+                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
+                    ✓ 10 NFT-Gated Polls / month
                   </li>
                   <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
                     ✓ Advanced analytics
@@ -563,11 +567,8 @@ const LandingPage = () => {
                   <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
                     ✓ Custom branding
                   </li>
-                  <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
-                    ✓ Priority support
-                  </li>
                   <li style={{ color: "var(--text-secondary)", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
-                    ✓ API access
+                    ✓ Priority support
                   </li>
                 </ul>
                 <Link 

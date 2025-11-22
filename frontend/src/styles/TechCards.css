@@ -97,9 +97,11 @@
 }
 
 .tech-card-title {
-  font-size: 1.75rem;
-  font-weight: 800;
-  margin-bottom: 0.5rem;
+  font-family: 'Bevellier', sans-serif; /* Yeni font eklendi */
+  font-size: 2.25rem; /* Font boyutu büyütüldü (1.75rem -> 2.25rem) */
+  font-weight: 700; /* Bevellier Bold için 700 */
+  line-height: 1.1; /* Satır aralığı sıkılaştırıldı */
+  margin-bottom: 0.75rem;
   
   /* Default Gold Color & Glow Effect for remaining text */
   color: #FFD700; /* Gold */
