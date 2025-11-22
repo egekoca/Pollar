@@ -31,14 +31,14 @@
   display: flex;
   align-items: center;
   height: var(--nav-h);
-  background: var(--base, #000);
+  background: transparent;
   border-radius: 9999px;
 }
 .pill-logo {
   width: var(--nav-h);
   height: var(--nav-h);
   border-radius: 50%;
-  background: var(--base, #000);
+  background: transparent;
   padding: 8px;
   display: inline-flex;
   align-items: center;

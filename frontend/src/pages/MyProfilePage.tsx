@@ -5,6 +5,7 @@ import { getUserProfile, saveUserProfile, UserProfile } from "../utils/userProfi
 import { getAllPolls } from "../utils/blockchain";
 import PillNav from "../components/PillNav";
 import UserProfileDropdown from "../components/UserProfileDropdown";
+import CreateVotePoolModal from "../components/CreateVotePoolModal";
 import { gsap } from "gsap";
 import "../styles/theme.css";
 
@@ -29,6 +30,35 @@ const MyProfilePage = () => {
   }>>([]);
   const [isLoadingPools, setIsLoadingPools] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleCreateVotePool = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handlePollCreated = () => {
+    // Reload pools after creation
+    const loadMyPools = async () => {
+      if (!account?.address) return;
+      setIsLoadingPools(true);
+      try {
+        const allPolls = await getAllPolls(client);
+        const userPools = allPolls.filter(
+          (poll) => poll.creator.toLowerCase() === account.address.toLowerCase()
+        );
+        setMyPools(userPools);
+      } catch (error) {
+        console.error("Error loading my pools:", error);
+      } finally {
+        setIsLoadingPools(false);
+      }
+    };
+    loadMyPools();
+  };
 
   const handleLogoHover = () => {
     if (logoRef.current) {
@@ -182,7 +212,6 @@ const MyProfilePage = () => {
             items={[
               { label: 'Home', href: '/' },
               { label: 'Pools', href: '/vote-pools' },
-              { label: 'Prediction Market', href: '/prediction-market' },
               { label: 'Pricing', href: '/#pricing' },
             ]}
             activeHref="/my-profile"
@@ -193,10 +222,31 @@ const MyProfilePage = () => {
           />
         </div>
 
-        {/* Sağ Taraf - Profil */}
+        {/* Sağ Taraf - Create Vote Pool Butonu ve Profil */}
         <div style={{ display: "flex", alignItems: "center", gap: "clamp(0.5rem, 1.5vw, 1rem)", flexWrap: "wrap" }}>
           {account && profile ? (
-            <UserProfileDropdown profile={profile} onLogout={handleLogout} />
+            <>
+              <button 
+                onClick={handleCreateVotePool} 
+                className="create-vote-pool-neon-white"
+                style={{ 
+                  fontSize: "clamp(0.8rem, 1.4vw, 0.95rem)", 
+                  padding: "clamp(0.5rem, 1.2vw, 0.65rem) clamp(1rem, 2vw, 1.25rem)",
+                  background: "transparent",
+                  color: "#ffffff",
+                  border: "1.5px solid #ffffff",
+                  borderRadius: "0.5rem",
+                  fontWeight: "600",
+                  textDecoration: "none",
+                  display: "inline-block",
+                  transition: "all 0.3s ease",
+                  cursor: "pointer",
+                }}
+              >
+                Create Vote Pool
+              </button>
+              <UserProfileDropdown profile={profile} onLogout={handleLogout} />
+            </>
           ) : (
             <button onClick={() => navigate("/login")} className="button button-primary">
               Connect Wallet
@@ -713,6 +763,12 @@ const MyProfilePage = () => {
           )}
         </div>
       </main>
+
+      <CreateVotePoolModal 
+        isOpen={isModalOpen} 
+        onClose={handleCloseModal}
+        onPollCreated={handlePollCreated}
+      />
     </div>
   );
 };

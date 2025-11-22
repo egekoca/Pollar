@@ -1,9 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCurrentAccount, useWallets, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { getUserProfile, saveUserProfile, UserProfile } from "../utils/userProfile";
 import { contractConfig } from "../config/contractConfig";
+import PillNav from "../components/PillNav";
+import { gsap } from "gsap";
 import "../styles/theme.css";
 
 const CreateProfilePage = () => {
@@ -11,10 +13,21 @@ const CreateProfilePage = () => {
   const account = useCurrentAccount();
   const wallets = useWallets();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const logoRef = useRef<HTMLImageElement>(null);
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleLogoHover = () => {
+    if (logoRef.current) {
+      gsap.to(logoRef.current, {
+        rotate: 360,
+        duration: 0.6,
+        ease: "power3.easeOut",
+      });
+    }
+  };
 
   useEffect(() => {
     // If no wallet connected, redirect to login
@@ -30,41 +43,13 @@ const CreateProfilePage = () => {
     }
   }, [account, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Ortak profil oluşturma fonksiyonu
+  const createProfileOnChain = (usernameToUse: string, avatarUrlToUse: string) => {
     setError("");
     setIsSubmitting(true);
 
     if (!account?.address) {
       setError("Wallet not connected");
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Validate inputs
-    const trimmedUsername = username.trim();
-    const trimmedAvatarUrl = avatarUrl.trim();
-
-    if (!trimmedUsername) {
-      setError("Username is required");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (trimmedUsername.length < 3 || trimmedUsername.length > 100) {
-      setError("Username must be between 3 and 100 characters");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (!trimmedAvatarUrl) {
-      setError("Avatar URL is required");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (trimmedAvatarUrl.length < 7 || trimmedAvatarUrl.length > 1000) {
-      setError("Avatar URL must be between 7 and 1000 characters");
       setIsSubmitting(false);
       return;
     }
@@ -92,8 +77,8 @@ const CreateProfilePage = () => {
       tx.moveCall({
         target: `${contractConfig.packageId}::${contractConfig.moduleName}::${contractConfig.functionNames.mintUser}`,
         arguments: [
-          tx.pure.string(trimmedUsername),
-          tx.pure.string(trimmedAvatarUrl),
+          tx.pure.string(usernameToUse),
+          tx.pure.string(avatarUrlToUse),
         ],
       });
 
@@ -101,7 +86,7 @@ const CreateProfilePage = () => {
       signAndExecute(
         {
           transaction: tx,
-        } as any, // Options may be supported but types may be outdated
+        } as any,
         {
           onSuccess: (result) => {
             console.log("User created successfully:", result);
@@ -109,7 +94,6 @@ const CreateProfilePage = () => {
             // Find the created User object ID from the result
             let userObjectId: string | undefined;
             
-            // Try to get objectChanges from result (may not be available in all SDK versions)
             const resultAny = result as any;
             if (resultAny.objectChanges) {
               const createdUser = resultAny.objectChanges.find(
@@ -123,7 +107,6 @@ const CreateProfilePage = () => {
               }
             }
             
-            // Alternative: Try to get from effects or events
             if (!userObjectId && resultAny.effects?.created) {
               const created = resultAny.effects.created;
               if (Array.isArray(created) && created.length > 0) {
@@ -131,11 +114,11 @@ const CreateProfilePage = () => {
               }
             }
 
-            // Save profile to localStorage with the created User object ID
+            // Save profile to localStorage
             const newProfile: UserProfile = {
               walletAddress: account.address,
-              username: trimmedUsername,
-              avatarUrl: trimmedAvatarUrl,
+              username: usernameToUse,
+              avatarUrl: avatarUrlToUse,
               authMethod: enokiWallet ? "google" : "wallet",
               ...(userObjectId && { userObjectId }),
             };
@@ -148,7 +131,6 @@ const CreateProfilePage = () => {
           onError: (error) => {
             console.error("Failed to create user on blockchain:", error);
             
-            // Check for specific error messages from Move contract
             const errorMessage = error.message || String(error);
             
             if (errorMessage.includes("EInvalidNameLength")) {
@@ -168,6 +150,46 @@ const CreateProfilePage = () => {
       setError(`Failed to create profile: ${error instanceof Error ? error.message : String(error)}`);
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate inputs
+    const trimmedUsername = username.trim();
+    const trimmedAvatarUrl = avatarUrl.trim();
+
+    if (!trimmedUsername) {
+      setError("Username is required");
+      return;
+    }
+
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 100) {
+      setError("Username must be between 3 and 100 characters");
+      return;
+    }
+
+    if (!trimmedAvatarUrl) {
+      setError("Avatar URL is required");
+      return;
+    }
+
+    if (trimmedAvatarUrl.length < 7 || trimmedAvatarUrl.length > 1000) {
+      setError("Avatar URL must be between 7 and 1000 characters");
+      return;
+    }
+
+    createProfileOnChain(trimmedUsername, trimmedAvatarUrl);
+  };
+
+  const handleSkip = () => {
+    if (!account?.address) return;
+    
+    // Varsayılan değerler
+    const defaultUsername = `User_${account.address.slice(-4)}`;
+    const defaultAvatarUrl = "/suilogo.jpg"; // Local public file
+    
+    createProfileOnChain(defaultUsername, defaultAvatarUrl);
   };
 
   // No longer needed, we show full address now
@@ -190,115 +212,190 @@ const CreateProfilePage = () => {
       {/* Header */}
       <header
         style={{
-          padding: "1.5rem 2rem",
-          borderBottom: "1px solid var(--border-color)",
+          padding: "clamp(0.35rem, 0.7vw, 0.5rem) clamp(1rem, 2.5vw, 1.5rem)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: "1rem",
+          position: "relative",
         }}
       >
-        <Link
-          to="/"
-          style={{ display: "flex", alignItems: "center", gap: "0.75rem", textDecoration: "none" }}
-        >
-          <div
+        {/* Sol Taraf - Logo + Proje İsmi */}
+        <Link to="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <img 
+            ref={logoRef}
+            src="/pollar-logo.png" 
+            alt="Pollar Logo" 
+            onMouseEnter={handleLogoHover}
             style={{
-              width: "40px",
-              height: "40px",
-              background: "linear-gradient(135deg, var(--color-navy) 0%, var(--color-light-blue) 100%)",
+              width: "clamp(32px, 5vw, 40px)", 
+              height: "clamp(32px, 5vw, 40px)",
               borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "1.5rem",
-              fontWeight: "bold",
-              color: "var(--color-white)",
-            }}
-          >
-            P
-          </div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: "700", color: "var(--text-primary)" }}>Pollar</h1>
+              cursor: "pointer",
+            }} 
+          />
+          <h1 style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", fontWeight: "700", color: "var(--text-primary)" }}>
+            POLLAR
+          </h1>
         </Link>
+
+        {/* Orta - PillNav */}
+        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+          <PillNav
+            logo="/pollar-logo.png"
+            logoAlt="Pollar Logo"
+            items={[
+              { label: 'Home', href: '/' },
+              { label: 'Pools', href: '/vote-pools' },
+              { label: 'Pricing', href: '/#pricing' },
+            ]}
+            activeHref="/create-profile"
+            baseColor="#000000"
+            pillColor="#ffffff"
+            hoveredPillTextColor="#ffffff"
+            pillTextColor="#000000"
+          />
+        </div>
+
+        {/* Sağ Taraf - Boş bırakıyoruz (Sadece logo ve menü olsun istendi) */}
+        <div style={{ width: "clamp(32px, 5vw, 40px)" }}></div>
       </header>
 
       {/* Main Content */}
       <main
         style={{
-          padding: "4rem 2rem",
-          maxWidth: "600px",
+          flex: 1,
+          width: "100%",
+          maxWidth: "1400px",
           margin: "0 auto",
+          padding: "clamp(2rem, 5vw, 4rem) clamp(1.5rem, 3vw, 2rem)",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
+          justifyContent: "center",
+          gap: "clamp(2rem, 5vw, 6rem)",
+          flexWrap: "wrap",
         }}
       >
-        <div style={{ width: "100%" }}>
+        {/* Left Column - Form */}
+        <div 
+          style={{ 
+            flex: "1 1 480px",
+            maxWidth: "600px",
+            width: "100%",
+            animation: "fadeIn 0.6s ease-out",
+          }}
+        >
           <h2
             style={{
-              fontSize: "2.5rem",
-              fontWeight: "700",
-              marginBottom: "0.5rem",
-              color: "var(--text-primary)",
-              textAlign: "center",
+              fontSize: "clamp(2rem, 4vw, 3rem)",
+              fontWeight: "800",
+              marginBottom: "1rem",
+              background: "linear-gradient(135deg, #ffffff 0%, #93c5fd 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              lineHeight: 1.2,
             }}
           >
-            Create Your Profile
+            Join the Party!
           </h2>
           <p
             style={{
-              color: "var(--text-muted)",
-              fontSize: "1.1rem",
-              marginBottom: "3rem",
-              textAlign: "center",
+              color: "rgba(255, 255, 255, 0.7)",
+              fontSize: "clamp(1rem, 1.2vw, 1.15rem)",
+              marginBottom: "2.5rem",
+              lineHeight: 1.6,
             }}
           >
-            Complete your profile to start voting on decentralized polls
+            Create your Pollar profile to start voting, creating pools, and earning rewards with the community.
           </p>
 
-          <div className="card" style={{ width: "100%" }}>
+          <div 
+            className="glass-panel"
+            style={{ 
+              width: "100%",
+              padding: "2.5rem",
+              background: "rgba(15, 23, 42, 0.6)",
+              backdropFilter: "blur(12px)",
+              borderRadius: "24px",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              boxShadow: "0 20px 50px -12px rgba(0, 0, 0, 0.5)",
+            }}
+          >
             {error && (
               <div
                 style={{
                   padding: "1rem",
                   background: "rgba(239, 68, 68, 0.1)",
-                  border: "1px solid rgba(239, 68, 68, 0.3)",
-                  borderRadius: "0.5rem",
-                  color: "#ef4444",
+                  border: "1px solid rgba(239, 68, 68, 0.2)",
+                  borderRadius: "12px",
+                  color: "#fca5a5",
                   marginBottom: "1.5rem",
+                  fontSize: "0.95rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
                 }}
               >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
                 {error}
               </div>
             )}
 
             <form onSubmit={handleSubmit}>
               {/* Wallet Address (Read-only) */}
-              <div style={{ marginBottom: "1.5rem" }}>
+              <div style={{ marginBottom: "1.75rem" }}>
                 <label
                   style={{
                     display: "block",
-                    marginBottom: "0.5rem",
-                    color: "var(--text-primary)",
-                    fontWeight: "500",
+                    marginBottom: "0.75rem",
+                    color: "rgba(255, 255, 255, 0.9)",
+                    fontWeight: "600",
+                    fontSize: "0.9rem",
+                    letterSpacing: "0.02em",
                   }}
                 >
-                  Wallet Address {isEnokiWallet && "(zkLogin)"}
+                  Connected Wallet
                 </label>
-                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <div 
+                  style={{ 
+                    display: "flex", 
+                    gap: "0.75rem", 
+                    alignItems: "center",
+                    padding: "0.875rem 1rem",
+                    background: "rgba(0, 0, 0, 0.3)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    borderRadius: "12px",
+                    position: "relative",
+                  }}
+                >
+                  <div 
+                    style={{
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      background: "#4ade80",
+                      boxShadow: "0 0 10px #4ade80",
+                      flexShrink: 0,
+                    }}
+                  />
                   <input
                     type="text"
-                    value={account.address}
+                    value={`${account.address.slice(0, 20)}...${account.address.slice(-4)}`}
                     readOnly
                     style={{
                       flex: "1",
-                      padding: "0.75rem",
-                      background: "var(--bg-secondary)",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: "0.5rem",
-                      color: "var(--text-primary)",
-                      fontSize: "0.9rem",
+                      background: "transparent",
+                      border: "none",
+                      color: "rgba(255, 255, 255, 0.6)",
+                      fontSize: "0.95rem",
                       fontFamily: "monospace",
-                      cursor: "text",
+                      outline: "none",
                     }}
                   />
                   <button
@@ -309,141 +406,285 @@ const CreateProfilePage = () => {
                       const originalText = btn.textContent;
                       btn.textContent = "Copied!";
                       setTimeout(() => {
-                        if (btn) btn.textContent = originalText;
+                        if (btn) btn.textContent = "Copy";
                       }, 2000);
                     }}
                     style={{
-                      padding: "0.75rem 1rem",
-                      background: "var(--color-navy)",
-                      color: "var(--color-white)",
-                      border: "none",
-                      borderRadius: "0.5rem",
+                      background: "transparent",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      borderRadius: "6px",
+                      color: "rgba(255, 255, 255, 0.8)",
+                      padding: "0.25rem 0.75rem",
+                      fontSize: "0.8rem",
                       cursor: "pointer",
-                      fontSize: "0.9rem",
-                      fontWeight: "500",
-                      whiteSpace: "nowrap",
+                      transition: "all 0.2s ease",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "var(--color-light-blue)";
+                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.4)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "var(--color-navy)";
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
                     }}
                   >
                     Copy
                   </button>
                 </div>
-                <p
-                  style={{
-                    fontSize: "0.85rem",
-                    color: "var(--text-muted)",
-                    marginTop: "0.5rem",
-                    marginBottom: 0,
-                  }}
-                >
-                  {isEnokiWallet
-                    ? "Your zkLogin wallet address has been automatically created. This address is tied to your Google account."
-                    : "Your wallet address is automatically detected from your connected wallet."}
-                </p>
               </div>
 
               {/* Username */}
-              <div style={{ marginBottom: "1.5rem" }}>
+              <div style={{ marginBottom: "1.75rem" }}>
                 <label
                   style={{
                     display: "block",
-                    marginBottom: "0.5rem",
-                    color: "var(--text-primary)",
-                    fontWeight: "500",
+                    marginBottom: "0.75rem",
+                    color: "rgba(255, 255, 255, 0.9)",
+                    fontWeight: "600",
+                    fontSize: "0.9rem",
+                    letterSpacing: "0.02em",
                   }}
                 >
-                  Username *
+                  Choose Username
                 </label>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
+                  placeholder="e.g. CryptoKing"
                   required
                   minLength={3}
                   style={{
                     width: "100%",
-                    padding: "0.75rem",
-                    background: "var(--bg-secondary)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "0.5rem",
-                    color: "var(--text-primary)",
+                    padding: "1rem 1.25rem",
+                    background: "rgba(255, 255, 255, 0.03)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    borderRadius: "12px",
+                    color: "#ffffff",
                     fontSize: "1rem",
+                    transition: "all 0.2s ease",
+                    outline: "none",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#60a5fa";
+                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                    e.currentTarget.style.boxShadow = "0 0 0 4px rgba(96, 165, 250, 0.1)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+                    e.currentTarget.style.boxShadow = "none";
                   }}
                 />
               </div>
 
               {/* Avatar URL */}
-              <div style={{ marginBottom: "1.5rem" }}>
+              <div style={{ marginBottom: "2.5rem" }}>
                 <label
                   style={{
                     display: "block",
-                    marginBottom: "0.5rem",
-                    color: "var(--text-primary)",
-                    fontWeight: "500",
+                    marginBottom: "0.75rem",
+                    color: "rgba(255, 255, 255, 0.9)",
+                    fontWeight: "600",
+                    fontSize: "0.9rem",
+                    letterSpacing: "0.02em",
                   }}
                 >
-                  Avatar URL *
+                  Avatar URL
                 </label>
-                <input
-                  type="url"
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://example.com/avatar.jpg"
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "0.75rem",
-                    background: "var(--bg-secondary)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "0.5rem",
-                    color: "var(--text-primary)",
-                    fontSize: "1rem",
-                  }}
-                />
-                {avatarUrl && (
-                  <div style={{ marginTop: "0.75rem", textAlign: "center" }}>
-                    <img
-                      src={avatarUrl}
-                      alt="Avatar preview"
+                <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      type="url"
+                      value={avatarUrl}
+                      onChange={(e) => setAvatarUrl(e.target.value)}
+                      placeholder="https://..."
+                      required
                       style={{
-                        width: "120px",
-                        height: "120px",
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                        border: "3px solid var(--color-light-blue)",
+                        width: "100%",
+                        padding: "1rem 1.25rem",
+                        background: "rgba(255, 255, 255, 0.03)",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        borderRadius: "12px",
+                        color: "#ffffff",
+                        fontSize: "1rem",
+                        transition: "all 0.2s ease",
+                        outline: "none",
                       }}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = "#60a5fa";
+                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                        e.currentTarget.style.boxShadow = "0 0 0 4px rgba(96, 165, 250, 0.1)";
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+                        e.currentTarget.style.boxShadow = "none";
                       }}
                     />
+                    <p style={{ fontSize: "0.8rem", color: "rgba(255, 255, 255, 0.4)", marginTop: "0.5rem" }}>
+                      Paste a direct link to your profile image
+                    </p>
                   </div>
-                )}
+                  
+                  {/* Avatar Preview */}
+                  <div 
+                    style={{ 
+                      width: "60px", 
+                      height: "60px", 
+                      borderRadius: "50%", 
+                      background: "rgba(255, 255, 255, 0.05)",
+                      border: "2px solid rgba(255, 255, 255, 0.1)",
+                      overflow: "hidden",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="Preview"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255, 255, 255, 0.3)" strokeWidth="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="button button-primary"
-                style={{
-                  width: "100%",
-                  padding: "1rem",
-                  fontSize: "1.1rem",
-                  cursor: isSubmitting ? "not-allowed" : "pointer",
-                }}
-              >
-                {isSubmitting ? "Creating Profile..." : "Create Profile"}
-              </button>
+              {/* Submit Buttons */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="create-profile-btn"
+                  style={{
+                    width: "100%",
+                    padding: "1.1rem",
+                    fontSize: "1.1rem",
+                    fontWeight: "700",
+                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                    background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "14px",
+                    boxShadow: "0 10px 25px -5px rgba(59, 130, 246, 0.4)",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSubmitting) {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 20px 35px -10px rgba(59, 130, 246, 0.5)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSubmitting) {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 10px 25px -5px rgba(59, 130, 246, 0.4)";
+                    }
+                  }}
+                >
+                  {isSubmitting ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                      <span className="loading-spinner" />
+                      Creating Profile...
+                    </div>
+                  ) : (
+                    "Create Profile & Start Voting"
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSkip}
+                  disabled={isSubmitting}
+                  style={{
+                    width: "100%",
+                    padding: "0.8rem",
+                    fontSize: "0.95rem",
+                    fontWeight: "600",
+                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                    background: "transparent",
+                    color: "rgba(255, 255, 255, 0.6)",
+                    border: "none",
+                    transition: "all 0.2s ease",
+                    textDecoration: "underline",
+                    textUnderlineOffset: "4px",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSubmitting) {
+                      e.currentTarget.style.color = "#ffffff";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSubmitting) {
+                      e.currentTarget.style.color = "rgba(255, 255, 255, 0.6)";
+                    }
+                  }}
+                >
+                  Skip & Use Defaults (You can edit later)
+                </button>
+              </div>
             </form>
           </div>
         </div>
+
+        {/* Right Column - Image */}
+        <div 
+          style={{ 
+            flex: "1 1 400px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            maxWidth: "650px",
+          }}
+        >
+          <img 
+            src="/friends.png" 
+            alt="Pollar Friends" 
+            style={{ 
+              width: "100%", 
+              height: "auto", 
+              objectFit: "contain",
+              filter: "drop-shadow(0 0 30px rgba(59, 130, 246, 0.2))",
+              animation: "float-gentle 6s ease-in-out infinite",
+            }} 
+          />
+        </div>
       </main>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float-gentle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-15px); }
+        }
+        .loading-spinner {
+          width: 20px;
+          height: 20px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-radius: 50%;
+          border-top-color: #ffffff;
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
