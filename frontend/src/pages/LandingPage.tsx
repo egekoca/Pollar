@@ -23,21 +23,7 @@ const LandingPage = () => {
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
       {/* Header */}
-      <header
-        style={{
-          padding: "clamp(0.35rem, 0.7vw, 0.5rem) clamp(1rem, 2.5vw, 1.5rem)",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "1rem",
-          position: "sticky",
-          top: 0,
-          zIndex: 1000,
-          backdropFilter: "blur(10px)",
-          background: "rgba(0, 0, 0, 0.05)",
-        }}
-      >
+      <header className="landing-header">
         {/* Sol Taraf - Logo + Proje İsmi */}
         <Link to="#" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.75rem" }} onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
           <img 
@@ -58,7 +44,7 @@ const LandingPage = () => {
         </Link>
 
         {/* Orta - PillNav */}
-        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
+        <div className="landing-pill-nav-wrapper">
           <PillNav
             logo="/pollar-logo.png"
             logoAlt="Pollar Logo"
@@ -122,7 +108,7 @@ const LandingPage = () => {
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, opacity: 1 }}>
           <Lightning hue={220} xOffset={0} speed={1} intensity={1.2} size={1} />
         </div>
-        <div style={{ position: "relative", zIndex: 1, transform: "translateX(-10rem)" }}>
+        <div className="landing-hero-content" style={{ position: "relative", zIndex: 1 }}>
           <div
             className="pollar-animated-text"
             style={{
@@ -138,7 +124,7 @@ const LandingPage = () => {
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
               animation: "smoothFlowingGradient 5s ease-in-out infinite",
-              transform: "translateY(-5rem)",
+              transform: "translateY(-5rem)", // Keep this for desktop, overridden in CSS for mobile
             }}
           >
             POLLAR
@@ -150,7 +136,7 @@ const LandingPage = () => {
               fontWeight: "800",
               marginBottom: "1.5rem",
               lineHeight: "1.2",
-              whiteSpace: "nowrap",
+              whiteSpace: "normal", // Changed from nowrap to avoid overflow on mobile
               background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 15%, #3b82f6 30%, #60a5fa 45%, #87ceeb 60%, #bae6fd 75%, #ffffff 90%, #bae6fd 100%)",
               backgroundSize: "300% auto",
               WebkitBackgroundClip: "text",
@@ -214,17 +200,9 @@ const LandingPage = () => {
           </div>
         </div>
         <div
-          className="hero-video-container"
+          className="landing-hero-video"
           style={{
-            position: "relative",
-            borderRadius: "1rem",
-            overflow: "hidden",
-            height: "clamp(250px, 50vw, 450px)",
-            width: "100%",
-            zIndex: 1,
-            boxShadow: "0 10px 40px rgba(59, 130, 246, 0.3)",
-            border: "2px solid rgba(59, 130, 246, 0.2)",
-            transform: "translate(11rem, -3rem)",
+            // Styles moved to CSS class .landing-hero-video
           }}
         >
           <video
