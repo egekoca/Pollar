@@ -40,7 +40,7 @@ const LandingPage = () => {
               cursor: "pointer",
             }} 
           />
-          <h1 style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", fontWeight: "700", color: "var(--text-primary)" }}>
+          <h1 style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", fontWeight: "700", color: "var(--text-primary)", fontFamily: "'Bevellier', sans-serif" }}>
             POLLAR
           </h1>
         </Link>
@@ -114,8 +114,9 @@ const LandingPage = () => {
           <div
             className="pollar-animated-text"
             style={{
+              fontFamily: "'Bevellier', sans-serif",
               fontSize: "clamp(4rem, 12vw, 7rem)",
-              fontWeight: "900",
+              fontWeight: "700", // Fontshare'den çekilen ağırlıkla (700) eşleşmesi için düzeltildi
               marginBottom: "1rem",
               lineHeight: "1",
               textTransform: "uppercase",
@@ -134,8 +135,9 @@ const LandingPage = () => {
           <h2
             className="decentralized-animated-text"
             style={{
+              fontFamily: "'Nunito', sans-serif", // Nunito fontu eklendi
               fontSize: "clamp(1.5rem, 3.5vw, 2.5rem)",
-              fontWeight: "800",
+              fontWeight: "800", // ExtraBold ağırlığı
               marginBottom: "1.5rem",
               lineHeight: "1.2",
               whiteSpace: "normal", // Changed from nowrap to avoid overflow on mobile
@@ -236,10 +238,13 @@ const LandingPage = () => {
           <h3
             className="why-choose-animated-text"
             style={{
+              fontFamily: "'Bevellier', sans-serif",
               textAlign: "center",
               fontSize: "clamp(2rem, 6vw, 4rem)",
               marginBottom: "clamp(4rem, 8vw, 6rem)",
-              fontWeight: "900",
+              fontWeight: "700", // Bevellier 700 ile uyumlu
+              letterSpacing: "0.1em", // Harf aralığı artırıldı (INTEGRATIONS gibi)
+              textTransform: "uppercase", // Büyük harf yapıldı
               background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 15%, #3b82f6 30%, #60a5fa 45%, #87ceeb 60%, #bae6fd 75%, #ffffff 90%, #bae6fd 100%)",
               backgroundSize: "300% auto",
               WebkitBackgroundClip: "text",
@@ -338,10 +343,11 @@ const LandingPage = () => {
         <div style={{ maxWidth: "1200px", margin: "0 auto", position: "relative", zIndex: 1 }}>
           <h3
             style={{
+              fontFamily: "'Bevellier', sans-serif",
               textAlign: "center",
               fontSize: "clamp(3rem, 8vw, 5rem)", // Daha büyük, görkemli font
               marginBottom: "clamp(3rem, 6vw, 5rem)",
-              fontWeight: "900",
+              fontWeight: "700", // Bevellier 700 ile uyumlu
               letterSpacing: "0.1em", // Harf aralığını açarak daha modern görünüm
               textTransform: "uppercase",
               // Dinamik Gradient Animasyonu
@@ -454,10 +460,12 @@ const LandingPage = () => {
           <h3
             className="pricing-animated-text"
             style={{
+              fontFamily: "'Bevellier', sans-serif",
               textAlign: "center",
               fontSize: "clamp(2rem, 6vw, 4rem)",
               marginBottom: "clamp(4rem, 8vw, 6rem)",
-              fontWeight: "900",
+              fontWeight: "700", // Bevellier 700 ile uyumlu
+              letterSpacing: "0.1em", // Harf aralığı eklendi
               background: "linear-gradient(90deg, #1e3a8a 0%, #2563eb 15%, #3b82f6 30%, #60a5fa 45%, #87ceeb 60%, #bae6fd 75%, #ffffff 90%, #bae6fd 100%)",
               backgroundSize: "300% auto",
               WebkitBackgroundClip: "text",
