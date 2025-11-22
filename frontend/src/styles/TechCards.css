@@ -1,0 +1,184 @@
+@keyframes integrationsGradient {
+  to {
+    background-position: 200% center;
+  }
+}
+
+/* Tech Stack Features Cards - Full Image Overlay Style */
+.tech-stack-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .tech-stack-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tech-card {
+  position: relative;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  min-height: 350px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.4s ease;
+  /* Kartın kendi arka planı (resim yüklenmezse görünür) */
+  background: #000;
+}
+
+.tech-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 215, 0, 0.5); /* Gold border on hover default */
+}
+
+/* Background Image styling */
+.tech-card-bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 0;
+  /* Parlaklık kısma (brightness filter) yok, orijinal hali */
+}
+
+.tech-card:hover .tech-card-bg-image {
+  transform: scale(1.1);
+}
+
+/* Overlay Gradient - Sadece alt kısımda metin okunabilirliği için */
+.tech-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Üst kısımları tamamen şeffaf yaptım, sadece en altta yazı arkasında koyuluk var */
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.95) 0%,
+    rgba(0, 0, 0, 0.6) 20%,
+    transparent 50%
+  );
+  z-index: 1;
+  transition: background 0.4s ease;
+}
+
+.tech-card:hover .tech-card-overlay {
+  /* Hover'da açıklama metni açılacağı için koyuluk biraz daha yukarı çıkıyor */
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.95) 0%,
+    rgba(0, 0, 0, 0.8) 30%,
+    rgba(0, 0, 0, 0.4) 50%,
+    transparent 100%
+  );
+}
+
+/* Content Container */
+.tech-card-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 2rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.tech-card-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  
+  /* Default Gold Color & Glow Effect for remaining text */
+  color: #FFD700; /* Gold */
+  text-shadow: 
+    0 0 10px rgba(255, 215, 0, 0.5),
+    0 0 20px rgba(255, 215, 0, 0.3),
+    2px 2px 4px rgba(0, 0, 0, 0.8); /* Okunabilirlik için siyah gölge */
+    
+  transform: translateY(20px);
+  transition: transform 0.4s ease;
+}
+
+.tech-card:hover .tech-card-title {
+  transform: translateY(0);
+}
+
+/* Special Text Highlights */
+.text-highlight-walrus {
+  color: #00E5FF; /* Parlak Turkuaz */
+  text-shadow: 
+    0 0 15px rgba(0, 229, 255, 0.6),
+    0 0 25px rgba(0, 229, 255, 0.4),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.text-highlight-seal {
+  color: #00FF9D; /* Parlak Deniz Yeşili */
+  text-shadow: 
+    0 0 15px rgba(0, 255, 157, 0.6),
+    0 0 25px rgba(0, 255, 157, 0.4),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.text-highlight-sui {
+  color: #3BA9FF; /* Parlak Gökyüzü Mavisi */
+  text-shadow: 
+    0 0 15px rgba(59, 169, 255, 0.6),
+    0 0 25px rgba(59, 169, 255, 0.4),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.tech-card-description {
+  color: rgba(255, 255, 255, 0.95); /* Metin biraz daha parlak/beyaz */
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.6;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(20px);
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); /* Okunabilirlik için */
+}
+
+.tech-card:hover .tech-card-description {
+  max-height: 200px;
+  opacity: 1;
+  transform: translateY(0);
+  margin-top: 1rem;
+}
+
+/* Specific Glow Colors per Card (Border & Shadow only) */
+
+.tech-card.walrus:hover {
+  border-color: #00E5FF;
+  box-shadow: 0 15px 40px rgba(0, 229, 255, 0.25);
+}
+
+.tech-card.seal:hover {
+  border-color: #00FF9D;
+  box-shadow: 0 15px 40px rgba(0, 255, 157, 0.25);
+}
+
+.tech-card.zklogin:hover {
+  border-color: #4285F4;
+  box-shadow: 0 15px 40px rgba(66, 133, 244, 0.25);
+}
+
+.tech-card.sui:hover {
+  border-color: #3BA9FF;
+  box-shadow: 0 15px 40px rgba(59, 169, 255, 0.25);
+}

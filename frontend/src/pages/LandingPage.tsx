@@ -7,6 +7,8 @@ import ElectricBorder from "../components/ElectricBorder";
 import pollarWalkVideo from "/pollar-walk.mp4";
 import "../styles/theme.css";
 
+import "../styles/TechCards.css";
+
 const LandingPage = () => {
   const logoRef = useRef<HTMLImageElement>(null);
 
@@ -306,6 +308,136 @@ const LandingPage = () => {
               </p>
             </div>
             </ElectricBorder>
+          </div>
+        </div>
+      </section>
+
+      {/* Tech Stack Section */}
+      <section
+        style={{
+          padding: "clamp(4rem, 10vw, 6rem) clamp(1rem, 3vw, 2rem)",
+          background: "var(--bg-primary)",
+          position: "relative",
+          overflow: "hidden"
+        }}
+      >
+        {/* Background Glow */}
+        <div 
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "100%",
+            height: "100%",
+            background: "radial-gradient(circle at center, rgba(30, 58, 138, 0.15) 0%, transparent 70%)",
+            zIndex: 0
+          }}
+        />
+        
+        <div style={{ maxWidth: "1200px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <h3
+            style={{
+              textAlign: "center",
+              fontSize: "clamp(3rem, 8vw, 5rem)", // Daha büyük, görkemli font
+              marginBottom: "clamp(3rem, 6vw, 5rem)",
+              fontWeight: "900",
+              letterSpacing: "0.1em", // Harf aralığını açarak daha modern görünüm
+              textTransform: "uppercase",
+              // Dinamik Gradient Animasyonu
+              background: "linear-gradient(90deg, #1e3a8a 0%, #1d4ed8 25%, #3b82f6 50%, #60a5fa 75%, #1e3a8a 100%)",
+              backgroundSize: "200% auto",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              animation: "integrationsGradient 4s linear infinite",
+            }}
+          >
+            INTEGRATIONS
+          </h3>
+
+          <div className="tech-stack-grid">
+            {/* Walrus Integration */}
+            <div className="tech-card walrus">
+              <img 
+                src="/features/walrus.png" 
+                alt="Walrus Integration" 
+                className="tech-card-bg-image"
+              />
+              <div className="tech-card-overlay"></div>
+              
+              <div className="tech-card-content">
+                <div className="tech-card-title">
+                  <span className="text-highlight-walrus">Walrus</span> Integration
+                </div>
+                <p className="tech-card-description">
+                  Decentralized storage layer ensuring your voting data is permanently archived and censorship-resistant.
+                </p>
+              </div>
+            </div>
+
+            {/* Seal Integration */}
+            <div className="tech-card seal">
+              <img 
+                src="/features/seal.png" 
+                alt="Seal Integration" 
+                className="tech-card-bg-image"
+              />
+              <div className="tech-card-overlay"></div>
+              
+              <div className="tech-card-content">
+                <div className="tech-card-title">
+                  <span className="text-highlight-seal">Seal</span> Integration
+                </div>
+                <p className="tech-card-description">
+                  State-of-the-art privacy preservation using Mysten Seal to encrypt votes before they ever leave your device.
+                </p>
+              </div>
+            </div>
+
+            {/* zkLogin Integration */}
+            <div className="tech-card zklogin">
+              <img 
+                src="/features/google.png" 
+                alt="zkLogin Integration" 
+                className="tech-card-bg-image"
+              />
+              <div className="tech-card-overlay"></div>
+              
+              <div className="tech-card-content">
+                <div className="tech-card-title">
+                  <span style={{ color: '#4285F4' }}>z</span>
+                  <span style={{ color: '#EA4335' }}>k</span>
+                  <span style={{ color: '#FBBC05' }}>L</span>
+                  <span style={{ color: '#4285F4' }}>o</span>
+                  <span style={{ color: '#34A853' }}>g</span>
+                  <span style={{ color: '#EA4335' }}>i</span>
+                  <span style={{ color: '#4285F4' }}>n</span> Integration
+                </div>
+                <p className="tech-card-description">
+                  Seamless onboarding with Google. No complex seed phrases needed, just secure and verifiable identity.
+                </p>
+              </div>
+            </div>
+
+            {/* Sui Blockchain */}
+            <div className="tech-card sui">
+              <img 
+                src="/features/sui.png" 
+                alt="Sui Blockchain" 
+                className="tech-card-bg-image"
+              />
+              <div className="tech-card-overlay"></div>
+              
+              <div className="tech-card-content">
+                <div className="tech-card-title">
+                  <span className="text-highlight-sui">Sui</span> Blockchain
+                </div>
+                <p className="tech-card-description">
+                  Built on the fastest layer-1 blockchain with parallel execution for instant vote confirmation and low fees.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
