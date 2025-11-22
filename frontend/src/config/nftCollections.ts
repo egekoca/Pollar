@@ -42,20 +42,6 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
     },
   },
   {
-    name: "Hero",
-    type: "0xc6726b1b8f40ed882c5d7b7bb2e6fec36a4f19017dd9354268068473de37464e::hero::Hero",
-    packageId: "0xc6726b1b8f40ed882c5d7b7bb2e6fec36a4f19017dd9354268068473de37464e",
-    moduleName: "hero",
-    structName: "Hero",
-    description: "Hero NFT Collection (Testnet)",
-    theme: {
-      backgroundGradient: "linear-gradient(180deg, #1e1e2e 0%, #2d1b3d 50%, #1e1e2e 100%)",
-      primaryColor: "#8b5cf6",
-      secondaryColor: "#a78bfa",
-      overlayOpacity: 0.1,
-    },
-  },
-  {
     name: "Sui Workshop",
     type: "0x22739e8c5f587927462590822f418a673e6435fe8a427f892132ab160a72fd83::simple_nft::SimpleNFT",
     packageId: "0x22739e8c5f587927462590822f418a673e6435fe8a427f892132ab160a72fd83",

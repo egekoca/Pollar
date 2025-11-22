@@ -566,8 +566,7 @@ const VotingPage = () => {
     >
       {/* Background Character Images - Left and Right Sides (For Public polls and Hero) */}
       {(!pollData?.nft_collection_type || 
-        pollData.nft_collection_type.length === 0 || 
-        pollData.nft_collection_type === "0xc6726b1b8f40ed882c5d7b7bb2e6fec36a4f19017dd9354268068473de37464e::hero::Hero") && (
+        pollData.nft_collection_type.length === 0) && (
         <div
           style={{
             position: "fixed",
