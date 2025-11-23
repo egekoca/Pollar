@@ -480,19 +480,7 @@ const VotingPage = () => {
           >
             <source src={pollarWalkVideo} type="video/mp4" />
           </video>
-          <div style={{ textAlign: "center" }}>
-            <p style={{ 
-              color: "var(--text-secondary)", 
-              fontSize: "clamp(1rem, 2vw, 1.2rem)",
-              fontWeight: "500",
-              marginBottom: "0.5rem"
-            }}>
-              Loading...
-            </p>
-            <p style={{ color: "var(--text-muted)", fontSize: "clamp(0.85rem, 1.5vw, 0.9rem)" }}>
-            Poll ID: {id}
-          </p>
-          </div>
+          {/* Loading metinleri kaldırıldı */}
         </div>
       </div>
     );
