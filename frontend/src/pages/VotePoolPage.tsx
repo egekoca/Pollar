@@ -430,13 +430,13 @@ const VotePoolPage = () => {
             alt="Pollar Logo" 
             onMouseEnter={handleLogoHover}
             style={{
-              width: "clamp(32px, 5vw, 40px)", 
-              height: "clamp(32px, 5vw, 40px)",
+              width: "clamp(40px, 6vw, 50px)", 
+              height: "clamp(40px, 6vw, 50px)",
               borderRadius: "8px",
               cursor: "pointer",
             }} 
           />
-          <h1 style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", fontWeight: "700", color: "var(--text-primary)" }}>
+          <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: "700", color: "var(--text-primary)", fontFamily: "'Bevellier', sans-serif" }}>
             POLLAR
           </h1>
         </Link>
@@ -693,7 +693,10 @@ const VotePoolPage = () => {
                       padding: "0.2em 0 0.3em 0"
                     } : {
                       // Default stil (Diğerleri)
-                      fontSize: "clamp(1.75rem, 4.5vw, 3rem)", 
+                      fontFamily: "'Bevellier', sans-serif",
+                      fontWeight: "700",
+                      letterSpacing: "0.1em",
+                      fontSize: "clamp(2.5rem, 6vw, 4.5rem)", 
                       backgroundImage: gradient,
                       backgroundSize: "300% auto",
                       WebkitBackgroundClip: "text",

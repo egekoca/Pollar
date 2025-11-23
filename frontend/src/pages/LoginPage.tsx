@@ -93,12 +93,12 @@ const LoginPage = () => {
               src="/pollar-logo.png" 
               alt="Pollar Logo" 
               style={{
-                width: "clamp(32px, 5vw, 40px)", 
-                height: "clamp(32px, 5vw, 40px)",
+                width: "clamp(40px, 6vw, 50px)", 
+                height: "clamp(40px, 6vw, 50px)",
                 borderRadius: "8px",
               }} 
             />
-            <h1 style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
+            <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: "700", color: "var(--text-primary)", margin: 0, fontFamily: "'Bevellier', sans-serif" }}>
               POLLAR
             </h1>
           </Link>
