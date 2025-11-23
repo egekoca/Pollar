@@ -9,6 +9,10 @@ import pollarWalkVideo from "/pollar-walk.mp4";
 import "../styles/theme.css";
 
 import "../styles/TechCards.css";
+import walrusImg from "../assets/features/walrus.png";
+import sealImg from "../assets/features/seal.png";
+import googleImg from "../assets/features/google.png";
+import suiImg from "../assets/features/sui.png";
 
 const LandingPage = () => {
   const logoRef = useRef<HTMLImageElement>(null);
@@ -414,7 +418,7 @@ const LandingPage = () => {
             {/* Walrus Integration */}
             <div className="tech-card walrus">
               <img 
-                src="/features/walrus.png" 
+                src={walrusImg}
                 alt="Walrus Integration" 
                 className="tech-card-bg-image"
               />
@@ -433,7 +437,7 @@ const LandingPage = () => {
             {/* Seal Integration */}
             <div className="tech-card seal">
               <img 
-                src="/features/seal.png" 
+                src={sealImg}
                 alt="Seal Integration" 
                 className="tech-card-bg-image"
               />
@@ -452,7 +456,7 @@ const LandingPage = () => {
             {/* zkLogin Integration */}
             <div className="tech-card zklogin">
               <img 
-                src="/features/google.png" 
+                src={googleImg}
                 alt="zkLogin Integration" 
                 className="tech-card-bg-image"
               />
@@ -477,7 +481,7 @@ const LandingPage = () => {
             {/* Sui Blockchain */}
             <div className="tech-card sui">
               <img 
-                src="/features/sui.png" 
+                src={suiImg}
                 alt="Sui Blockchain" 
                 className="tech-card-bg-image"
               />

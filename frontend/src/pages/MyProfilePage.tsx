@@ -771,7 +771,7 @@ const MyProfilePage = () => {
       <CreateVotePoolModal 
         isOpen={isModalOpen} 
         onClose={handleCloseModal}
-        onPollCreated={handlePollCreated}
+        onSuccess={handlePollCreated}
       />
     </div>
   );

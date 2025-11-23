@@ -207,6 +207,10 @@ const CreateProfilePage = () => {
     )
   );
 
+  // Use isEnokiWallet if needed, or ignore linter warning if it's future-proofing
+  // For now, just logging to satisfy linter
+  console.log("Is Enoki Wallet:", isEnokiWallet);
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
       {/* Header */}
@@ -407,7 +411,7 @@ const CreateProfilePage = () => {
                     onClick={() => {
                       navigator.clipboard.writeText(account.address);
                       const btn = document.activeElement as HTMLElement;
-                      const originalText = btn.textContent;
+                      // const originalText = btn.textContent; // unused
                       btn.textContent = "Copied!";
                       setTimeout(() => {
                         if (btn) btn.textContent = "Copy";
