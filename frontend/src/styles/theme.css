@@ -141,6 +141,28 @@ body {
   background: rgba(255, 255, 255, 0.05);
 }
 
+/* Yeni Pembe Neon Buton Stili */
+.hero-button-neon-pink:hover {
+  box-shadow: 0 0 15px rgba(236, 72, 153, 0.6), 
+              0 0 30px rgba(236, 72, 153, 0.4),
+              0 0 45px rgba(236, 72, 153, 0.2),
+              inset 0 0 10px rgba(236, 72, 153, 0.1);
+  border-color: #ec4899;
+  color: #ec4899;
+  background: rgba(236, 72, 153, 0.05);
+}
+
+/* Yeni Sarı Neon Buton Stili */
+.hero-button-neon-yellow:hover {
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.6), 
+              0 0 30px rgba(255, 215, 0, 0.4),
+              0 0 45px rgba(255, 215, 0, 0.2),
+              inset 0 0 10px rgba(255, 215, 0, 0.1);
+  border-color: #FFD700;
+  color: #FFD700;
+  background: rgba(255, 215, 0, 0.05);
+}
+
 /* Create Vote Pool Button - Neon White Glow Effect */
 .create-vote-pool-neon-white:hover {
   transform: none !important;

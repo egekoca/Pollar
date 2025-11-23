@@ -109,7 +109,18 @@ const LandingPage = () => {
         }}
       >
         {/* Lightning Background */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, opacity: 1 }}>
+        <div style={{ 
+          position: "absolute", 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          zIndex: 0, 
+          opacity: 1,
+          // Kenarları yumuşatmak için maskeleme eklendi
+          maskImage: "radial-gradient(circle at center, black 40%, transparent 80%)",
+          WebkitMaskImage: "radial-gradient(circle at center, black 40%, transparent 80%)" 
+        }}>
           <Lightning hue={220} xOffset={0} speed={1} intensity={1.2} size={1} />
         </div>
         <div className="landing-hero-content" style={{ position: "relative", zIndex: 1 }}>
@@ -234,6 +245,9 @@ const LandingPage = () => {
         style={{
           padding: "clamp(4rem, 10vw, 8rem) clamp(1rem, 3vw, 2rem)",
           background: "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)",
+          // Daha yumuşak ve uzun bir geçiş için maskeleme güncellendi
+          maskImage: "linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)"
         }}
       >
         <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
@@ -575,13 +589,13 @@ const LandingPage = () => {
                 </ul>
                 <Link 
                   to="/vote-pools" 
-                  className="hero-button-neon-blue"
+                  className="hero-button-neon-yellow" // Sarı buton stili
                   style={{ 
                     fontSize: "clamp(0.9rem, 2vw, 1.1rem)", 
                     padding: "clamp(0.65rem, 1.8vw, 0.85rem) clamp(1.5rem, 3.5vw, 2.25rem)",
                     background: "transparent",
-                    color: "#60a5fa",
-                    border: "1.5px solid #60a5fa",
+                    color: "#FFD700",
+                    border: "1.5px solid #FFD700",
                     borderRadius: "0.5rem",
                     fontWeight: "600",
                     textDecoration: "none",
@@ -595,48 +609,48 @@ const LandingPage = () => {
               </div>
             </ElectricBorder>
             <ElectricBorder
-              color="#3b82f6"
+              color="#ec4899"
               speed={1}
               chaos={0.5}
               thickness={2}
               style={{ borderRadius: 16 }}
             >
               <div style={{ padding: "clamp(2rem, 4vw, 3rem)", textAlign: "center" }}>
-                <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#60a5fa" }}>
-                  Enterprise
+                <h4 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", marginBottom: "1rem", color: "#ec4899" }}>
+                  NFT Collection Owners
                 </h4>
                 <div style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: "bold", color: "#ffffff", marginBottom: "1rem" }}>
-                  Custom
+                  Special
                 </div>
                 <p style={{ color: "var(--text-secondary)", marginBottom: "2rem", fontSize: "clamp(1rem, 1.8vw, 1.15rem)" }}>
-                  Tailored solutions for large teams
+                  Exclusive access for community members
                 </p>
                 <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", textAlign: "left" }}>
                   <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
-                    ✓ Everything in Pro
+                    ✓ Exclusive voting rights
                   </li>
                   <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
-                    ✓ Dedicated support
+                    ✓ Create NFT-gated polls
                   </li>
                   <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
-                    ✓ Custom integrations
+                    ✓ Community governance
                   </li>
                   <li style={{ color: "var(--text-secondary)", marginBottom: "0.75rem", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
-                    ✓ SLA guarantee
+                    ✓ Premium support
                   </li>
                   <li style={{ color: "var(--text-secondary)", fontSize: "clamp(0.9rem, 1.6vw, 1rem)" }}>
-                    ✓ On-premise deployment
+                    ✓ Early access features
                   </li>
                 </ul>
                 <Link 
                   to="/vote-pools" 
-                  className="hero-button-neon-blue"
+                  className="hero-button-neon-pink"
                   style={{ 
                     fontSize: "clamp(0.9rem, 2vw, 1.1rem)", 
                     padding: "clamp(0.65rem, 1.8vw, 0.85rem) clamp(1.5rem, 3.5vw, 2.25rem)",
                     background: "transparent",
-                    color: "#60a5fa",
-                    border: "1.5px solid #60a5fa",
+                    color: "#ec4899",
+                    border: "1.5px solid #ec4899",
                     borderRadius: "0.5rem",
                     fontWeight: "600",
                     textDecoration: "none",
@@ -645,7 +659,7 @@ const LandingPage = () => {
                     cursor: "pointer",
                   }}
                 >
-                  Contact Sales
+                  Contact Us
                 </Link>
               </div>
             </ElectricBorder>
