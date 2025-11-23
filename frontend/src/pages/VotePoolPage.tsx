@@ -415,8 +415,11 @@ const VotePoolPage = () => {
           alignItems: "center",
           flexWrap: "wrap",
           gap: "1rem",
-          position: "sticky",
+          position: "fixed",
+          width: "100%",
+          boxSizing: "border-box",
           top: 0,
+          left: 0,
           zIndex: 1000,
           backdropFilter: "blur(10px)",
           background: "rgba(0, 0, 0, 0.05)", // Çok hafif transparan
@@ -498,6 +501,7 @@ const VotePoolPage = () => {
         className="main-content-responsive"
           style={{
           padding: "clamp(1rem, 3vw, 2rem)",
+          paddingTop: "clamp(6rem, 10vw, 8rem)",
           paddingLeft: "clamp(1rem, calc(12vw + 2rem), calc(200px + 4rem))",
           paddingRight: "clamp(1rem, calc(12vw + 2rem), calc(200px + 4rem))",
           maxWidth: "1400px", 

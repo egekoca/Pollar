@@ -26,7 +26,7 @@ const LandingPage = () => {
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
       {/* Header */}
-      <header className="landing-header" style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 1000 }}>
+      <header className="landing-header" style={{ position: 'fixed', top: 0, left: 0, width: '100%', zIndex: 1000, background: "rgba(0, 0, 0, 0.3)", backdropFilter: "blur(10px)" }}>
         {/* Sol Taraf - Logo + Proje İsmi */}
         <Link to="#" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.75rem" }} onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
           <img 
