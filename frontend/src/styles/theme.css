@@ -254,7 +254,7 @@ body {
   z-index: 1;
   box-shadow: 0 10px 40px rgba(59, 130, 246, 0.3);
   border: 2px solid rgba(59, 130, 246, 0.2);
-  transform: translate(11rem, -3rem);
+  transform: translate(14rem, -3rem);
 }
 
 @media (max-width: 1024px) {

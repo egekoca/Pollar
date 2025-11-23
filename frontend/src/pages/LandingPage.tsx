@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useRef } from "react";
 import { gsap } from "gsap";
+import LottieAnimation from "../components/LottieAnimation";
 import Lightning from "../components/Lightning";
 import PillNav from "../components/PillNav";
 import ElectricBorder from "../components/ElectricBorder";
@@ -356,6 +357,35 @@ const LandingPage = () => {
             zIndex: 0
           }}
         />
+
+        {/* Lightning Lottie Animations - Left and Right Containers */}
+        <div style={{
+          position: "absolute",
+          top: "50%",
+          left: "clamp(1rem, 5vw, 5rem)",
+          transform: "translateY(-50%)",
+          width: "clamp(150px, 20vw, 300px)",
+          height: "auto",
+          zIndex: 0,
+          opacity: 0.6,
+          pointerEvents: "none"
+        }}>
+          <LottieAnimation path="/Lightning _Lottie_Animation.json" loop={true} />
+        </div>
+
+        <div style={{
+          position: "absolute",
+          top: "50%",
+          right: "clamp(1rem, 5vw, 5rem)",
+          transform: "translateY(-50%) scaleX(-1)", // Mirror the right side animation
+          width: "clamp(150px, 20vw, 300px)",
+          height: "auto",
+          zIndex: 0,
+          opacity: 0.6,
+          pointerEvents: "none"
+        }}>
+          <LottieAnimation path="/Lightning _Lottie_Animation.json" loop={true} />
+        </div>
         
         <div style={{ maxWidth: "1200px", margin: "0 auto", position: "relative", zIndex: 1 }}>
           <h3
@@ -712,4 +742,3 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
-
