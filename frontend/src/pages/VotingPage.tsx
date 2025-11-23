@@ -821,10 +821,11 @@ const VotingPage = () => {
               { label: 'Pricing', href: '/#pricing' },
             ]}
             activeHref={id ? `/voting/${id}` : undefined}
-            baseColor="#000000"
+            baseColor="transparent"
             pillColor="#ffffff"
             hoveredPillTextColor="#ffffff"
             pillTextColor="#000000"
+            hoverCircleColor="#000000"
           />
         </div>
 

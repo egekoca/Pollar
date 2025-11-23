@@ -22,6 +22,7 @@ interface PillNavProps {
   pillTextColor?: string;
   onMobileMenuClick?: () => void;
   initialLoadAnimation?: boolean;
+  hoverCircleColor?: string;
 }
 
 const PillNav: React.FC<PillNavProps> = ({
@@ -36,7 +37,8 @@ const PillNav: React.FC<PillNavProps> = ({
   hoveredPillTextColor = '#060010',
   pillTextColor,
   onMobileMenuClick,
-  initialLoadAnimation = true
+  initialLoadAnimation = true,
+  hoverCircleColor,
 }) => {
   const resolvedPillTextColor = pillTextColor ?? baseColor;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -240,7 +242,8 @@ const PillNav: React.FC<PillNavProps> = ({
     ['--base' as string]: baseColor,
     ['--pill-bg' as string]: pillColor,
     ['--hover-text' as string]: hoveredPillTextColor,
-    ['--pill-text' as string]: resolvedPillTextColor
+    ['--pill-text' as string]: resolvedPillTextColor,
+    ['--hover-circle-bg' as string]: hoverCircleColor
   };
 
   return (

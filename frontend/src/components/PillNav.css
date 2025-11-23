@@ -90,7 +90,7 @@
   left: 50%;
   bottom: 0;
   border-radius: 50%;
-  background: var(--base, #000);
+  background: var(--hover-circle-bg, var(--base, #000));
   z-index: 1;
   display: block;
   pointer-events: none;

@@ -452,10 +452,11 @@ const VotePoolPage = () => {
               { label: 'Pricing', href: '/#pricing' },
             ]}
             activeHref="/vote-pools"
-            baseColor="#000000"
+            baseColor="transparent"
             pillColor="#ffffff"
             hoveredPillTextColor="#ffffff"
             pillTextColor="#000000"
+            hoverCircleColor="#000000"
           />
         </div>
 
