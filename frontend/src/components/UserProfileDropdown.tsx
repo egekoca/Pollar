@@ -3,12 +3,15 @@ import { Link } from "react-router-dom";
 import { UserProfile } from "../utils/userProfile";
 import "../styles/theme.css";
 
+const ADMIN_ADDRESS = "0x0ba252d960dede1ad8b3cc8a297130cacd581b7d745cf45ae7fe5897ca7a09bb";
+
 interface UserProfileDropdownProps {
   profile: UserProfile;
   onLogout: () => void;
 }
 
 const UserProfileDropdown = ({ profile, onLogout }: UserProfileDropdownProps) => {
+  const isAdmin = profile.walletAddress.toLowerCase() === ADMIN_ADDRESS.toLowerCase();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -107,6 +110,29 @@ const UserProfileDropdown = ({ profile, onLogout }: UserProfileDropdownProps) =>
           >
             My Profile
           </Link>
+
+          {isAdmin && (
+            <Link
+              to="/admin"
+              style={{
+                display: "block",
+                padding: "0.75rem 1rem",
+                color: "var(--text-primary)",
+                textDecoration: "none",
+                transition: "background 0.2s ease",
+                borderTop: "1px solid var(--border-color)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--bg-secondary)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+              }}
+              onClick={() => setIsOpen(false)}
+            >
+              Admin Panel
+            </Link>
+          )}
 
           <button
             onClick={() => {

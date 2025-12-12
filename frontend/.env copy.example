@@ -17,4 +17,9 @@ VITE_PACKAGE_ID=your_package_id_here
 # or from the Sui Explorer. If not set, the app will try to find it automatically.
 VITE_POLL_REGISTRY_ID=your_poll_registry_id_here
 
+# Supabase Configuration
+# Get your Supabase URL and Anon Key from: https://supabase.com/dashboard
+VITE_SUPABASE_URL=your_supabase_url_here
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+
 

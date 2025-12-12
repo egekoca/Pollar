@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { contractConfig } from "../config/contractConfig";
-import { findPollRegistry, getUserNftsByType } from "../utils/blockchain";
+import { findPollRegistry } from "../utils/blockchain";
 import { NFT_COLLECTIONS } from "../config/nftCollections";
+import { supabase } from "../utils/supabase";
 import "../styles/theme.css";
 
 interface Option {
@@ -44,54 +45,63 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
     { name: "", image: "" },
   ]);
   const [error, setError] = useState<string>("");
-  const [userOwnsNft, setUserOwnsNft] = useState<boolean>(true); // Default true for public polls
-  const [checkingNft, setCheckingNft] = useState<boolean>(false);
-  const [nftOwnershipError, setNftOwnershipError] = useState<string>("");
+  const [isWhitelisted, setIsWhitelisted] = useState<boolean>(true); // Default true for public polls
+  const [checkingWhitelist, setCheckingWhitelist] = useState<boolean>(false);
+  const [whitelistError, setWhitelistError] = useState<string>("");
 
-  // Check NFT ownership when collection is selected
+  // Check whitelist when collection is selected
   useEffect(() => {
-    const checkNftOwnership = async () => {
+    const checkWhitelist = async () => {
       // Reset states
-      setUserOwnsNft(true);
-      setNftOwnershipError("");
+      setIsWhitelisted(true);
+      setWhitelistError("");
 
       // If public poll, no need to check
       if (selectedCollection === "public" || !formData.nftCollectionType) {
-        setUserOwnsNft(true);
+        setIsWhitelisted(true);
         return;
       }
 
       // If no account, can't check
       if (!account?.address) {
-        setUserOwnsNft(false);
-        setNftOwnershipError("Please connect your wallet to create an NFT-gated poll.");
+        setIsWhitelisted(false);
+        setWhitelistError("Please connect your wallet to create an NFT-gated poll.");
         return;
       }
 
-      // Check NFT ownership
-      setCheckingNft(true);
+      // Check whitelist from Supabase
+      setCheckingWhitelist(true);
       try {
-        const nfts = await getUserNftsByType(client, account.address, formData.nftCollectionType);
-        if (nfts.length === 0) {
-          setUserOwnsNft(false);
-          setNftOwnershipError(
-            `You don't own any ${selectedCollection} NFTs. You must own at least one ${selectedCollection} NFT to create a poll for this collection.`
+        const { data, error: supabaseError } = await supabase
+          .from('whitelist_entries')
+          .select('wallet_address')
+          .eq('collection_type', formData.nftCollectionType)
+          .eq('wallet_address', account.address.toLowerCase());
+
+        if (supabaseError) {
+          console.error("Error checking whitelist:", supabaseError);
+          setIsWhitelisted(false);
+          setWhitelistError("Error checking whitelist. Please try again.");
+        } else if (!data || data.length === 0) {
+          setIsWhitelisted(false);
+          setWhitelistError(
+            `Your wallet is not whitelisted for ${selectedCollection}. You must be whitelisted by an admin to create a poll for this collection.`
           );
         } else {
-          setUserOwnsNft(true);
-          setNftOwnershipError("");
+          setIsWhitelisted(true);
+          setWhitelistError("");
         }
       } catch (error) {
-        console.error("Error checking NFT ownership:", error);
-        setUserOwnsNft(false);
-        setNftOwnershipError("Error checking NFT ownership. Please try again.");
+        console.error("Error checking whitelist:", error);
+        setIsWhitelisted(false);
+        setWhitelistError("Error checking whitelist. Please try again.");
       } finally {
-        setCheckingNft(false);
+        setCheckingWhitelist(false);
       }
     };
 
-    checkNftOwnership();
-  }, [selectedCollection, formData.nftCollectionType, account?.address, client]);
+    checkWhitelist();
+  }, [selectedCollection, formData.nftCollectionType, account?.address]);
 
   if (!isOpen) return null;
 
@@ -139,16 +149,16 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
       return;
     }
 
-    // Check NFT ownership if NFT-gated poll
+    // Check whitelist if NFT-gated poll
     if (selectedCollection !== "public" && formData.nftCollectionType) {
-      if (!userOwnsNft) {
+      if (!isWhitelisted) {
         setError(
-          `You don't own any ${selectedCollection} NFTs. You must own at least one ${selectedCollection} NFT to create a poll for this collection.`
+          `Your wallet is not whitelisted for ${selectedCollection}. You must be whitelisted by an admin to create a poll for this collection.`
         );
         return;
       }
-      if (checkingNft) {
-        setError("Please wait while we verify your NFT ownership...");
+      if (checkingWhitelist) {
+        setError("Please wait while we verify your whitelist status...");
         return;
       }
     }
@@ -590,12 +600,12 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
                 ? "Anyone can vote in this poll."
                 : `Only ${selectedCollection} NFT holders can vote in this poll.`}
             </p>
-            {checkingNft && selectedCollection !== "public" && (
+            {checkingWhitelist && selectedCollection !== "public" && (
               <p style={{ fontSize: "0.85rem", color: "var(--color-light-blue)", marginTop: "0.5rem" }}>
-                Checking NFT ownership...
+                Checking whitelist status...
               </p>
             )}
-            {nftOwnershipError && (
+            {whitelistError && (
               <div
                 style={{
                   marginTop: "0.5rem",
@@ -607,12 +617,12 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
                   fontSize: "0.85rem",
                 }}
               >
-                {nftOwnershipError}
+                {whitelistError}
               </div>
             )}
-            {userOwnsNft && selectedCollection !== "public" && !checkingNft && (
+            {isWhitelisted && selectedCollection !== "public" && !checkingWhitelist && (
               <p style={{ fontSize: "0.85rem", color: "#10b981", marginTop: "0.5rem" }}>
-                ✓ You own {selectedCollection} NFT(s). You can create this poll.
+                ✓ Your wallet is whitelisted for {selectedCollection}. You can create this poll.
               </p>
             )}
           </div>
@@ -690,13 +700,13 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
             <button 
               type="submit" 
               className="button button-primary"
-              disabled={isPending || checkingNft || (!userOwnsNft && selectedCollection !== "public")}
+              disabled={isPending || checkingWhitelist || (!isWhitelisted && selectedCollection !== "public")}
               style={{ 
-                cursor: (isPending || checkingNft || (!userOwnsNft && selectedCollection !== "public")) ? "not-allowed" : "pointer",
-                opacity: (isPending || checkingNft || (!userOwnsNft && selectedCollection !== "public")) ? 0.6 : 1
+                cursor: (isPending || checkingWhitelist || (!isWhitelisted && selectedCollection !== "public")) ? "not-allowed" : "pointer",
+                opacity: (isPending || checkingWhitelist || (!isWhitelisted && selectedCollection !== "public")) ? 0.6 : 1
               }}
             >
-              {isPending ? "Creating..." : checkingNft ? "Checking NFT..." : "Create Pool"}
+              {isPending ? "Creating..." : checkingWhitelist ? "Checking whitelist..." : "Create Pool"}
             </button>
           </div>
         </form>

@@ -106,17 +106,20 @@ const VotePoolPage = () => {
   };
 
   useEffect(() => {
-    if (account?.address) {
-      const profile = getUserProfile(account.address);
-      if (profile) {
-        setUserProfile(profile);
+    const loadProfile = async () => {
+      if (account?.address) {
+        const profile = await getUserProfile(account.address);
+        if (profile) {
+          setUserProfile(profile);
+        } else {
+          // No profile, redirect to create profile page
+          navigate("/create-profile");
+        }
       } else {
-        // No profile, redirect to create profile page
-        navigate("/create-profile");
+        setUserProfile(null);
       }
-    } else {
-      setUserProfile(null);
-    }
+    };
+    loadProfile();
   }, [account?.address, navigate]);
 
   const handlePollCreated = () => {

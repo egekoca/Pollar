@@ -14,25 +14,28 @@ const LoginPage = () => {
   const hasRedirected = useRef(false);
 
   useEffect(() => {
-    // Check if account is connected
-    if (account?.address && !hasRedirected.current) {
-      console.log("Account connected on login page:", account.address);
-      
-      hasRedirected.current = true;
-      
-      // Check profile
-      const profile = getUserProfile(account.address);
-      
-      if (profile) {
-        console.log("Profile exists, going to vote pools");
-        navigate("/vote-pools", { replace: true });
-      } else {
-        console.log("No profile, going to create profile");
-        navigate("/create-profile", { replace: true });
+    const checkProfile = async () => {
+      // Check if account is connected
+      if (account?.address && !hasRedirected.current) {
+        console.log("Account connected on login page:", account.address);
+        
+        hasRedirected.current = true;
+        
+        // Check profile
+        const profile = await getUserProfile(account.address);
+        
+        if (profile) {
+          console.log("Profile exists, going to vote pools");
+          navigate("/vote-pools", { replace: true });
+        } else {
+          console.log("No profile, going to create profile");
+          navigate("/create-profile", { replace: true });
+        }
+      } else if (!account?.address) {
+        hasRedirected.current = false;
       }
-    } else if (!account?.address) {
-      hasRedirected.current = false;
-    }
+    };
+    checkProfile();
   }, [account?.address, navigate]);
 
   const handleGoogleSignIn = async () => {

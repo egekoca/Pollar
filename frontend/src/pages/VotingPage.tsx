@@ -6,6 +6,7 @@ import { VotePool, VoteOption } from "../data/mockData";
 import { gsap } from "gsap";
 import PillNav from "../components/PillNav";
 import { getCollectionByType } from "../config/nftCollections";
+import { saveUserVote } from "../utils/supabase";
 import {
   LineChart,
   Line,
@@ -316,6 +317,17 @@ const VotingPage = () => {
         {
           onSuccess: async (result: any) => {
             console.log("Vote submitted successfully!", result);
+            
+            // Save vote to database (only track which poll was voted on, not the option)
+            if (account?.address && id) {
+              try {
+                await saveUserVote(account.address, id);
+                console.log("Vote saved to database");
+              } catch (error) {
+                console.error("Error saving vote to database:", error);
+                // Don't block the flow if database save fails
+              }
+            }
             
             // Show success modal with video
             setShowSuccessModal(true);

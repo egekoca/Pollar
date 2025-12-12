@@ -37,10 +37,13 @@ const CreateProfilePage = () => {
     }
 
     // If profile already exists, redirect to vote pools
-    const existingProfile = getUserProfile(account.address);
-    if (existingProfile) {
-      navigate("/vote-pools");
-    }
+    const checkExistingProfile = async () => {
+      const existingProfile = await getUserProfile(account.address);
+      if (existingProfile) {
+        navigate("/vote-pools");
+      }
+    };
+    checkExistingProfile();
   }, [account, navigate]);
 
   // Ortak profil oluşturma fonksiyonu
@@ -88,7 +91,7 @@ const CreateProfilePage = () => {
           transaction: tx,
         } as any,
         {
-          onSuccess: (result) => {
+          onSuccess: async (result) => {
             console.log("User created successfully:", result);
             
             // Find the created User object ID from the result
@@ -114,7 +117,7 @@ const CreateProfilePage = () => {
               }
             }
 
-            // Save profile to localStorage
+            // Save profile to Supabase and localStorage
             const newProfile: UserProfile = {
               walletAddress: account.address,
               username: usernameToUse,
@@ -123,7 +126,7 @@ const CreateProfilePage = () => {
               ...(userObjectId && { userObjectId }),
             };
 
-            saveUserProfile(newProfile);
+            await saveUserProfile(newProfile);
 
             // Redirect to vote pools after successful profile creation
             navigate("/vote-pools");

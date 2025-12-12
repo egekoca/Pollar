@@ -5,6 +5,7 @@ import CreateProfilePage from "./pages/CreateProfilePage";
 import VotePoolPage from "./pages/VotePoolPage";
 import VotingPage from "./pages/VotingPage";
 import MyProfilePage from "./pages/MyProfilePage";
+import AdminPanelPage from "./pages/AdminPanelPage";
 function App() {
   return (
     <Router>
@@ -15,6 +16,7 @@ function App() {
         <Route path="/vote-pools" element={<VotePoolPage />} />
         <Route path="/voting/:id" element={<VotingPage />} />
         <Route path="/my-profile" element={<MyProfilePage />} />
+        <Route path="/admin" element={<AdminPanelPage />} />
       </Routes>
     </Router>
   );

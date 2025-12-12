@@ -76,37 +76,39 @@ const MyProfilePage = () => {
       return;
     }
 
-    const userProfile = getUserProfile(account.address);
-    if (!userProfile) {
-      navigate("/vote-pools");
-      return;
-    }
-
-    setProfile(userProfile);
-    setUsername(userProfile.username);
-    setAvatarUrl(userProfile.avatarUrl);
-
-    // Kullanıcının oluşturduğu poll'ları yükle
-    const loadMyPools = async () => {
-      setIsLoadingPools(true);
-      try {
-        const allPolls = await getAllPolls(client);
-        // Sadece bu kullanıcının oluşturduğu poll'ları filtrele
-        const userPools = allPolls.filter(
-          (poll) => poll.creator.toLowerCase() === account.address.toLowerCase()
-        );
-        setMyPools(userPools);
-      } catch (error) {
-        console.error("Error loading my pools:", error);
-      } finally {
-        setIsLoadingPools(false);
+    const loadProfile = async () => {
+      const userProfile = await getUserProfile(account.address);
+      if (!userProfile) {
+        navigate("/vote-pools");
+        return;
       }
-    };
 
-    loadMyPools();
+      setProfile(userProfile);
+      setUsername(userProfile.username);
+      setAvatarUrl(userProfile.avatarUrl);
+
+      // Kullanıcının oluşturduğu poll'ları yükle
+      const loadMyPools = async () => {
+        setIsLoadingPools(true);
+        try {
+          const allPolls = await getAllPolls(client);
+          // Sadece bu kullanıcının oluşturduğu poll'ları filtrele
+          const userPools = allPolls.filter(
+            (poll) => poll.creator.toLowerCase() === account.address.toLowerCase()
+          );
+          setMyPools(userPools);
+        } catch (error) {
+          console.error("Error loading my pools:", error);
+        } finally {
+          setIsLoadingPools(false);
+        }
+      };
+      loadMyPools();
+    };
+    loadProfile();
   }, [account, navigate, client]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setError("");
 
     if (!username.trim()) {
@@ -132,7 +134,7 @@ const MyProfilePage = () => {
       avatarUrl: avatarUrl.trim(),
     };
 
-    saveUserProfile(updatedProfile);
+    await saveUserProfile(updatedProfile);
     setProfile(updatedProfile);
     setIsEditing(false);
   };
