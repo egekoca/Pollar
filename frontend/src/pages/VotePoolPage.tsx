@@ -49,9 +49,10 @@ const VotePoolPage = () => {
   const uniqueCollectionTypesUnsorted = Array.from(new Set([...uniqueCollectionTypesFromPolls, ...allCollectionTypes]));
   const validCollectionTypesUnsorted = uniqueCollectionTypesUnsorted.filter((type) => !!getCollectionByType(type));
   
-  // Sort collections in desired order: Sui Workshop, Popkins, Tallys, Pawtato Heroes
+  // Sort collections in desired order: Sui Workshop, SUI TURKIYE, Popkins, Tallys, Pawtato Heroes
   const collectionOrder = [
     "0x22739e8c5f587927462590822f418a673e6435fe8a427f892132ab160a72fd83::simple_nft::SimpleNFT", // Sui Workshop
+    "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye", // SUI TURKIYE
     "0xb908f3c6fea6865d32e2048c520cdfe3b5c5bbcebb658117c41bad70f52b7ccc::popkins_nft::Popkins", // Popkins
     "0x75888defd3f392d276643932ae204cd85337a5b8f04335f9f912b6291149f423::nft::Tally", // Tallys
     "0x0000000000000000000000000000000000000000000000000000000000000000::pawtato_heroes::PawtatoHero", // Pawtato Heroes
@@ -141,6 +142,9 @@ const VotePoolPage = () => {
   } else if (selectedCollection?.name === "Sui Workshop") {
     // Deep Navy -> Electric Blue Glow -> Dark Navy (Inspired by suiworkshop.png)
     backgroundGradient = "radial-gradient(circle at 50% 30%, #1e40af 0%, #0f172a 60%, #020617 100%)";
+  } else if (selectedCollection?.name === "SUI TURKIYE") {
+    // Analiz edilmiş gradient: koyu lacivert %30-40'a kadar devam ediyor, sonra koyu bordo, sağda parlak kırmızı
+    backgroundGradient = "linear-gradient(90deg, rgba(1, 7, 19, 0.98) 0%, rgba(1, 7, 19, 0.97) 30%, rgba(8, 12, 25, 0.96) 40%, rgba(42, 5, 17, 0.95) 50%, rgba(96, 5, 18, 0.93) 60%, rgba(154, 2, 13, 0.92) 75%, rgba(211, 0, 12, 0.95) 100%)";
   }
 
   return (
@@ -545,7 +549,8 @@ const VotePoolPage = () => {
             const isTallys = collection?.name === "Tallys";
             const isPawtatoHeroes = collection?.name === "Pawtato Heroes";
             const isSuiWorkshop = collection?.name === "Sui Workshop";
-            const hasImage = isPopkins || isTallys || isPawtatoHeroes || isSuiWorkshop;
+            const isSuiTurkiye = collection?.name === "SUI TURKIYE";
+            const hasImage = isPopkins || isTallys || isPawtatoHeroes || isSuiWorkshop || isSuiTurkiye;
             const isSelected = selectedCollectionType === collectionType;
             return (
               <button
@@ -565,6 +570,7 @@ const VotePoolPage = () => {
                   justifyContent: "center",
                   opacity: hasImage && isSelected ? 1 : (hasImage ? 0.7 : 1),
                   transform: hasImage && isSelected ? "scale(1.05)" : "scale(1)",
+                  maxWidth: isSuiTurkiye ? "clamp(120px, 15vw, 180px)" : "none",
                   boxShadow: hasImage && isSelected 
                     ? (isPopkins 
                         ? "0 0 15px rgba(255, 165, 0, 0.6), 0 0 30px rgba(255, 140, 0, 0.4)"
@@ -574,6 +580,8 @@ const VotePoolPage = () => {
                         ? "0 0 15px rgba(132, 204, 22, 0.6), 0 0 30px rgba(163, 230, 53, 0.4)"
                         : isSuiWorkshop
                         ? "0 0 15px rgba(79, 195, 247, 0.6), 0 0 30px rgba(41, 182, 246, 0.4)"
+                        : isSuiTurkiye
+                        ? "0 0 15px rgba(220, 38, 38, 0.6), 0 0 30px rgba(30, 58, 138, 0.4)"
                         : "none")
                     : "none",
                 }}
@@ -623,6 +631,17 @@ const VotePoolPage = () => {
                       borderRadius: "1rem",
                     }}
                   />
+                ) : isSuiTurkiye ? (
+                  <img 
+                    src="/suitrbutton.png" 
+                    alt="SUI TURKIYE" 
+                    style={{
+                      height: "clamp(2rem, 4vw, 3rem)",
+                      width: "auto",
+                      objectFit: "contain",
+                      display: "block",
+                    }}
+                  />
                 ) : (
                   collection?.name || collectionType.split("::").pop() || "Unknown"
                 )}
@@ -653,6 +672,9 @@ const VotePoolPage = () => {
                 } else if (collection.name === "Sui Workshop") {
                   title = "SUI WORKSHOP VOTE POLLS";
                   gradient = "linear-gradient(90deg, #0277bd 0%, #0288d1 20%, #03a9f4 40%, #29b6f6 60%, #4fc3f7 80%, #81d4fa 100%)"; // Blue gradient
+                } else if (collection.name === "SUI TURKIYE") {
+                  title = "SUI TURKIYE VOTE POLLS";
+                  gradient = "linear-gradient(180deg, #ffffff 0%, #dc2626 100%)"; // Üstte beyaz, altta kırmızı
                 }
               }
             }
@@ -661,8 +683,9 @@ const VotePoolPage = () => {
             const isTallys = title === "TALLYS VOTE POLLS";
             const isPawtatoHeroes = title === "PAWTATO HEROES VOTE POLLS";
             const isSuiWorkshop = title === "SUI WORKSHOP VOTE POLLS";
-            // Sui Workshop'u tekrar grafiti stiline dahil ediyoruz
-            const isGraffitiStyled = isPopkins || isTallys || isPawtatoHeroes || isSuiWorkshop;
+            const isSuiTurkiye = title === "SUI TURKIYE VOTE POLLS";
+            // Sui Workshop ve SUI TURKIYE'yi tekrar grafiti stiline dahil ediyoruz
+            const isGraffitiStyled = isPopkins || isTallys || isPawtatoHeroes || isSuiWorkshop || isSuiTurkiye;
 
             return (
               <>
@@ -684,6 +707,8 @@ const VotePoolPage = () => {
                         ? "linear-gradient(180deg, #ef4444 20%, #f59e0b 80%)"
                         : isSuiWorkshop
                         ? "linear-gradient(180deg, #ffffff 20%, #3b82f6 80%)" // Sui: Beyaz -> Mavi
+                        : isSuiTurkiye
+                        ? "linear-gradient(180deg, #ffffff 0%, #dc2626 100%)" // SUI TURKIYE: Üstte beyaz, altta kırmızı
                         : "linear-gradient(180deg, #4ade80 20%, #f97316 80%)",
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
@@ -721,7 +746,8 @@ const VotePoolPage = () => {
                 </h2>
           <p style={{ 
             // Sui Workshop için koyu arka plan olduğu için text-muted (gri/beyaz) kullanıyoruz
-            color: isGraffitiStyled ? "rgba(0, 0, 0, 0.85)" : "var(--text-muted)", 
+            // SUI TURKIYE için beyaz renk
+            color: isSuiTurkiye ? "#ffffff" : (isGraffitiStyled ? "rgba(0, 0, 0, 0.85)" : "var(--text-muted)"), 
             fontSize: "clamp(1rem, 2vw, 1.1rem)", 
             marginBottom: "1rem",
             fontWeight: isGraffitiStyled ? "600" : "normal",
@@ -815,10 +841,11 @@ const VotePoolPage = () => {
         {!isLoadingPools && pools.length === 0 && (
           <div style={{ textAlign: "center", padding: "2rem" }}>
             <p style={{ 
-              color: (selectedCollection?.name === "Popkins" || selectedCollection?.name === "Tallys" || selectedCollection?.name === "Pawtato Heroes") ? "rgba(0, 0, 0, 0.85)" : "var(--text-muted)", 
+              // SUI TURKIYE için beyaz renk
+              color: selectedCollection?.name === "SUI TURKIYE" ? "#ffffff" : ((selectedCollection?.name === "Popkins" || selectedCollection?.name === "Tallys" || selectedCollection?.name === "Pawtato Heroes") ? "rgba(0, 0, 0, 0.85)" : "var(--text-muted)"), 
               fontSize: "1.1rem", 
               marginBottom: "1rem",
-              fontWeight: (selectedCollection?.name === "Popkins" || selectedCollection?.name === "Tallys" || selectedCollection?.name === "Pawtato Heroes") ? "600" : "normal"
+              fontWeight: (selectedCollection?.name === "Popkins" || selectedCollection?.name === "Tallys" || selectedCollection?.name === "Pawtato Heroes" || selectedCollection?.name === "SUI TURKIYE") ? "600" : "normal"
             }}>
               No polls found. Create the first poll!
             </p>
@@ -826,7 +853,7 @@ const VotePoolPage = () => {
               <button 
                 onClick={handleCreateVotePool} 
                 className="button button-primary"
-                style={(selectedCollection?.name === "Popkins" || selectedCollection?.name === "Tallys" || selectedCollection?.name === "Pawtato Heroes") ? {
+                style={(selectedCollection?.name === "Popkins" || selectedCollection?.name === "Tallys" || selectedCollection?.name === "Pawtato Heroes" || selectedCollection?.name === "SUI TURKIYE") ? {
                   backgroundColor: "#000000",
                   color: "#ffffff",
                   fontWeight: "700",
@@ -859,6 +886,7 @@ const VotePoolPage = () => {
             const isTallys = poolCollection?.name === "Tallys";
             const isPawtatoHeroes = poolCollection?.name === "Pawtato Heroes";
             const isSuiWorkshop = poolCollection?.name === "Sui Workshop";
+            const isSuiTurkiye = poolCollection?.name === "SUI TURKIYE";
             
             // Check if poll is active
             const now = new Date();
@@ -875,6 +903,8 @@ const VotePoolPage = () => {
               ? "rgba(132, 204, 22, 0.3), rgba(163, 230, 53, 0.3)" // Lime green for Pawtato Heroes
               : isSuiWorkshop
               ? "rgba(79, 195, 247, 0.3), rgba(41, 182, 246, 0.3)" // Blue for Sui Workshop
+              : isSuiTurkiye
+              ? "rgba(220, 38, 38, 0.3), rgba(30, 58, 138, 0.3)" // Red-Navy for SUI TURKIYE
               : "transparent";
             
             return (
@@ -892,10 +922,10 @@ const VotePoolPage = () => {
                   flexDirection: "column",
                   position: "relative",
                   boxShadow: glowColor !== "transparent" 
-                    ? `0 0 20px ${isPopkins ? "rgba(255, 165, 0, 0.4)" : isTallys ? "rgba(255, 20, 147, 0.4)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.4)" : isSuiWorkshop ? "rgba(79, 195, 247, 0.4)" : "rgba(139, 92, 246, 0.4)"}, 0 0 40px ${isPopkins ? "rgba(50, 205, 50, 0.3)" : isTallys ? "rgba(255, 99, 71, 0.3)" : isPawtatoHeroes ? "rgba(163, 230, 53, 0.3)" : isSuiWorkshop ? "rgba(41, 182, 246, 0.3)" : "rgba(167, 139, 250, 0.3)"}`
+                    ? `0 0 20px ${isPopkins ? "rgba(255, 165, 0, 0.4)" : isTallys ? "rgba(255, 20, 147, 0.4)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.4)" : isSuiWorkshop ? "rgba(79, 195, 247, 0.4)" : isSuiTurkiye ? "rgba(220, 38, 38, 0.4)" : "rgba(139, 92, 246, 0.4)"}, 0 0 40px ${isPopkins ? "rgba(50, 205, 50, 0.3)" : isTallys ? "rgba(255, 99, 71, 0.3)" : isPawtatoHeroes ? "rgba(163, 230, 53, 0.3)" : isSuiWorkshop ? "rgba(41, 182, 246, 0.3)" : isSuiTurkiye ? "rgba(30, 58, 138, 0.3)" : "rgba(167, 139, 250, 0.3)"}`
                     : undefined,
                   border: glowColor !== "transparent"
-                    ? `1px solid ${isPopkins ? "rgba(255, 165, 0, 0.5)" : isTallys ? "rgba(255, 20, 147, 0.5)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.5)" : isSuiWorkshop ? "rgba(79, 195, 247, 0.5)" : "rgba(139, 92, 246, 0.5)"}`
+                    ? `1px solid ${isPopkins ? "rgba(255, 165, 0, 0.5)" : isTallys ? "rgba(255, 20, 147, 0.5)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.5)" : isSuiWorkshop ? "rgba(79, 195, 247, 0.5)" : isSuiTurkiye ? "rgba(220, 38, 38, 0.5)" : "rgba(139, 92, 246, 0.5)"}`
                     : undefined,
                 }}
               >
@@ -917,7 +947,7 @@ const VotePoolPage = () => {
                 />
 
                 {/* NFT Collection Badge - Ribbon Style Top Right */}
-                {(isPopkins || isTallys || isPawtatoHeroes || isSuiWorkshop) && (
+                {(isPopkins || isTallys || isPawtatoHeroes || isSuiWorkshop || isSuiTurkiye) && (
                   <div
                     style={{
                       position: "absolute",
@@ -939,8 +969,8 @@ const VotePoolPage = () => {
                         height: "0",
                         borderStyle: "solid",
                         borderWidth: `0 clamp(55px, 7.5vw, 75px) clamp(55px, 7.5vw, 75px) 0`,
-                        borderColor: `transparent ${isPopkins ? "rgba(255, 165, 0, 0.95)" : isTallys ? "rgba(255, 20, 147, 0.95)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.95)" : isSuiWorkshop ? "rgba(33, 150, 243, 0.95)" : "rgba(139, 92, 246, 0.95)"} transparent transparent`,
-                        filter: `drop-shadow(0 2px 8px ${isPopkins ? "rgba(255, 165, 0, 0.7)" : isTallys ? "rgba(255, 20, 147, 0.7)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.7)" : isSuiWorkshop ? "rgba(33, 150, 243, 0.7)" : "rgba(139, 92, 246, 0.7)"})`,
+                        borderColor: `transparent ${isPopkins ? "rgba(255, 165, 0, 0.95)" : isTallys ? "rgba(255, 20, 147, 0.95)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.95)" : isSuiWorkshop ? "rgba(33, 150, 243, 0.95)" : isSuiTurkiye ? "rgba(220, 38, 38, 0.95)" : "rgba(139, 92, 246, 0.95)"} transparent transparent`,
+                        filter: `drop-shadow(0 2px 8px ${isPopkins ? "rgba(255, 165, 0, 0.7)" : isTallys ? "rgba(255, 20, 147, 0.7)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.7)" : isSuiWorkshop ? "rgba(33, 150, 243, 0.7)" : isSuiTurkiye ? "rgba(220, 38, 38, 0.7)" : "rgba(139, 92, 246, 0.7)"})`,
                       }}
                     />
                     {/* Ribbon Fold Shadow */}
@@ -953,12 +983,12 @@ const VotePoolPage = () => {
                         height: "0",
                         borderStyle: "solid",
                         borderWidth: `0 clamp(40px, 5.5vw, 55px) clamp(40px, 5.5vw, 55px) 0`,
-                        borderColor: `transparent ${isPopkins ? "rgba(255, 140, 0, 0.8)" : isTallys ? "rgba(255, 0, 100, 0.8)" : isPawtatoHeroes ? "rgba(101, 163, 13, 0.8)" : isSuiWorkshop ? "rgba(25, 118, 210, 0.8)" : "rgba(124, 58, 237, 0.8)"} transparent transparent`,
+                        borderColor: `transparent ${isPopkins ? "rgba(255, 140, 0, 0.8)" : isTallys ? "rgba(255, 0, 100, 0.8)" : isPawtatoHeroes ? "rgba(101, 163, 13, 0.8)" : isSuiWorkshop ? "rgba(25, 118, 210, 0.8)" : isSuiTurkiye ? "rgba(153, 27, 27, 0.8)" : "rgba(124, 58, 237, 0.8)"} transparent transparent`,
                         transform: "translate(4px, 4px)",
                       }}
                     />
                     {/* Image Container - Centered on Ribbon, Larger and More to Top Right */}
-                    {!isSuiWorkshop && (
+                    {!isSuiWorkshop && !isSuiTurkiye && (
                       <div
                         style={{
                           position: "absolute",
@@ -976,6 +1006,35 @@ const VotePoolPage = () => {
                         <img
                           src={isPopkins ? "/popkins.png" : isTallys ? "/tallys.png" : isPawtatoHeroes ? "/PawtatoHeroes.png" : "/popkins.png"}
                           alt={poolCollection?.name}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                            filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6))",
+                            transform: "rotate(-45deg)",
+                          }}
+                        />
+                      </div>
+                    )}
+                    {/* SUI TURKIYE Image Container */}
+                    {isSuiTurkiye && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "clamp(6px, 1vw, 10px)",
+                          right: "clamp(6px, 1vw, 10px)",
+                          width: "clamp(50px, 7.5vw, 70px)",
+                          height: "clamp(50px, 7.5vw, 70px)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          zIndex: 11,
+                          transform: "rotate(45deg)",
+                        }}
+                      >
+                        <img
+                          src="/suitrbutton.png"
+                          alt="SUI TURKIYE"
                           style={{
                             width: "100%",
                             height: "100%",

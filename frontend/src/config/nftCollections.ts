@@ -63,6 +63,28 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
     },
   },
   {
+    name: "SUI TURKIYE",
+    type: "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye", // TODO: Update with actual type
+    packageId: "0x0000000000000000000000000000000000000000000000000000000000000000", // TODO: Update with actual package ID
+    moduleName: "sui_turkiye",
+    structName: "SuiTurkiye",
+    description: "SUI TURKIYE Community NFT Collection",
+    imageUrl: "/suitrbutton.png",
+    theme: {
+      backgroundGradient: "linear-gradient(90deg, #010713 0%, #010713 30%, #080c19 40%, #2A0511 50%, #600512 60%, #9A020D 75%, #D3000C 100%)", // Analiz edilmiş gradient: koyu lacivert %30-40'a kadar devam ediyor, sonra koyu bordo, sağda parlak kırmızı
+      backgroundImages: [
+        "https://pbs.twimg.com/media/G6hdHDuXgAAMe2X?format=jpg&name=medium",
+        "https://pbs.twimg.com/media/GyOVjY4WEAAb4jd?format=jpg&name=small",
+        "https://pbs.twimg.com/media/GrdSd1cW0AAWiFZ?format=jpg&name=medium",
+        "https://pbs.twimg.com/media/Gql9AFkWkAA_Vf5?format=png&name=medium",
+        "/suitr.jpg",
+      ],
+      primaryColor: "#dc2626", // Red
+      secondaryColor: "#1e3a8a", // Dark navy blue
+      overlayOpacity: 0.15,
+    },
+  },
+  {
     name: "Tallys",
     type: "0x75888defd3f392d276643932ae204cd85337a5b8f04335f9f912b6291149f423::nft::Tally",
     packageId: "0x75888defd3f392d276643932ae204cd85337a5b8f04335f9f912b6291149f423",
