@@ -19,6 +19,7 @@ const VotePoolPage = () => {
   const account = useCurrentAccount();
   const { mutate: disconnect } = useDisconnectWallet();
   const [selectedCollectionType, setSelectedCollectionType] = useState<string | null>(null); // null = all polls, string = specific collection
+  const [selectedFilter, setSelectedFilter] = useState<"active" | "upcoming" | "ended">("active"); // Filter: active, upcoming, ended
 
   const handleLogoHover = () => {
     if (logoRef.current) {
@@ -36,9 +37,25 @@ const VotePoolPage = () => {
   // Filter pools by selected collection
   // null = "All Polls" (shows all polls including public and NFT-required)
   // string = specific collection type (shows only polls for that collection)
-  const pools = selectedCollectionType === null
+  let filteredPools = selectedCollectionType === null
     ? allPools // Show all polls when "All Polls" is selected
     : allPools.filter((pool) => pool.nft_collection_type === selectedCollectionType);
+  
+  // Filter by status (active, upcoming, ended)
+  const now = new Date();
+  const pools = filteredPools.filter((pool) => {
+    const startDate = new Date(pool.startTime);
+    const endDate = new Date(pool.endTime);
+    
+    if (selectedFilter === "active") {
+      return now >= startDate && now <= endDate;
+    } else if (selectedFilter === "upcoming") {
+      return now < startDate;
+    } else if (selectedFilter === "ended") {
+      return now > endDate;
+    }
+    return true;
+  });
   
   // Get unique collection types from all polls
   const uniqueCollectionTypesFromPolls = getUniqueCollectionTypes(allPools);
@@ -744,17 +761,33 @@ const VotePoolPage = () => {
                 >
                   {title}
                 </h2>
-          <p style={{ 
-            // Sui Workshop için koyu arka plan olduğu için text-muted (gri/beyaz) kullanıyoruz
-            // SUI TURKIYE için beyaz renk
-            color: isSuiTurkiye ? "#ffffff" : (isGraffitiStyled ? "rgba(0, 0, 0, 0.85)" : "var(--text-muted)"), 
-            fontSize: "clamp(1rem, 2vw, 1.1rem)", 
+          {/* Status Filter - Select Box */}
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
             marginBottom: "1rem",
-            fontWeight: isGraffitiStyled ? "600" : "normal",
-            textShadow: isGraffitiStyled ? "0 1px 2px rgba(255,255,255,0.3)" : "none"
           }}>
-            Participate in ongoing polls and make your voice heard
-          </p>
+            <select
+              value={selectedFilter}
+              onChange={(e) => setSelectedFilter(e.target.value as "active" | "upcoming" | "ended")}
+              style={{
+                padding: "0.5rem 1rem",
+                background: "transparent",
+                color: "var(--text-primary)",
+                border: "1.5px solid var(--color-light-blue)",
+                borderRadius: "0.5rem",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+                fontSize: "clamp(0.75rem, 1.2vw, 0.875rem)",
+                minWidth: "140px",
+              }}
+            >
+              <option value="active">ACTIVE POLLS</option>
+              <option value="upcoming">UPCOMING</option>
+              <option value="ended">ENDED</option>
+            </select>
+          </div>
           {selectedCollectionType && (() => {
             const collection = getCollectionByType(selectedCollectionType);
             if (collection && collection.tradeportUrl) {
