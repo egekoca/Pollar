@@ -653,7 +653,7 @@ const VotePoolPage = () => {
         <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)", textAlign: "center" }}>
           {(() => {
             // Determine title and gradient based on selected collection
-            let title = "ACTIVE VOTE POOLS";
+            let title = "ACTIVE VOTE POLLS";
             let gradient = "linear-gradient(90deg, #1e3a8a 0%, #2563eb 15%, #3b82f6 30%, #60a5fa 45%, #87ceeb 60%, #bae6fd 75%, #ffffff 90%, #bae6fd 100%)";
             
             if (selectedCollectionType) {
