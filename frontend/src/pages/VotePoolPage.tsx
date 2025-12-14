@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
+import { useCurrentAccount, useDisconnectWallet, useSuiClient } from "@mysten/dapp-kit";
 import { gsap } from "gsap";
 import PillNav from "../components/PillNav";
 import CreateVotePoolModal from "../components/CreateVotePoolModal";
@@ -8,6 +8,7 @@ import UserProfileDropdown from "../components/UserProfileDropdown";
 import { getUserProfile, UserProfile } from "../utils/userProfile";
 import { useBlockchainPolls } from "../utils/pollUtils";
 import { NFT_COLLECTIONS, getUniqueCollectionTypes, getCollectionByType } from "../config/nftCollections";
+import { getUserNftsByType } from "../utils/blockchain";
 import pollarWalkVideo from "/pollar-walk.mp4";
 import "../styles/theme.css";
 
@@ -17,6 +18,7 @@ const VotePoolPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const account = useCurrentAccount();
+  const client = useSuiClient();
   const { mutate: disconnect } = useDisconnectWallet();
   const [selectedCollectionType, setSelectedCollectionType] = useState<string | null>(null); // null = all polls, string = specific collection
   const [selectedFilter, setSelectedFilter] = useState<"active" | "upcoming" | "ended">("active"); // Filter: active, upcoming, ended
@@ -33,13 +35,52 @@ const VotePoolPage = () => {
   
   // Blockchain'den poll'ları oku
   const { data: allPools = [], isLoading: isLoadingPools, refetch } = useBlockchainPolls();
+
+  // Check if user owns NFT for a collection
+  const [userNftsByCollection, setUserNftsByCollection] = useState<Map<string, number>>(new Map());
   
-  // Filter pools by selected collection
+  useEffect(() => {
+    const loadUserNfts = async () => {
+      if (!account?.address) {
+        setUserNftsByCollection(new Map());
+        return;
+      }
+
+      const nftMap = new Map<string, number>();
+      for (const collection of NFT_COLLECTIONS) {
+        try {
+          const nfts = await getUserNftsByType(client, account.address, collection.type);
+          nftMap.set(collection.type, nfts.length);
+        } catch (error) {
+          console.error(`Error loading NFTs for ${collection.name}:`, error);
+          nftMap.set(collection.type, 0);
+        }
+      }
+      setUserNftsByCollection(nftMap);
+    };
+
+    loadUserNfts();
+  }, [account?.address, client]);
+  
+  // Filter pools by selected collection and visibility
   // null = "All Polls" (shows all polls including public and NFT-required)
   // string = specific collection type (shows only polls for that collection)
   let filteredPools = selectedCollectionType === null
     ? allPools // Show all polls when "All Polls" is selected
     : allPools.filter((pool) => pool.nft_collection_type === selectedCollectionType);
+  
+  // Filter by visibility (private polls only visible to NFT holders and poll creator)
+  // is_private is now stored on-chain in the Poll struct
+  filteredPools = filteredPools.filter((pool) => {
+    if (pool.is_private && pool.nft_collection_type) {
+      // Private poll: show if user owns NFT OR is the poll creator
+      const nftCount = userNftsByCollection.get(pool.nft_collection_type) || 0;
+      const isCreator = account?.address && pool.creator?.toLowerCase() === account.address.toLowerCase();
+      return nftCount > 0 || isCreator;
+    }
+    // Public poll or not private: show to everyone
+    return true;
+  });
   
   // Filter by status (active, upcoming, ended)
   const now = new Date();
@@ -89,12 +130,42 @@ const VotePoolPage = () => {
     return 0;
   });
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+  // Countdown timer state
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every second for countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Format countdown: "X days, Y hours, Z minutes"
+  const formatCountdown = (endTime: string) => {
+    const endDate = new Date(endTime);
+    const now = currentTime;
+    const diff = endDate.getTime() - now.getTime();
+
+    if (diff <= 0) {
+      return "Ended";
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    if (days > 0) {
+      return `${days}d ${hours}h ${minutes}m`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
   };
 
   const handleCreateVotePool = () => {
@@ -1052,35 +1123,6 @@ const VotePoolPage = () => {
                         />
                       </div>
                     )}
-                    {/* SUI TURKIYE Image Container */}
-                    {isSuiTurkiye && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "clamp(6px, 1vw, 10px)",
-                          right: "clamp(6px, 1vw, 10px)",
-                          width: "clamp(50px, 7.5vw, 70px)",
-                          height: "clamp(50px, 7.5vw, 70px)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          zIndex: 11,
-                          transform: "rotate(45deg)",
-                        }}
-                      >
-                        <img
-                          src="/suitrbutton.png"
-                          alt="SUI TURKIYE"
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "contain",
-                            filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6))",
-                            transform: "rotate(-45deg)",
-                          }}
-                        />
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -1253,9 +1295,9 @@ const VotePoolPage = () => {
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.6)", marginBottom: "0.25rem" }}>Ends</div>
-                      <div style={{ fontSize: "0.85rem", color: "#ffffff" }}>
-                        {formatDate(pool.endTime)}
+                      <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.6)", marginBottom: "0.25rem" }}>Ends In</div>
+                      <div style={{ fontSize: "0.85rem", color: "#ffffff", fontWeight: "600" }}>
+                        {formatCountdown(pool.endTime)}
                       </div>
                     </div>
                   </div>

@@ -16,6 +16,8 @@ export interface VotePool {
   endTime: string;
   totalVotes: number;
   nft_collection_type?: string; // NFT collection type (empty string = no NFT required)
+  is_private?: boolean; // If true, only NFT holders can see this poll
+  creator?: string; // Address of the poll creator
   history: {
     timestamp: string;
     options: {

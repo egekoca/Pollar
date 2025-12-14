@@ -81,6 +81,7 @@ export async function getAllPolls(client: SuiClient): Promise<
     start_date: string;
     end_date: string;
     nft_collection_type: string; // NFT collection type (empty string = no NFT required)
+    is_private: boolean; // If true, only NFT holders can see this poll
     options: Array<{
       id: string;
       name: string;
@@ -177,6 +178,7 @@ export async function getAllPolls(client: SuiClient): Promise<
               start_date: fields.start_date || "",
               end_date: fields.end_date || "",
               nft_collection_type: fields.nft_collection_type || "",
+              is_private: fields.is_private || false, // Default to false if not present (for backward compatibility)
               options: pollOptions,
             });
           }
@@ -209,6 +211,7 @@ export async function getPollById(
   start_date: string;
   end_date: string;
   nft_collection_type: string; // NFT collection type (empty string = no NFT required)
+  is_private: boolean; // If true, only NFT holders can see this poll
   options: Array<{
     id: string;
     name: string;
@@ -260,6 +263,7 @@ export async function getPollById(
         start_date: fields.start_date || "",
         end_date: fields.end_date || "",
         nft_collection_type: fields.nft_collection_type || "",
+        is_private: fields.is_private || false, // Default to false if not present (for backward compatibility)
         options: pollOptions,
       };
     }

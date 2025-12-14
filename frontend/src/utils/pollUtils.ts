@@ -20,6 +20,7 @@ export async function convertBlockchainPollToVotePool(
     start_date: string;
     end_date: string;
     nft_collection_type: string;
+    is_private?: boolean; // Optional: if true, only NFT holders can see this poll
     options: Array<{
       id: string;
       name: string;
@@ -66,6 +67,8 @@ export async function convertBlockchainPollToVotePool(
     options: sortedOptions,
     totalVotes,
     nft_collection_type: blockchainPoll.nft_collection_type,
+    is_private: blockchainPoll.is_private || false, // Default to false if not present (for backward compatibility)
+    creator: blockchainPoll.creator, // Poll creator address
     history: [
       {
         timestamp: blockchainPoll.start_date,

@@ -32,6 +32,14 @@ export interface UserVote {
   created_at?: string;
 }
 
+export interface PollVisibility {
+  id?: number;
+  poll_id: string;
+  is_private: boolean;
+  collection_type: string;
+  created_at?: string;
+}
+
 // Save user vote to database (only tracks which poll was voted on, not the option)
 export const saveUserVote = async (walletAddress: string, pollId: string): Promise<void> => {
   try {
@@ -100,6 +108,56 @@ export const getUserVotes = async (walletAddress: string): Promise<UserVote[]> =
     }));
   } catch (error) {
     console.error("Error getting user votes:", error);
+    return [];
+  }
+};
+
+// Get poll visibility from Supabase
+export const getPollVisibility = async (pollId: string): Promise<PollVisibility | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('poll_visibility')
+      .select('*')
+      .eq('poll_id', pollId)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return {
+      id: data.id,
+      poll_id: data.poll_id,
+      is_private: data.is_private,
+      collection_type: data.collection_type,
+      created_at: data.created_at,
+    };
+  } catch (error) {
+    console.error("Error getting poll visibility:", error);
+    return null;
+  }
+};
+
+// Get all poll visibilities
+export const getAllPollVisibilities = async (): Promise<PollVisibility[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('poll_visibility')
+      .select('*');
+
+    if (error || !data) {
+      return [];
+    }
+
+    return data.map((item) => ({
+      id: item.id,
+      poll_id: item.poll_id,
+      is_private: item.is_private,
+      collection_type: item.collection_type,
+      created_at: item.created_at,
+    }));
+  } catch (error) {
+    console.error("Error getting poll visibilities:", error);
     return [];
   }
 };

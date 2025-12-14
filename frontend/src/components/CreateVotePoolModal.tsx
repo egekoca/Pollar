@@ -40,6 +40,7 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
     nftCollectionType: "", // NFT collection type (e.g., "0x...::popkins_nft::Popkins"). Empty = no NFT required
   });
   const [selectedCollection, setSelectedCollection] = useState<string>("public"); // "public" or collection name
+  const [pollVisibility, setPollVisibility] = useState<"public" | "private">("public"); // Visibility for NFT-gated polls
   const [options, setOptions] = useState<Option[]>([
     { name: "", image: "" },
     { name: "", image: "" },
@@ -209,6 +210,13 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
         return;
       }
 
+      // Determine if poll is private
+      // Private polls are only for NFT-gated polls (not for public polls)
+      // Public polls are always public visibility (is_private = false)
+      const isPrivate = selectedCollection !== "public" && pollVisibility === "private";
+      // For public polls, is_private must be false
+      const finalIsPrivate = selectedCollection === "public" ? false : isPrivate;
+
       // mint_poll çağrısı
       // Vector oluşturmak için Sui Transaction API'sinde tx.makeMoveVec kullanıyoruz
       tx.moveCall({
@@ -223,7 +231,8 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
             type: `${contractConfig.packageId}::${contractConfig.moduleName}::PollOption`,
             elements: optionResults 
           }),
-          tx.pure.string(formData.nftCollectionType.trim()), // NFT collection type
+          tx.pure.string(formData.nftCollectionType.trim()), // NFT collection type (empty string for public polls)
+          tx.pure.bool(finalIsPrivate), // is_private: true if private, false if public (always false for public polls)
           tx.object(pollRegistryId), // PollRegistry shared object
         ],
       });
@@ -234,8 +243,10 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
           transaction: tx,
         } as any, // Temporary type assertion - options may be supported but types may be outdated
         {
-          onSuccess: (result) => {
+          onSuccess: async (result) => {
             console.log("Poll created successfully:", result);
+            
+            // Poll visibility is now stored on-chain, no need to save to Supabase
             
             // Callback'leri çağır
             if (onSubmit) {
@@ -259,12 +270,16 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
               nftCollectionType: "",
             });
             setSelectedCollection("public"); // Reset to public
+            setPollVisibility("public"); // Reset visibility
             setOptions([
               { name: "", image: "" },
               { name: "", image: "" },
             ]);
             setError("");
             onClose();
+            
+            // Refresh the page to show the new poll
+            window.location.reload();
           },
           onError: (error) => {
             console.error("Failed to create poll on blockchain:", error);
@@ -567,13 +582,15 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
               onChange={(e) => {
                 const collectionName = e.target.value;
                 setSelectedCollection(collectionName);
-                // If "public" is selected, set empty string. Otherwise, find the collection and set its type.
+                // If "public" is selected, set empty string and reset visibility to public. Otherwise, find the collection and set its type.
                 if (collectionName === "public") {
                   setFormData({ ...formData, nftCollectionType: "" });
+                  setPollVisibility("public"); // Public polls are always public visibility
                 } else {
                   const collection = NFT_COLLECTIONS.find((col) => col.name === collectionName);
                   if (collection) {
                     setFormData({ ...formData, nftCollectionType: collection.type });
+                    setPollVisibility("public"); // Reset to public when switching collections
                   }
                 }
               }}
@@ -597,8 +614,8 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
             </select>
             <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
               {selectedCollection === "public"
-                ? "Anyone can vote in this poll."
-                : `Only ${selectedCollection} NFT holders can vote in this poll.`}
+                ? "Anyone can vote in this poll. Vote power is 1 for everyone."
+                : `Only ${selectedCollection} NFT holders can vote in this poll. Vote power is based on NFT count.`}
             </p>
             {checkingWhitelist && selectedCollection !== "public" && (
               <p style={{ fontSize: "0.85rem", color: "var(--color-light-blue)", marginTop: "0.5rem" }}>
@@ -624,6 +641,80 @@ const CreateVotePoolModal = ({ isOpen, onClose, onSubmit, onSuccess }: CreateVot
               <p style={{ fontSize: "0.85rem", color: "#10b981", marginTop: "0.5rem" }}>
                 ✓ Your wallet is whitelisted for {selectedCollection}. You can create this poll.
               </p>
+            )}
+
+            {/* Poll Visibility Selection (only for NFT-gated polls, not for public polls) */}
+            {selectedCollection !== "public" && isWhitelisted && !checkingWhitelist && (
+              <div style={{ marginTop: "1.5rem" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "0.5rem",
+                    color: "var(--text-primary)",
+                    fontWeight: "500",
+                  }}
+                >
+                  Poll Visibility *
+                </label>
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      cursor: "pointer",
+                      padding: "0.75rem",
+                      background: pollVisibility === "public" ? "var(--bg-primary)" : "var(--bg-secondary)",
+                      border: `1.5px solid ${pollVisibility === "public" ? "var(--color-light-blue)" : "var(--border-color)"}`,
+                      borderRadius: "0.5rem",
+                      flex: "1",
+                      minWidth: "200px",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      value="public"
+                      checked={pollVisibility === "public"}
+                      onChange={(e) => setPollVisibility(e.target.value as "public" | "private")}
+                      style={{ cursor: "pointer" }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: "600", color: "var(--text-primary)" }}>Public</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                        Everyone can see this poll
+                      </div>
+                    </div>
+                  </label>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      cursor: "pointer",
+                      padding: "0.75rem",
+                      background: pollVisibility === "private" ? "var(--bg-primary)" : "var(--bg-secondary)",
+                      border: `1.5px solid ${pollVisibility === "private" ? "var(--color-light-blue)" : "var(--border-color)"}`,
+                      borderRadius: "0.5rem",
+                      flex: "1",
+                      minWidth: "200px",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      value="private"
+                      checked={pollVisibility === "private"}
+                      onChange={(e) => setPollVisibility(e.target.value as "public" | "private")}
+                      style={{ cursor: "pointer" }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: "600", color: "var(--text-primary)" }}>Private</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                        Only {selectedCollection} NFT holders can see this poll
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
             )}
           </div>
 

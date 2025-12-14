@@ -113,6 +113,7 @@ public struct Poll has key
     options: vector<PollOption>,
     creator: address, // Address of the poll creator
     nft_collection_type: String, // NFT collection type (e.g., "0x...::popkins_nft::Popkins"). Empty string means no NFT required.
+    is_private: bool, // If true, only NFT holders can see this poll. If false, everyone can see it.
 }
 
 // Event payload emitted when a Poll is minted. Contains the Poll ID and the
@@ -174,7 +175,7 @@ public fun create_poll_option(name: String, image_url: String, ctx: &mut TxConte
     pollOption
 }
 
-public fun create_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, options: vector<PollOption>, nft_collection_type: String, ctx: &mut TxContext): Poll
+public fun create_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, options: vector<PollOption>, nft_collection_type: String, is_private: bool, ctx: &mut TxContext): Poll
 {
     let poll = Poll 
     {
@@ -187,6 +188,7 @@ public fun create_poll(name: String, description: String, image_url: String, sta
         options,
         creator: ctx.sender(), // Store creator address
         nft_collection_type, // NFT collection type (empty string = no NFT required)
+        is_private, // Visibility: true = private (only NFT holders can see), false = public (everyone can see)
     };
     poll
 }
@@ -203,7 +205,7 @@ public fun create_user(name: String, icon_url: String, ctx: &mut TxContext): Use
     user
 }
 
-public entry fun mint_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, options: vector<PollOption>, nft_collection_type: String, pollRegistry: &mut PollRegistry, ctx: &mut TxContext)
+public entry fun mint_poll(name: String, description: String, image_url: String, start_date: String, end_date: String, options: vector<PollOption>, nft_collection_type: String, is_private: bool, pollRegistry: &mut PollRegistry, ctx: &mut TxContext)
 {
     // Validate poll name length (3-250 characters)
     let name_length = name.length();
@@ -225,10 +227,16 @@ public entry fun mint_poll(name: String, description: String, image_url: String,
     let options_length = vector::length(&options);
     assert!(options_length >= 2, EInvalidOptionsLength);
 
+    // Validate: if poll is private, it must require NFT
+    // Private polls without NFT requirement don't make sense
+    if (is_private) {
+        assert!(nft_collection_type.length() > 0, EInvalidPollOption);
+    };
+
     // Note: Date range validation removed - Move doesn't support String comparison
     // Date validation should be done on the frontend
 
-    let poll = create_poll(name, description, image_url, start_date, end_date, options, nft_collection_type, ctx);
+    let poll = create_poll(name, description, image_url, start_date, end_date, options, nft_collection_type, is_private, ctx);
     let inner_id = object::id(&poll);
     
     // Simplified VoteRegistry - now uses address list and option_votes

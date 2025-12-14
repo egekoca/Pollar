@@ -42,6 +42,7 @@ const VotingPage = () => {
 
   const pollRequiresNft = !!(pollData?.nft_collection_type && pollData.nft_collection_type.length > 0);
   const nftCountForPoll = pollRequiresNft ? userNfts.length : 0;
+  // Vote power: Public polls = 1, NFT-gated polls = NFT count squared
   const derivedVotePower = pollRequiresNft
     ? nftCountForPoll > 0
       ? nftCountForPoll * nftCountForPoll
@@ -76,6 +77,27 @@ const VotingPage = () => {
           setError("Poll not found");
           setIsLoading(false);
           return;
+        }
+
+        // Check if poll is private and user has access
+        // is_private is now stored on-chain in the Poll struct
+        if (poll.is_private && poll.nft_collection_type) {
+          // Private poll: check if user owns NFT OR is the poll creator
+          if (!account?.address) {
+            setError("Please connect your wallet to view this private poll.");
+            setIsLoading(false);
+            return;
+          }
+
+          const isCreator = poll.creator?.toLowerCase() === account.address.toLowerCase();
+          if (!isCreator) {
+            const userNfts = await getUserNftsByType(client, account.address, poll.nft_collection_type);
+            if (userNfts.length === 0) {
+              setError("This is a private poll. You must own an NFT from this collection to view it.");
+              setIsLoading(false);
+              return;
+            }
+          }
         }
 
         setPollData(poll);
@@ -215,6 +237,7 @@ const VotingPage = () => {
   }, [id, client, account?.address]);
 
   // Load user NFTs if poll requires NFT
+  // Special case: SUI TURKIYE polls can use Sui Workshop NFTs for voting
   useEffect(() => {
     const loadUserNfts = async () => {
       if (!account?.address || !pollData?.nft_collection_type || pollData.nft_collection_type.length === 0) {
@@ -223,7 +246,20 @@ const VotingPage = () => {
       }
 
       try {
-        const nfts = await getUserNftsByType(client, account.address, pollData.nft_collection_type);
+        // Check if this is a SUI TURKIYE poll
+        const isSuiTurkiye = pollData.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
+        
+        let nfts: Array<{ objectId: string; type: string }> = [];
+        
+        if (isSuiTurkiye) {
+          // For SUI TURKIYE polls, check for Sui Workshop NFTs
+          const suiWorkshopType = "0x22739e8c5f587927462590822f418a673e6435fe8a427f892132ab160a72fd83::simple_nft::SimpleNFT";
+          nfts = await getUserNftsByType(client, account.address, suiWorkshopType);
+        } else {
+          // For other polls, use the poll's NFT collection type
+          nfts = await getUserNftsByType(client, account.address, pollData.nft_collection_type);
+        }
+        
         setUserNfts(nfts);
         if (nfts.length > 0) {
           setSelectedNftId(nfts[0].objectId); // Auto-select first NFT
@@ -267,7 +303,12 @@ const VotingPage = () => {
 
     if (pollRequiresNft) {
       if (userNfts.length === 0) {
-        setError("This poll requires an NFT from the collection. You don't own any NFTs from this collection.");
+        const isSuiTurkiye = pollData?.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
+        setError(
+          isSuiTurkiye
+            ? "This poll requires a Sui Workshop NFT. You don't own any Sui Workshop NFTs."
+            : "This poll requires an NFT from the collection. You don't own any NFTs from this collection."
+        );
         setSelectedOption(null);
         return;
       }
@@ -291,13 +332,20 @@ const VotingPage = () => {
       let tx;
       if (useSealedVoting) {
         if (pollRequiresNft && selectedNftId) {
+          // For SUI TURKIYE polls, we need to use Sui Workshop NFT type in the transaction
+          // but the poll's nft_collection_type should still be SUI TURKIYE
+          const isSuiTurkiye = pollData.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
+          const nftTypeForTransaction = isSuiTurkiye 
+            ? "0x22739e8c5f587927462590822f418a673e6435fe8a427f892132ab160a72fd83::simple_nft::SimpleNFT"
+            : pollData.nft_collection_type;
+          
           tx = await createSealedVoteWithNftTransaction(
             client,
             id,
             optionIndex,
             votePower,
             voteRegistryId,
-            pollData.nft_collection_type,
+            nftTypeForTransaction, // Use Sui Workshop type for SUI TURKIYE polls
             selectedNftId
           );
         } else {
@@ -1116,7 +1164,9 @@ const VotingPage = () => {
                   fontSize: "0.9rem",
                 }}
               >
-                You don't own any NFTs from this collection. You cannot vote in this poll.
+                {pollData?.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye"
+                  ? "You don't own any Sui Workshop NFTs. You cannot vote in this poll."
+                  : "You don't own any NFTs from this collection. You cannot vote in this poll."}
               </div>
             )}
 
