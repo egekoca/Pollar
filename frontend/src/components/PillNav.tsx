@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
 import './PillNav.css';
@@ -25,7 +25,7 @@ interface PillNavProps {
   hoverCircleColor?: string;
 }
 
-const PillNav: React.FC<PillNavProps> = ({
+const PillNav: React.FC<PillNavProps> = React.memo(({
   logo,
   logoAlt = 'Logo',
   items,
@@ -140,7 +140,7 @@ const PillNav: React.FC<PillNavProps> = ({
     }
 
     return () => window.removeEventListener('resize', onResize);
-  }, [items, ease, initialLoadAnimation]);
+  }, [ease, initialLoadAnimation]); // items'i dependency'den çıkardık - items değişse bile layout sadece resize'da güncellenecek
 
   const handleEnter = (i: number) => {
     const tl = tlRefs.current[i];
@@ -366,6 +366,29 @@ const PillNav: React.FC<PillNavProps> = ({
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison: sadece gerçekten değişen props'ları kontrol et
+  return (
+    prevProps.logo === nextProps.logo &&
+    prevProps.logoAlt === nextProps.logoAlt &&
+    prevProps.activeHref === nextProps.activeHref &&
+    prevProps.className === nextProps.className &&
+    prevProps.ease === nextProps.ease &&
+    prevProps.baseColor === nextProps.baseColor &&
+    prevProps.pillColor === nextProps.pillColor &&
+    prevProps.hoveredPillTextColor === nextProps.hoveredPillTextColor &&
+    prevProps.pillTextColor === nextProps.pillTextColor &&
+    prevProps.initialLoadAnimation === nextProps.initialLoadAnimation &&
+    prevProps.hoverCircleColor === nextProps.hoverCircleColor &&
+    // items array'ini deep compare et
+    prevProps.items?.length === nextProps.items?.length &&
+    prevProps.items?.every((item, index) => 
+      nextProps.items?.[index]?.label === item.label &&
+      nextProps.items?.[index]?.href === item.href
+    )
+  );
+});
+
+PillNav.displayName = 'PillNav';
 
 export default PillNav;

@@ -99,7 +99,9 @@ export function useBlockchainPolls() {
       );
       return pollsWithVotes;
     },
-    refetchInterval: 30000, // 30 saniyede bir fallback yenileme
+    refetchInterval: 60000, // 60 saniyede bir fallback yenileme (daha az sıklıkla)
+    refetchOnWindowFocus: false, // Pencere focus olduğunda otomatik yenileme yapma
+    refetchOnMount: true, // Sadece component mount olduğunda yenile
   });
 
   // Subscribe to events for real-time updates
@@ -107,6 +109,11 @@ export function useBlockchainPolls() {
     const packageId = contractConfig.packageId;
     if (!packageId || !client) {
       return;
+    }
+
+    // Sadece bir kez log yaz (subscription zaten kurulmuşsa tekrar kurma)
+    if (subscriptionRef.current) {
+      return; // Subscription zaten aktif
     }
 
     console.log("🎧 Setting up event subscriptions for real-time vote updates...");
@@ -140,8 +147,13 @@ export function useBlockchainPolls() {
             subscriptionRef.current = () => {
               if (voteUnsubscribe) voteUnsubscribe();
             };
-          } catch (subError) {
-            console.warn("⚠️ Event subscription not supported, using polling:", subError);
+          } catch (subError: any) {
+            // WebSocket bağlantı hatalarını sessizce yok say, polling kullan
+            if (subError?.message?.includes("WebSocket") || subError?.message?.includes("wss://")) {
+              console.log("⚠️ WebSocket connection unavailable, using polling instead");
+            } else {
+              console.warn("⚠️ Event subscription not supported, using polling:", subError);
+            }
           }
         } else {
           // Fallback: Use shorter polling interval if event subscription is not available
@@ -162,7 +174,7 @@ export function useBlockchainPolls() {
       }
       if (voteUnsubscribe) voteUnsubscribe();
     };
-  }, [client, query]);
+  }, [client]); // query'i dependency'den çıkardık, sadece client'a bağlı
 
   return query;
 }

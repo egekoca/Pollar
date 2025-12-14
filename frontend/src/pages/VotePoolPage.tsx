@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useCurrentAccount, useDisconnectWallet, useSuiClient } from "@mysten/dapp-kit";
 import { gsap } from "gsap";
 import PillNav from "../components/PillNav";
@@ -27,8 +27,11 @@ const VotePoolPage = () => {
   // Check URL parameter for collection type on mount
   useEffect(() => {
     const collectionParam = searchParams.get("collection");
-    if (collectionParam) {
+    if (collectionParam && collectionParam.trim() !== "") {
       setSelectedCollectionType(collectionParam);
+    } else {
+      // Eğer collection parametresi yoksa, selectedCollectionType'ı null yap (All Polls)
+      setSelectedCollectionType(null);
     }
   }, [searchParams]);
 
@@ -81,13 +84,18 @@ const VotePoolPage = () => {
   // Filter by visibility (private polls only visible to NFT holders and poll creator)
   // is_private is now stored on-chain in the Poll struct
   filteredPools = filteredPools.filter((pool) => {
-    if (pool.is_private && pool.nft_collection_type) {
+    // Sadece gerçekten private olan poll'ları filtrele (is_private === true)
+    // is_private false, undefined veya null ise, poll public'tir ve herkese gösterilir
+    const isPrivate = pool.is_private === true;
+    
+    if (isPrivate && pool.nft_collection_type && pool.nft_collection_type.length > 0) {
       // Private poll: show if user owns NFT OR is the poll creator
       const nftCount = userNftsByCollection.get(pool.nft_collection_type) || 0;
       const isCreator = account?.address && pool.creator?.toLowerCase() === account.address.toLowerCase();
       return nftCount > 0 || isCreator;
     }
-    // Public poll or not private: show to everyone
+    
+    // Public poll (is_private === false, undefined, veya null) veya public NFT-gated poll: show to everyone
     return true;
   });
   
@@ -207,9 +215,11 @@ const VotePoolPage = () => {
     refetch();
   };
 
-  const handlePollClick = (pollId: string, collectionType?: string | null) => {
-    if (collectionType) {
-      navigate(`/voting/${pollId}?fromCollection=${encodeURIComponent(collectionType)}`);
+  const handlePollClick = (pollId: string) => {
+    // Kullanıcının seçtiği collection'ı URL parametresi olarak geçir
+    // Eğer selectedCollectionType null ise (All Polls), fromCollection parametresini gönderme
+    if (selectedCollectionType) {
+      navigate(`/voting/${pollId}?fromCollection=${encodeURIComponent(selectedCollectionType)}`);
     } else {
       navigate(`/voting/${pollId}`);
     }
@@ -557,11 +567,11 @@ const VotePoolPage = () => {
           <PillNav
             logo="/pollar-logo.png"
             logoAlt="Pollar Logo"
-            items={[
+            items={useMemo(() => [
               { label: 'Home', href: '/' },
               { label: 'Pools', href: '/vote-pools' },
               { label: 'Pricing', href: '/#pricing' },
-            ]}
+            ], [])}
             activeHref="/vote-pools"
             baseColor="transparent"
             pillColor="#ffffff"
@@ -1030,14 +1040,15 @@ const VotePoolPage = () => {
             return (
             <div
               key={pool.id}
-              onClick={() => handlePollClick(pool.id, pool.nft_collection_type || null)}
+              onClick={() => handlePollClick(pool.id)}
               style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}
             >
               <div 
                 className="vote-pool-card" 
                 style={{ 
                   cursor: "pointer", 
-                  height: "100%", 
+                  height: "100%",
+                  minHeight: "420px", // Minimum yükseklik artırıldı
                   display: "flex", 
                   flexDirection: "column",
                   position: "relative",
@@ -1108,7 +1119,9 @@ const VotePoolPage = () => {
                       }}
                     />
                     {/* Image Container - Centered on Ribbon, Larger and More to Top Right */}
-                    {!isSuiWorkshop && !isSuiTurkiye && (
+                    {/* Logoları kaldırdık, sadece renkli ribbon badge gösteriliyor */}
+                    {/* Sadece Tallys ve Pawtato Heroes için logo gösteriliyor */}
+                    {(isTallys || isPawtatoHeroes) && (
                       <div
                         style={{
                           position: "absolute",
@@ -1124,7 +1137,7 @@ const VotePoolPage = () => {
                         }}
                       >
                         <img
-                          src={isPopkins ? "/popkins.png" : isTallys ? "/tallys.png" : isPawtatoHeroes ? "/PawtatoHeroes.png" : "/popkins.png"}
+                          src={isTallys ? "/tallys.png" : isPawtatoHeroes ? "/PawtatoHeroes.png" : "/popkins.png"}
                           alt={poolCollection?.name}
                           style={{
                             width: "100%",
@@ -1164,12 +1177,12 @@ const VotePoolPage = () => {
                 {/* Content */}
                 <div style={{ padding: "1rem", flex: "1", display: "flex", flexDirection: "column" }}>
                   {/* Title and Description */}
-                  <div style={{ marginBottom: "1rem" }}>
+                  <div style={{ marginBottom: pool.options && pool.options.length > 2 ? "0.75rem" : "1rem" }}>
                   <h3
                     style={{
-                        fontSize: "clamp(1rem, 1.8vw, 1.2rem)",
+                        fontSize: "clamp(1rem, 1.8vw, 1.25rem)",
                       fontWeight: "700",
-                        marginBottom: "0.25rem",
+                        marginBottom: "0.3rem",
                       color: "#ffffff",
                         lineHeight: "1.3",
                         overflow: "hidden",
@@ -1183,7 +1196,7 @@ const VotePoolPage = () => {
                     style={{
                         color: "rgba(255, 255, 255, 0.7)",
                         lineHeight: "1.4",
-                        fontSize: "clamp(0.8rem, 1.2vw, 0.85rem)",
+                        fontSize: "clamp(0.8rem, 1.2vw, 0.9rem)",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -1196,65 +1209,50 @@ const VotePoolPage = () => {
                 {/* Options with Progress Bars */}
                 {pool.options && pool.options.length >= 2 && (
                   <div style={{ marginBottom: "1rem", flex: "1" }}>
-                    {/* First Option */}
-                    <div style={{ marginBottom: "0.75rem" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
-                        <span style={{ fontSize: "0.875rem", fontWeight: "500", color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1", marginRight: "0.5rem" }}>
-                          {pool.options[0].name}
-                        </span>
-                        <span style={{ fontSize: "0.875rem", color: "#60a5fa", fontWeight: "bold", flexShrink: 0 }}>
-                          {pool.options[0].percentage.toFixed(1)}%
-                        </span>
-                    </div>
-                      <div
-                          style={{
-                          height: "8px",
-                          background: "rgba(255, 255, 255, 0.1)",
-                          borderRadius: "4px",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${pool.options[0].percentage}%`,
-                            height: "100%",
-                            background: "linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)",
-                            transition: "width 0.3s ease",
-                          }}
-                        />
-                  </div>
-                </div>
-
-                    {/* Second Option */}
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
-                        <span style={{ fontSize: "0.875rem", fontWeight: "500", color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1", marginRight: "0.5rem" }}>
-                          {pool.options[1].name}
-                        </span>
-                        <span style={{ fontSize: "0.875rem", color: pool.options[1].percentage > pool.options[0].percentage ? "#60a5fa" : "#ef4444", fontWeight: "bold", flexShrink: 0 }}>
-                          {pool.options[1].percentage.toFixed(1)}%
-                        </span>
-                      </div>
-                <div
-                  style={{
-                          height: "8px",
-                          background: "rgba(255, 255, 255, 0.1)",
-                          borderRadius: "4px",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${pool.options[1].percentage}%`,
-                            height: "100%",
-                            background: pool.options[1].percentage > pool.options[0].percentage 
-                              ? "linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)"
-                              : "linear-gradient(90deg, #dc2626 0%, #ef4444 100%)",
-                            transition: "width 0.3s ease",
-                          }}
-                        />
-                  </div>
-                    </div>
+                    {pool.options.map((option, index) => {
+                      // En yüksek yüzdeyi bul
+                      const maxPercentage = Math.max(...pool.options.map(opt => opt.percentage));
+                      const isHighest = option.percentage === maxPercentage;
+                      
+                      // 3+ seçenek varsa daha kompakt spacing, ama yine de okunabilir boyutlarda
+                      const isCompact = pool.options.length > 2;
+                      const optionMarginBottom = isCompact ? "0.6rem" : "0.75rem";
+                      const fontSize = isCompact ? "0.85rem" : "0.95rem";
+                      const progressBarHeight = isCompact ? "6px" : "8px";
+                      const labelMarginBottom = isCompact ? "0.35rem" : "0.4rem";
+                      
+                      return (
+                        <div key={index} style={{ marginBottom: index < pool.options.length - 1 ? optionMarginBottom : "0" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: labelMarginBottom }}>
+                            <span style={{ fontSize: fontSize, fontWeight: "500", color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1", marginRight: "0.5rem", lineHeight: "1.3" }}>
+                              {option.name}
+                            </span>
+                            <span style={{ fontSize: fontSize, color: isHighest ? "#60a5fa" : "#ef4444", fontWeight: "bold", flexShrink: 0, lineHeight: "1.3" }}>
+                              {option.percentage.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              height: progressBarHeight,
+                              background: "rgba(255, 255, 255, 0.1)",
+                              borderRadius: "3px",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: `${option.percentage}%`,
+                                height: "100%",
+                                background: isHighest 
+                                  ? "linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)"
+                                  : "linear-gradient(90deg, #dc2626 0%, #ef4444 100%)",
+                                transition: "width 0.3s ease",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 

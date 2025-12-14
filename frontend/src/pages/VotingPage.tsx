@@ -82,7 +82,10 @@ const VotingPage = () => {
 
         // Check if poll is private and user has access
         // is_private is now stored on-chain in the Poll struct
-        if (poll.is_private && poll.nft_collection_type) {
+        // Sadece gerçekten private olan poll'ları kontrol et (is_private === true)
+        const isPrivate = poll.is_private === true;
+        
+        if (isPrivate && poll.nft_collection_type && poll.nft_collection_type.length > 0) {
           // Private poll: check if user owns NFT OR is the poll creator
           if (!account?.address) {
             setError("Please connect your wallet to view this private poll.");
@@ -100,6 +103,7 @@ const VotingPage = () => {
             }
           }
         }
+        // Public poll (is_private === false, undefined, veya null): herkes görebilir, kontrol yapma
 
         setPollData(poll);
 
@@ -985,9 +989,11 @@ const VotingPage = () => {
                 <button
                   onClick={() => {
                     const fromCollection = searchParams.get("fromCollection");
-                    if (fromCollection) {
+                    // Eğer fromCollection parametresi varsa, o collection'a yönlendir
+                    if (fromCollection && fromCollection.trim() !== "") {
                       navigate(`/vote-pools?collection=${encodeURIComponent(fromCollection)}`);
                     } else {
+                      // Eğer yoksa, genel vote-pools sayfasına git
                       navigate("/vote-pools");
                     }
                   }}
