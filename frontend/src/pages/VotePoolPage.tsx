@@ -29,6 +29,13 @@ const VotePoolPage = () => {
     const collectionParam = searchParams.get("collection");
     if (collectionParam && collectionParam.trim() !== "") {
       setSelectedCollectionType(collectionParam);
+      // URL'den collection parametresini temizle (sayfa yenilendiğinde tüm poll'lar gösterilsin)
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("collection");
+      const newUrl = newSearchParams.toString() 
+        ? `${window.location.pathname}?${newSearchParams.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
     } else {
       // Eğer collection parametresi yoksa, selectedCollectionType'ı null yap (All Polls)
       setSelectedCollectionType(null);

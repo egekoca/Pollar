@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { findVoteRegistryByPollId, getVoteRegistry, getPollById, getUserNftsByType, createSealedVoteTransaction, createSealedVoteWithNftTransaction, getTokenBalance, calculateTrWalVotePower } from "../utils/blockchain";
@@ -24,7 +24,6 @@ import "../styles/theme.css";
 const VotingPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const account = useCurrentAccount();
   const client = useSuiClient();
   const { mutate: signAndExecute, isPending: isVoting } = useSignAndExecuteTransaction();
@@ -1076,14 +1075,9 @@ const VotingPage = () => {
                 </h2>
                 <button
                   onClick={() => {
-                    const fromCollection = searchParams.get("fromCollection");
-                    // Eğer fromCollection parametresi varsa, o collection'a yönlendir
-                    if (fromCollection && fromCollection.trim() !== "") {
-                      navigate(`/vote-pools?collection=${encodeURIComponent(fromCollection)}`);
-                    } else {
-                      // Eğer yoksa, genel vote-pools sayfasına git
-                      navigate("/vote-pools");
-                    }
+                    // Her zaman sadece /vote-pools sayfasına git, collection parametresi olmadan
+                    // Böylece sayfa yenilendiğinde tüm poll'lar gösterilir
+                    navigate("/vote-pools");
                   }}
                   style={{
                     background: "transparent",
