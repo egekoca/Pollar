@@ -793,7 +793,7 @@ const VotingPage = () => {
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     borderRadius: "16px",
-                    filter: "blur(1.5px)",
+                    filter: "blur(0.3px)",
                     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                     border: "1px solid rgba(255, 255, 255, 0.1)",
                     transform: `rotate(${index * 3 - 3}deg)`,
@@ -826,7 +826,7 @@ const VotingPage = () => {
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     borderRadius: "16px",
-                    filter: "blur(1.5px)",
+                    filter: "blur(0.3px)",
                     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                     border: "1px solid rgba(255, 255, 255, 0.1)",
                     transform: `rotate(${index * -3 + 3}deg)`,
@@ -1255,7 +1255,7 @@ const VotingPage = () => {
                         fontWeight: 600,
                       }}
                     >
-                      TR_WAL tokens: <span style={{ color: "#34d399" }}>{trWalTokenCount}</span> | Vote power: <span style={{ color: "#34d399" }}>{derivedVotePower}</span>
+                      TR_WAL tokens: <span style={{ color: "#dc2626" }}>{trWalTokenCount}</span> | Vote power: <span style={{ color: "#34d399" }}>{derivedVotePower}</span>
                     </div>
                   )
                 ) : (

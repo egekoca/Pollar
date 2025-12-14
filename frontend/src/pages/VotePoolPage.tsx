@@ -940,7 +940,7 @@ const VotePoolPage = () => {
                 }}
               >
                 <span>TR_WAL:</span>
-                <span style={{ color: "#34d399", fontWeight: "700" }}>
+                <span style={{ color: "#dc2626", fontWeight: "700" }}>
                   {trWalTokenCount > 0 ? trWalTokenCount.toLocaleString() : "0"}
                 </span>
               </div>
