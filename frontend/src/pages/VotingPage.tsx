@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { findVoteRegistryByPollId, getVoteRegistry, getPollById, getUserNftsByType, createSealedVoteTransaction, createSealedVoteWithNftTransaction } from "../utils/blockchain";
@@ -24,6 +24,7 @@ import "../styles/theme.css";
 const VotingPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const account = useCurrentAccount();
   const client = useSuiClient();
   const { mutate: signAndExecute, isPending: isVoting } = useSignAndExecuteTransaction();
@@ -969,16 +970,53 @@ const VotingPage = () => {
               />
             </div>
             <div>
-              <h2
-                style={{
-                  fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
-                  fontWeight: "700",
-                  marginBottom: "1rem",
-                  color: "var(--text-primary)",
-                }}
-              >
-                {localPool.name}
-              </h2>
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+                <h2
+                  style={{
+                    fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
+                    fontWeight: "700",
+                    margin: 0,
+                    color: "var(--text-primary)",
+                    flex: 1,
+                  }}
+                >
+                  {localPool.name}
+                </h2>
+                <button
+                  onClick={() => {
+                    const fromCollection = searchParams.get("fromCollection");
+                    if (fromCollection) {
+                      navigate(`/vote-pools?collection=${encodeURIComponent(fromCollection)}`);
+                    } else {
+                      navigate("/vote-pools");
+                    }
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "0.5rem",
+                    padding: "0.5rem 1rem",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    color: "var(--text-primary)",
+                    fontSize: "clamp(0.875rem, 1.5vw, 1rem)",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "var(--bg-secondary)";
+                    e.currentTarget.style.borderColor = "var(--color-light-blue)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.borderColor = "var(--border-color)";
+                  }}
+                >
+                  <span>←</span>
+                  <span>Back</span>
+                </button>
+              </div>
               <p
                 style={{
                   color: "var(--text-secondary)",

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useCurrentAccount, useDisconnectWallet, useSuiClient } from "@mysten/dapp-kit";
 import { gsap } from "gsap";
@@ -20,8 +20,17 @@ const VotePoolPage = () => {
   const account = useCurrentAccount();
   const client = useSuiClient();
   const { mutate: disconnect } = useDisconnectWallet();
+  const [searchParams] = useSearchParams();
   const [selectedCollectionType, setSelectedCollectionType] = useState<string | null>(null); // null = all polls, string = specific collection
   const [selectedFilter, setSelectedFilter] = useState<"active" | "upcoming" | "ended">("active"); // Filter: active, upcoming, ended
+
+  // Check URL parameter for collection type on mount
+  useEffect(() => {
+    const collectionParam = searchParams.get("collection");
+    if (collectionParam) {
+      setSelectedCollectionType(collectionParam);
+    }
+  }, [searchParams]);
 
   const handleLogoHover = () => {
     if (logoRef.current) {
@@ -198,8 +207,12 @@ const VotePoolPage = () => {
     refetch();
   };
 
-  const handlePollClick = (pollId: string) => {
-    navigate(`/voting/${pollId}`);
+  const handlePollClick = (pollId: string, collectionType?: string | null) => {
+    if (collectionType) {
+      navigate(`/voting/${pollId}?fromCollection=${encodeURIComponent(collectionType)}`);
+    } else {
+      navigate(`/voting/${pollId}`);
+    }
   };
 
 
@@ -1017,7 +1030,7 @@ const VotePoolPage = () => {
             return (
             <div
               key={pool.id}
-              onClick={() => handlePollClick(pool.id)}
+              onClick={() => handlePollClick(pool.id, pool.nft_collection_type || null)}
               style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}
             >
               <div 
