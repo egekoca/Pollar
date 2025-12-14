@@ -41,22 +41,47 @@ const VotingPage = () => {
   const [userNfts, setUserNfts] = useState<Array<{ objectId: string; type: string }>>([]);
   const [selectedNftId, setSelectedNftId] = useState<string | null>(null);
   const [trWalTokenCount, setTrWalTokenCount] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const pollRequiresNft = !!(pollData?.nft_collection_type && pollData.nft_collection_type.length > 0);
   const isSuiTurkiyePoll = pollData?.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
-  const nftCountForPoll = pollRequiresNft ? userNfts.length : 0;
   
-  // Vote power calculation:
-  // - Public polls = 1
-  // - SUI TURKIYE polls = TR_WAL token count based (1-10: 1, 11-30: 2, 31-50: 30, 51-100: 40)
-  // - Other NFT-gated polls = NFT count squared
-  const derivedVotePower = pollRequiresNft
-    ? isSuiTurkiyePoll
-      ? calculateTrWalVotePower(trWalTokenCount)
-      : nftCountForPoll > 0
-        ? nftCountForPoll * nftCountForPoll
-        : 0
-    : 1;
+  // Update current time every second for countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Format countdown: "X days, Y hours, Z minutes"
+  const formatCountdown = (endTime: string) => {
+    const endDate = new Date(endTime);
+    const now = currentTime;
+    const diff = endDate.getTime() - now.getTime();
+
+    if (diff <= 0) {
+      return "Ended";
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    if (days > 0) {
+      return `${days}d ${hours}h ${minutes}m`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  };
+  
+  // Vote power calculation is done in handleVote function
 
   const handleLogoHover = () => {
     if (logoRef.current) {
@@ -547,7 +572,30 @@ const VotingPage = () => {
   const theme = pollCollection?.theme;
   // Always use dark background like other pages
   const defaultBackground = "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)";
-  const backgroundGradient = defaultBackground; // Keep dark background, NFT theme only affects NFT images
+  
+  let backgroundGradient = defaultBackground;
+
+  // Custom background for each NFT collection (matching VotePoolPage.tsx)
+  if (pollCollection?.name === "Popkins") {
+    // Green (Left) -> Orange (Center) -> Pink (Right)
+    // Using darker shades to maintain readability while keeping the colors visible
+    backgroundGradient = "linear-gradient(90deg, rgba(16, 185, 129, 0.8) 0%, rgba(245, 158, 11, 0.8) 50%, rgba(236, 72, 153, 0.8) 100%), linear-gradient(180deg, #000000 0%, transparent 50%, #000000 100%)";
+  } else if (pollCollection?.name === "Tallys") {
+    // Pink/Magenta (Left) -> Sea Green/Teal (Right)
+    backgroundGradient = "linear-gradient(90deg, rgba(219, 39, 119, 0.8) 0%, rgba(45, 212, 191, 0.8) 100%), linear-gradient(180deg, #000000 0%, transparent 50%, #000000 100%)";
+  } else if (pollCollection?.name === "Pawtato Heroes") {
+    // Dark Green (Left) -> Yellowish Orange (Center) -> Dark Red (Right)
+    backgroundGradient = "linear-gradient(90deg, rgba(21, 128, 61, 0.9) 0%, rgba(234, 179, 8, 0.9) 50%, rgba(153, 27, 27, 0.9) 100%), linear-gradient(180deg, #000000 0%, transparent 50%, #000000 100%)";
+  } else if (pollCollection?.name === "Sui Workshop") {
+    // Deep Navy -> Electric Blue Glow -> Dark Navy (Inspired by suiworkshop.png)
+    backgroundGradient = "radial-gradient(circle at 50% 30%, #1e40af 0%, #0f172a 60%, #020617 100%)";
+  } else if (pollCollection?.name === "SUI TURKIYE") {
+    // Analiz edilmiş gradient: koyu lacivert %30-40'a kadar devam ediyor, sonra koyu bordo, sağda parlak kırmızı
+    backgroundGradient = "linear-gradient(90deg, rgba(1, 7, 19, 0.98) 0%, rgba(1, 7, 19, 0.97) 30%, rgba(8, 12, 25, 0.96) 40%, rgba(42, 5, 17, 0.95) 50%, rgba(96, 5, 18, 0.93) 60%, rgba(154, 2, 13, 0.92) 75%, rgba(211, 0, 12, 0.95) 100%)";
+  } else if (theme?.backgroundGradient) {
+    // Fallback to theme's backgroundGradient if available
+    backgroundGradient = theme.backgroundGradient;
+  }
 
   if (isLoading) {
     return (
@@ -977,20 +1025,24 @@ const VotingPage = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
               gap: "clamp(1rem, 3vw, 2rem)",
               marginBottom: "clamp(1.5rem, 3vw, 2rem)",
+              alignItems: "center",
             }}
           >
             <div
               style={{
                 width: "100%",
-                maxWidth: "200px",
-                aspectRatio: "1",
+                maxWidth: "450px",
+                aspectRatio: "4/3",
                 borderRadius: "1rem",
                 overflow: "hidden",
                 background: "var(--bg-secondary)",
                 margin: "0 auto",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <img
@@ -1007,11 +1059,17 @@ const VotingPage = () => {
               <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
                 <h2
                   style={{
-                    fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
+                    fontSize: "clamp(1.5rem, 3.5vw, 2.25rem)",
                     fontWeight: "700",
                     margin: 0,
                     color: "var(--text-primary)",
                     flex: 1,
+                    lineHeight: "1.2",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}
                 >
                   {localPool.name}
@@ -1063,6 +1121,117 @@ const VotingPage = () => {
               >
                 {localPool.description}
               </p>
+              
+              {/* Voting Status and Info Messages - Poll details'in altında, seçeneklerin üstünde değil */}
+              {hasVoted && account?.address && (
+                <div
+                  style={{
+                    padding: "0.75rem 1rem",
+                    background: "rgba(0, 0, 0, 0.85)",
+                    backdropFilter: "blur(10px)",
+                    border: "1px solid rgba(251, 191, 36, 0.5)",
+                    borderRadius: "0.5rem",
+                    color: "#fbbf24",
+                    fontSize: "0.875rem",
+                    marginBottom: "1rem",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+                  }}
+                >
+                  You have already voted in this poll. Thank you!
+                </div>
+              )}
+              {error && (
+                <div
+                  style={{
+                    padding: "0.75rem 1rem",
+                    background: "rgba(0, 0, 0, 0.85)",
+                    backdropFilter: "blur(10px)",
+                    border: "1px solid rgba(239, 68, 68, 0.5)",
+                    borderRadius: "0.5rem",
+                    color: "#ef4444",
+                    fontSize: "0.875rem",
+                    marginBottom: "1rem",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+              
+              {/* NFT/Token info (if poll requires NFT) */}
+              {pollRequiresNft && account?.address && (
+                <>
+                  {isSuiTurkiyePoll ? (
+                    trWalTokenCount === 0 ? (
+                      <div
+                        style={{
+                          padding: "0.75rem 1rem",
+                          background: "rgba(0, 0, 0, 0.85)",
+                          backdropFilter: "blur(10px)",
+                          border: "1px solid rgba(239, 68, 68, 0.5)",
+                          borderRadius: "0.5rem",
+                          color: "#ef4444",
+                          fontSize: "0.875rem",
+                          marginBottom: "1rem",
+                          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+                        }}
+                      >
+                        You don't own any TR_WAL tokens. You cannot vote in this poll.
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          padding: "0.75rem 1rem",
+                          background: "rgba(15, 23, 42, 0.6)",
+                          border: "1px solid rgba(148, 163, 184, 0.3)",
+                          borderRadius: "0.5rem",
+                          color: "var(--text-primary)",
+                          fontSize: "0.875rem",
+                          fontWeight: 600,
+                          marginBottom: "1rem",
+                        }}
+                      >
+                        TR_WAL tokens: <span style={{ color: "#dc2626" }}>{trWalTokenCount}</span> | Vote power: <span style={{ color: "#34d399" }}>{calculateTrWalVotePower(trWalTokenCount)}</span>
+                      </div>
+                    )
+                  ) : (
+                    userNfts.length === 0 ? (
+                      <div
+                        style={{
+                          padding: "0.75rem 1rem",
+                          background: "rgba(0, 0, 0, 0.85)",
+                          backdropFilter: "blur(10px)",
+                          border: "1px solid rgba(239, 68, 68, 0.5)",
+                          borderRadius: "0.5rem",
+                          color: "#ef4444",
+                          fontSize: "0.875rem",
+                          marginBottom: "1rem",
+                          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+                        }}
+                      >
+                        You don't own any NFTs from this collection. You cannot vote in this poll.
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          padding: "0.75rem 1rem",
+                          background: "rgba(15, 23, 42, 0.6)",
+                          border: "1px solid rgba(148, 163, 184, 0.3)",
+                          borderRadius: "0.5rem",
+                          color: "var(--text-primary)",
+                          fontSize: "0.875rem",
+                          fontWeight: 600,
+                          marginBottom: "1rem",
+                        }}
+                      >
+                        Vote power in this poll:{" "}
+                        <span style={{ color: "#34d399" }}>{userNfts.length * userNfts.length}</span>
+                      </div>
+                    )
+                  )}
+                </>
+              )}
+              
               <div style={{ display: "flex", gap: "clamp(1rem, 3vw, 2rem)", flexWrap: "wrap" }}>
                 <div>
                   <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.85rem)", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
@@ -1082,10 +1251,10 @@ const VotingPage = () => {
                 </div>
                 <div>
                   <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.85rem)", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
-                    Ends
+                    Ends In
                   </div>
-                  <div style={{ fontSize: "clamp(0.9rem, 1.8vw, 1rem)", color: "var(--text-secondary)" }}>
-                    {formatDate(localPool.endTime)}
+                  <div style={{ fontSize: "clamp(0.9rem, 1.8vw, 1rem)", color: "var(--text-secondary)", fontWeight: "600" }}>
+                    {formatCountdown(localPool.endTime)}
                   </div>
                 </div>
               </div>
@@ -1093,97 +1262,17 @@ const VotingPage = () => {
           </div>
         </div>
 
-        <div 
-          className="voting-layout-responsive"
-          style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "clamp(1.5rem, 3vw, 2rem)", alignItems: "start" }}
-        >
-          {/* Chart - Left Section */}
-          <div className="card" style={{
-            background: "linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(27, 27, 27, 0.95) 100%)",
-            border: "1px solid rgba(96, 165, 250, 0.2)",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(96, 165, 250, 0.1)",
+        {/* Voting Options - Horizontal Layout */}
+        <div style={{ marginBottom: "clamp(2rem, 4vw, 3rem)" }}>
+          <div style={{ 
+            display: "flex", 
+            flexDirection: "row", 
+            gap: "clamp(1rem, 2vw, 1.5rem)",
+            flexWrap: "nowrap",
+            justifyContent: "center",
+            marginBottom: "clamp(2rem, 4vw, 3rem)",
+            overflowX: "auto",
           }}>
-            <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
-            <h3
-              style={{
-                fontSize: "clamp(1.5rem, 3vw, 1.75rem)",
-                  fontWeight: "700",
-                  marginBottom: "0.5rem",
-                color: "var(--text-primary)",
-                  background: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                Voting Trends
-              </h3>
-              <p style={{ color: "var(--text-muted)", fontSize: "clamp(0.9rem, 1.5vw, 1rem)" }}>
-                Track how votes have changed over time
-              </p>
-            </div>
-            <div style={{
-              background: "rgba(0, 0, 0, 0.2)",
-              borderRadius: "0.75rem",
-              padding: "1rem",
-              border: "1px solid rgba(255, 255, 255, 0.05)",
-            }}>
-              <ResponsiveContainer width="100%" height={350}>
-                <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
-                    stroke="rgba(255, 255, 255, 0.1)" 
-                    strokeOpacity={0.3}
-                  />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="var(--text-secondary)"
-                    style={{ fontSize: "0.875rem" }}
-                    tick={{ fill: "var(--text-muted)" }}
-                  />
-                  <YAxis 
-                    stroke="var(--text-secondary)" 
-                    domain={[0, 100]}
-                    style={{ fontSize: "0.875rem" }}
-                    tick={{ fill: "var(--text-muted)" }}
-                    label={{ value: "Percentage (%)", angle: -90, position: "insideLeft", fill: "var(--text-muted)", style: { fontSize: "0.875rem" } }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "rgba(27, 27, 27, 0.95)",
-                      border: "1px solid rgba(96, 165, 250, 0.3)",
-                      borderRadius: "0.75rem",
-                      color: "var(--text-primary)",
-                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
-                      padding: "0.75rem 1rem",
-                    }}
-                    labelStyle={{ color: "var(--text-primary)", fontWeight: "600", marginBottom: "0.5rem" }}
-                    itemStyle={{ color: "var(--text-secondary)", padding: "0.25rem 0" }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ paddingTop: "1rem" }}
-                    iconType="line"
-                    formatter={(value) => <span style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}>{value}</span>}
-                  />
-                  {localPool.options.map((option, index) => (
-                    <Line
-                      key={option.id}
-                      type="monotone"
-                      dataKey={option.name}
-                      stroke={colors[index % colors.length]}
-                      strokeWidth={3}
-                      dot={{ fill: colors[index % colors.length], r: 5, strokeWidth: 2, stroke: "rgba(0, 0, 0, 0.2)" }}
-                      activeDot={{ r: 7, stroke: colors[index % colors.length], strokeWidth: 2, fill: "#fff" }}
-                      strokeDasharray={index === 0 ? "0" : "5 5"}
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Voting Options - Right Section */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "clamp(1.5rem, 3vw, 2rem)" }}>
             {!account?.address && (
               <div
                 style={{
@@ -1193,111 +1282,14 @@ const VotingPage = () => {
                   borderRadius: "0.5rem",
                   color: "var(--color-light-blue)",
                   fontSize: "0.9rem",
+                  width: "100%",
+                  marginBottom: "1rem",
                 }}
               >
                 Please connect your wallet to vote. You can view details and results.
               </div>
             )}
-            {hasVoted && account?.address && (
-              <div
-                style={{
-                  padding: "1rem",
-                  background: "rgba(251, 191, 36, 0.1)",
-                  border: "1px solid rgba(251, 191, 36, 0.3)",
-                  borderRadius: "0.5rem",
-                  color: "#fbbf24",
-                  fontSize: "0.9rem",
-                }}
-              >
-                You have already voted in this poll. Thank you!
-              </div>
-            )}
-            {error && (
-              <div
-                style={{
-                  padding: "1rem",
-                  background: "rgba(239, 68, 68, 0.1)",
-                  border: "1px solid rgba(239, 68, 68, 0.3)",
-                  borderRadius: "0.5rem",
-                  color: "#ef4444",
-                }}
-              >
-                {error}
-              </div>
-            )}
-            
-            {/* NFT info (if poll requires NFT) */}
-            {pollRequiresNft && account?.address && (
-              <>
-                {isSuiTurkiyePoll ? (
-                  trWalTokenCount === 0 ? (
-                    <div
-                      style={{
-                        padding: "1rem",
-                        background: "rgba(59, 130, 246, 0.1)",
-                        border: "1px solid rgba(59, 130, 246, 0.3)",
-                        borderRadius: "0.5rem",
-                        color: "#ef4444",
-                        fontSize: "0.9rem",
-                      }}
-                    >
-                      You don't own any TR_WAL tokens. You cannot vote in this poll.
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        padding: "0.85rem 1rem",
-                        background: "rgba(15, 23, 42, 0.6)",
-                        border: "1px solid rgba(148, 163, 184, 0.3)",
-                        borderRadius: "0.5rem",
-                        color: "var(--text-primary)",
-                        fontSize: "0.9rem",
-                        fontWeight: 600,
-                      }}
-                    >
-                      TR_WAL tokens: <span style={{ color: "#dc2626" }}>{trWalTokenCount}</span> | Vote power: <span style={{ color: "#34d399" }}>{derivedVotePower}</span>
-                    </div>
-                  )
-                ) : (
-                  nftCountForPoll === 0 ? (
-                    <div
-                      style={{
-                        padding: "1rem",
-                        background: "rgba(59, 130, 246, 0.1)",
-                        border: "1px solid rgba(59, 130, 246, 0.3)",
-                        borderRadius: "0.5rem",
-                        color: "#ef4444",
-                        fontSize: "0.9rem",
-                      }}
-                    >
-                      You don't own any NFTs from this collection. You cannot vote in this poll.
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        padding: "0.85rem 1rem",
-                        background: "rgba(15, 23, 42, 0.6)",
-                        border: "1px solid rgba(148, 163, 184, 0.3)",
-                        borderRadius: "0.5rem",
-                        color: "var(--text-primary)",
-                        fontSize: "0.9rem",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Vote power in this poll:{" "}
-                      <span style={{ color: "#34d399" }}>{derivedVotePower}</span>
-                    </div>
-                  )
-                )}
-              </>
-            )}
-            
-            <div style={{ 
-              display: "flex", 
-              flexDirection: "column",
-              gap: "1rem" 
-            }}>
-              {localPool.options.map((option, index) => {
+            {localPool.options.map((option, index) => {
                 const isSelected = selectedOption === index;
                 const isDisabled = !account?.address || isVoting || hasVoted;
                 
@@ -1356,6 +1348,9 @@ const VotingPage = () => {
                     boxShadow: isSelected 
                       ? "0 4px 20px rgba(96, 165, 250, 0.3), 0 0 0 1px rgba(96, 165, 250, 0.2)"
                       : "0 2px 8px rgba(0, 0, 0, 0.2)",
+                    flex: "1 1 0",
+                    minWidth: "200px",
+                    maxWidth: "none",
                   }}
                   onMouseEnter={(e) => {
                     if (isDisabled) return;
@@ -1535,7 +1530,91 @@ const VotingPage = () => {
                 </div>
                 );
               })}
-            </div>
+          </div>
+        </div>
+
+        {/* Chart - Below Options */}
+        <div className="card" style={{
+          background: "linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(27, 27, 27, 0.95) 100%)",
+          border: "1px solid rgba(96, 165, 250, 0.2)",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(96, 165, 250, 0.1)",
+        }}>
+          <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
+            <h3
+              style={{
+                fontSize: "clamp(1.5rem, 3vw, 1.75rem)",
+                fontWeight: "700",
+                marginBottom: "0.5rem",
+                color: "var(--text-primary)",
+                background: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              Voting Trends
+            </h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "clamp(0.9rem, 1.5vw, 1rem)" }}>
+              Track how votes have changed over time
+            </p>
+          </div>
+          <div style={{
+            background: "rgba(0, 0, 0, 0.2)",
+            borderRadius: "0.75rem",
+            padding: "1rem",
+            border: "1px solid rgba(255, 255, 255, 0.05)",
+          }}>
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="rgba(255, 255, 255, 0.1)" 
+                  strokeOpacity={0.3}
+                />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="var(--text-secondary)"
+                  style={{ fontSize: "0.875rem" }}
+                  tick={{ fill: "var(--text-muted)" }}
+                />
+                <YAxis 
+                  stroke="var(--text-secondary)" 
+                  domain={[0, 100]}
+                  style={{ fontSize: "0.875rem" }}
+                  tick={{ fill: "var(--text-muted)" }}
+                  label={{ value: "Percentage (%)", angle: -90, position: "insideLeft", fill: "var(--text-muted)", style: { fontSize: "0.875rem" } }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "rgba(27, 27, 27, 0.95)",
+                    border: "1px solid rgba(96, 165, 250, 0.3)",
+                    borderRadius: "0.75rem",
+                    color: "var(--text-primary)",
+                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+                    padding: "0.75rem 1rem",
+                  }}
+                  labelStyle={{ color: "var(--text-primary)", fontWeight: "600", marginBottom: "0.5rem" }}
+                  itemStyle={{ color: "var(--text-secondary)", padding: "0.25rem 0" }}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: "1rem" }}
+                  iconType="line"
+                  formatter={(value) => <span style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}>{value}</span>}
+                />
+                {localPool.options.map((option, index) => (
+                  <Line
+                    key={option.id}
+                    type="monotone"
+                    dataKey={option.name}
+                    stroke={colors[index % colors.length]}
+                    strokeWidth={3}
+                    dot={{ fill: colors[index % colors.length], r: 5, strokeWidth: 2, stroke: "rgba(0, 0, 0, 0.2)" }}
+                    activeDot={{ r: 7, stroke: colors[index % colors.length], strokeWidth: 2, fill: "#fff" }}
+                    strokeDasharray={index === 0 ? "0" : "5 5"}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </main>
