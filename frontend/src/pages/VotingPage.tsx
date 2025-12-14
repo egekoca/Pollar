@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
-import { findVoteRegistryByPollId, getVoteRegistry, getPollById, getUserNftsByType, createSealedVoteTransaction, createSealedVoteWithNftTransaction } from "../utils/blockchain";
+import { findVoteRegistryByPollId, getVoteRegistry, getPollById, getUserNftsByType, createSealedVoteTransaction, createSealedVoteWithNftTransaction, getTokenBalance, calculateTrWalVotePower } from "../utils/blockchain";
 import { VotePool, VoteOption } from "../data/mockData";
 import { gsap } from "gsap";
 import PillNav from "../components/PillNav";
@@ -40,14 +40,22 @@ const VotingPage = () => {
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [userNfts, setUserNfts] = useState<Array<{ objectId: string; type: string }>>([]);
   const [selectedNftId, setSelectedNftId] = useState<string | null>(null);
+  const [trWalTokenCount, setTrWalTokenCount] = useState<number>(0);
 
   const pollRequiresNft = !!(pollData?.nft_collection_type && pollData.nft_collection_type.length > 0);
+  const isSuiTurkiyePoll = pollData?.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
   const nftCountForPoll = pollRequiresNft ? userNfts.length : 0;
-  // Vote power: Public polls = 1, NFT-gated polls = NFT count squared
+  
+  // Vote power calculation:
+  // - Public polls = 1
+  // - SUI TURKIYE polls = TR_WAL token count based (1-10: 1, 11-30: 2, 31-50: 30, 51-100: 40)
+  // - Other NFT-gated polls = NFT count squared
   const derivedVotePower = pollRequiresNft
-    ? nftCountForPoll > 0
-      ? nftCountForPoll * nftCountForPoll
-      : 0
+    ? isSuiTurkiyePoll
+      ? calculateTrWalVotePower(trWalTokenCount)
+      : nftCountForPoll > 0
+        ? nftCountForPoll * nftCountForPoll
+        : 0
     : 1;
 
   const handleLogoHover = () => {
@@ -84,9 +92,10 @@ const VotingPage = () => {
         // is_private is now stored on-chain in the Poll struct
         // Sadece gerçekten private olan poll'ları kontrol et (is_private === true)
         const isPrivate = poll.is_private === true;
+        const isSuiTurkiye = poll.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
         
         if (isPrivate && poll.nft_collection_type && poll.nft_collection_type.length > 0) {
-          // Private poll: check if user owns NFT OR is the poll creator
+          // Private poll: check if user owns NFT/token OR is the poll creator
           if (!account?.address) {
             setError("Please connect your wallet to view this private poll.");
             setIsLoading(false);
@@ -95,11 +104,23 @@ const VotingPage = () => {
 
           const isCreator = poll.creator?.toLowerCase() === account.address.toLowerCase();
           if (!isCreator) {
-            const userNfts = await getUserNftsByType(client, account.address, poll.nft_collection_type);
-            if (userNfts.length === 0) {
-              setError("This is a private poll. You must own an NFT from this collection to view it.");
-              setIsLoading(false);
-              return;
+            if (isSuiTurkiye) {
+              // SUI TURKIYE private polls require TR_WAL token
+              const trWalTokenType = "0xa8ad8c2720f064676856f4999894974a129e3d15386b3d0a27f3a7f85811c64a::tr_wal::TR_WAL";
+              const tokenCount = await getTokenBalance(client, account.address, trWalTokenType);
+              if (tokenCount === 0) {
+                setError("This is a private poll. You must own TR_WAL token to view it.");
+                setIsLoading(false);
+                return;
+              }
+            } else {
+              // Other private polls require NFT
+              const userNfts = await getUserNftsByType(client, account.address, poll.nft_collection_type);
+              if (userNfts.length === 0) {
+                setError("This is a private poll. You must own an NFT from this collection to view it.");
+                setIsLoading(false);
+                return;
+              }
             }
           }
         }
@@ -242,11 +263,12 @@ const VotingPage = () => {
   }, [id, client, account?.address]);
 
   // Load user NFTs if poll requires NFT
-  // Special case: SUI TURKIYE polls can use Sui Workshop NFTs for voting
+  // Special case: SUI TURKIYE polls use TR_WAL token instead of NFT
   useEffect(() => {
-    const loadUserNfts = async () => {
+    const loadUserAssets = async () => {
       if (!account?.address || !pollData?.nft_collection_type || pollData.nft_collection_type.length === 0) {
         setUserNfts([]);
+        setTrWalTokenCount(0);
         return;
       }
 
@@ -254,28 +276,29 @@ const VotingPage = () => {
         // Check if this is a SUI TURKIYE poll
         const isSuiTurkiye = pollData.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
         
-        let nfts: Array<{ objectId: string; type: string }> = [];
-        
         if (isSuiTurkiye) {
-          // For SUI TURKIYE polls, check for Sui Workshop NFTs
-          const suiWorkshopType = "0x22739e8c5f587927462590822f418a673e6435fe8a427f892132ab160a72fd83::simple_nft::SimpleNFT";
-          nfts = await getUserNftsByType(client, account.address, suiWorkshopType);
+          // For SUI TURKIYE polls, check for TR_WAL token balance
+          const trWalTokenType = "0xa8ad8c2720f064676856f4999894974a129e3d15386b3d0a27f3a7f85811c64a::tr_wal::TR_WAL";
+          const tokenCount = await getTokenBalance(client, account.address, trWalTokenType);
+          setTrWalTokenCount(tokenCount);
+          setUserNfts([]); // NFT gerekmiyor
         } else {
           // For other polls, use the poll's NFT collection type
-          nfts = await getUserNftsByType(client, account.address, pollData.nft_collection_type);
-        }
-        
-        setUserNfts(nfts);
-        if (nfts.length > 0) {
-          setSelectedNftId(nfts[0].objectId); // Auto-select first NFT
+          const nfts = await getUserNftsByType(client, account.address, pollData.nft_collection_type);
+          setUserNfts(nfts);
+          setTrWalTokenCount(0);
+          if (nfts.length > 0) {
+            setSelectedNftId(nfts[0].objectId); // Auto-select first NFT
+          }
         }
       } catch (error) {
-        console.error("Error loading user NFTs:", error);
+        console.error("Error loading user assets:", error);
         setUserNfts([]);
+        setTrWalTokenCount(0);
       }
     };
 
-    loadUserNfts();
+    loadUserAssets();
   }, [account?.address, pollData?.nft_collection_type, client]);
 
   const handleVote = async (optionIndex: number) => {
@@ -307,25 +330,35 @@ const VotingPage = () => {
     setSelectedOption(optionIndex);
 
     if (pollRequiresNft) {
-      if (userNfts.length === 0) {
-        const isSuiTurkiye = pollData?.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
-        setError(
-          isSuiTurkiye
-            ? "This poll requires a Sui Workshop NFT. You don't own any Sui Workshop NFTs."
-            : "This poll requires an NFT from the collection. You don't own any NFTs from this collection."
-        );
-        setSelectedOption(null);
-        return;
-      }
-      
-      if (!selectedNftId) {
-        setError("Please select an NFT to vote with.");
-        setSelectedOption(null);
-        return;
+      if (isSuiTurkiyePoll) {
+        // SUI TURKIYE polls require TR_WAL token
+        if (trWalTokenCount === 0) {
+          setError("This poll requires TR_WAL token. You don't own any TR_WAL tokens.");
+          setSelectedOption(null);
+          return;
+        }
+      } else {
+        // Other polls require NFT
+        if (userNfts.length === 0) {
+          setError("This poll requires an NFT from the collection. You don't own any NFTs from this collection.");
+          setSelectedOption(null);
+          return;
+        }
+        
+        if (!selectedNftId) {
+          setError("Please select an NFT to vote with.");
+          setSelectedOption(null);
+          return;
+        }
       }
     }
 
-    const votePower = pollRequiresNft ? Math.max(1, userNfts.length * userNfts.length) : 1;
+    // Calculate vote power based on poll type
+    const votePower = pollRequiresNft
+      ? isSuiTurkiyePoll
+        ? calculateTrWalVotePower(trWalTokenCount)
+        : Math.max(1, userNfts.length * userNfts.length)
+      : 1;
 
     try {
       // Check if poll uses sealed (encrypted) voting
@@ -336,24 +369,21 @@ const VotingPage = () => {
       // Create transaction - use sealed voting functions for privacy
       let tx;
       if (useSealedVoting) {
-        if (pollRequiresNft && selectedNftId) {
-          // For SUI TURKIYE polls, we need to use Sui Workshop NFT type in the transaction
-          // but the poll's nft_collection_type should still be SUI TURKIYE
-          const isSuiTurkiye = pollData.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
-          const nftTypeForTransaction = isSuiTurkiye 
-            ? "0x22739e8c5f587927462590822f418a673e6435fe8a427f892132ab160a72fd83::simple_nft::SimpleNFT"
-            : pollData.nft_collection_type;
-          
+        // SUI TURKIYE polls use TR_WAL token (not NFT), so we use regular sealed vote without NFT
+        // Other NFT-gated polls use NFT transaction
+        if (pollRequiresNft && !isSuiTurkiyePoll && selectedNftId) {
+          // For other NFT-gated polls, use NFT transaction
           tx = await createSealedVoteWithNftTransaction(
             client,
             id,
             optionIndex,
             votePower,
             voteRegistryId,
-            nftTypeForTransaction, // Use Sui Workshop type for SUI TURKIYE polls
+            pollData.nft_collection_type,
             selectedNftId
           );
         } else {
+          // For public polls or SUI TURKIYE polls (token-based), use regular sealed vote
           tx = await createSealedVoteTransaction(client, id, optionIndex, votePower, voteRegistryId);
         }
       } else {
@@ -1197,38 +1227,69 @@ const VotingPage = () => {
             )}
             
             {/* NFT info (if poll requires NFT) */}
-            {pollRequiresNft && account?.address && userNfts.length === 0 && (
-              <div
-                style={{
-                  padding: "1rem",
-                  background: "rgba(59, 130, 246, 0.1)",
-                  border: "1px solid rgba(59, 130, 246, 0.3)",
-                  borderRadius: "0.5rem",
-                  color: "#ef4444",
-                  fontSize: "0.9rem",
-                }}
-              >
-                {pollData?.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye"
-                  ? "You don't own any Sui Workshop NFTs. You cannot vote in this poll."
-                  : "You don't own any NFTs from this collection. You cannot vote in this poll."}
-              </div>
-            )}
-
-            {pollRequiresNft && account?.address && nftCountForPoll > 0 && (
-              <div
-                style={{
-                  padding: "0.85rem 1rem",
-                  background: "rgba(15, 23, 42, 0.6)",
-                  border: "1px solid rgba(148, 163, 184, 0.3)",
-                  borderRadius: "0.5rem",
-                  color: "var(--text-primary)",
-                  fontSize: "0.9rem",
-                  fontWeight: 600,
-                }}
-              >
-                Vote power in this poll:{" "}
-                <span style={{ color: "#34d399" }}>{derivedVotePower}</span>
-              </div>
+            {pollRequiresNft && account?.address && (
+              <>
+                {isSuiTurkiyePoll ? (
+                  trWalTokenCount === 0 ? (
+                    <div
+                      style={{
+                        padding: "1rem",
+                        background: "rgba(59, 130, 246, 0.1)",
+                        border: "1px solid rgba(59, 130, 246, 0.3)",
+                        borderRadius: "0.5rem",
+                        color: "#ef4444",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      You don't own any TR_WAL tokens. You cannot vote in this poll.
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        padding: "0.85rem 1rem",
+                        background: "rgba(15, 23, 42, 0.6)",
+                        border: "1px solid rgba(148, 163, 184, 0.3)",
+                        borderRadius: "0.5rem",
+                        color: "var(--text-primary)",
+                        fontSize: "0.9rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      TR_WAL tokens: <span style={{ color: "#34d399" }}>{trWalTokenCount}</span> | Vote power: <span style={{ color: "#34d399" }}>{derivedVotePower}</span>
+                    </div>
+                  )
+                ) : (
+                  nftCountForPoll === 0 ? (
+                    <div
+                      style={{
+                        padding: "1rem",
+                        background: "rgba(59, 130, 246, 0.1)",
+                        border: "1px solid rgba(59, 130, 246, 0.3)",
+                        borderRadius: "0.5rem",
+                        color: "#ef4444",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      You don't own any NFTs from this collection. You cannot vote in this poll.
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        padding: "0.85rem 1rem",
+                        background: "rgba(15, 23, 42, 0.6)",
+                        border: "1px solid rgba(148, 163, 184, 0.3)",
+                        borderRadius: "0.5rem",
+                        color: "var(--text-primary)",
+                        fontSize: "0.9rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Vote power in this poll:{" "}
+                      <span style={{ color: "#34d399" }}>{derivedVotePower}</span>
+                    </div>
+                  )
+                )}
+              </>
             )}
             
             <div style={{ 

@@ -8,7 +8,7 @@ import UserProfileDropdown from "../components/UserProfileDropdown";
 import { getUserProfile, UserProfile } from "../utils/userProfile";
 import { useBlockchainPolls } from "../utils/pollUtils";
 import { NFT_COLLECTIONS, getUniqueCollectionTypes, getCollectionByType } from "../config/nftCollections";
-import { getUserNftsByType } from "../utils/blockchain";
+import { getUserNftsByType, getTokenBalance } from "../utils/blockchain";
 import pollarWalkVideo from "/pollar-walk.mp4";
 import "../styles/theme.css";
 
@@ -48,18 +48,40 @@ const VotePoolPage = () => {
   // Blockchain'den poll'ları oku
   const { data: allPools = [], isLoading: isLoadingPools, refetch } = useBlockchainPolls();
 
-  // Check if user owns NFT for a collection
+  // Check if user owns NFT/token for a collection
   const [userNftsByCollection, setUserNftsByCollection] = useState<Map<string, number>>(new Map());
+  const [trWalTokenCount, setTrWalTokenCount] = useState<number>(0);
   
   useEffect(() => {
-    const loadUserNfts = async () => {
+    const loadUserAssets = async () => {
       if (!account?.address) {
         setUserNftsByCollection(new Map());
+        setTrWalTokenCount(0);
         return;
       }
 
       const nftMap = new Map<string, number>();
+      
+      // Load TR_WAL token count for SUI TURKIYE
+      const trWalTokenType = "0xa8ad8c2720f064676856f4999894974a129e3d15386b3d0a27f3a7f85811c64a::tr_wal::TR_WAL";
+      try {
+        const tokenCount = await getTokenBalance(client, account.address, trWalTokenType);
+        setTrWalTokenCount(tokenCount);
+        // SUI TURKIYE collection type için token count'u da ekle
+        const suiTurkiyeType = "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
+        nftMap.set(suiTurkiyeType, tokenCount > 0 ? 1 : 0); // Token varsa 1, yoksa 0 (görünürlük kontrolü için)
+      } catch (error) {
+        console.error("Error loading TR_WAL token:", error);
+        setTrWalTokenCount(0);
+      }
+      
+      // Load NFTs for other collections
       for (const collection of NFT_COLLECTIONS) {
+        // SUI TURKIYE için token kontrolü yapıldı, atla
+        if (collection.name === "SUI TURKIYE") {
+          continue;
+        }
+        
         try {
           const nfts = await getUserNftsByType(client, account.address, collection.type);
           nftMap.set(collection.type, nfts.length);
@@ -71,7 +93,7 @@ const VotePoolPage = () => {
       setUserNftsByCollection(nftMap);
     };
 
-    loadUserNfts();
+    loadUserAssets();
   }, [account?.address, client]);
   
   // Filter pools by selected collection and visibility
@@ -81,18 +103,29 @@ const VotePoolPage = () => {
     ? allPools // Show all polls when "All Polls" is selected
     : allPools.filter((pool) => pool.nft_collection_type === selectedCollectionType);
   
-  // Filter by visibility (private polls only visible to NFT holders and poll creator)
+  // Filter by visibility (private polls only visible to NFT/token holders and poll creator)
   // is_private is now stored on-chain in the Poll struct
   filteredPools = filteredPools.filter((pool) => {
     // Sadece gerçekten private olan poll'ları filtrele (is_private === true)
     // is_private false, undefined veya null ise, poll public'tir ve herkese gösterilir
     const isPrivate = pool.is_private === true;
+    const isSuiTurkiye = pool.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
     
     if (isPrivate && pool.nft_collection_type && pool.nft_collection_type.length > 0) {
-      // Private poll: show if user owns NFT OR is the poll creator
-      const nftCount = userNftsByCollection.get(pool.nft_collection_type) || 0;
+      // Private poll: show if user owns NFT/token OR is the poll creator
       const isCreator = account?.address && pool.creator?.toLowerCase() === account.address.toLowerCase();
-      return nftCount > 0 || isCreator;
+      if (isCreator) {
+        return true;
+      }
+      
+      if (isSuiTurkiye) {
+        // SUI TURKIYE private polls require TR_WAL token
+        return trWalTokenCount > 0;
+      } else {
+        // Other private polls require NFT
+        const nftCount = userNftsByCollection.get(pool.nft_collection_type) || 0;
+        return nftCount > 0;
+      }
     }
     
     // Public poll (is_private === false, undefined, veya null) veya public NFT-gated poll: show to everyone
@@ -803,11 +836,12 @@ const VotePoolPage = () => {
 
             return (
               <>
-                <h2 
-                  className="active-pools-animated-text"
-                  style={{ 
-                    marginBottom: "0.5rem",
-                    fontWeight: "900",
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", marginBottom: "0.5rem", flexWrap: "wrap" }}>
+                  <h2 
+                    className="active-pools-animated-text"
+                    style={{ 
+                      marginBottom: "0",
+                      fontWeight: "900",
                     textTransform: "uppercase",
                     // Popkins, Tallys, Pawtato Heroes ve Sui Workshop için Graffiti stili
                     ...(isGraffitiStyled ? {
@@ -858,11 +892,15 @@ const VotePoolPage = () => {
                 >
                   {title}
                 </h2>
+                </div>
           {/* Status Filter - Select Box */}
           <div style={{
             display: "flex",
             justifyContent: "center",
+            alignItems: "center",
+            gap: "1rem",
             marginBottom: "1rem",
+            flexWrap: "wrap",
           }}>
             <select
               value={selectedFilter}
@@ -884,6 +922,29 @@ const VotePoolPage = () => {
               <option value="upcoming">UPCOMING</option>
               <option value="ended">ENDED</option>
             </select>
+            {/* TR_WAL Balance Display for SUI TURKIYE */}
+            {isSuiTurkiye && account?.address && (
+              <div
+                style={{
+                  padding: "0.5rem 1rem",
+                  background: "rgba(255, 255, 255, 0.1)",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  borderRadius: "0.5rem",
+                  color: "#ffffff",
+                  fontSize: "clamp(0.75rem, 1.2vw, 0.9rem)",
+                  fontWeight: "600",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span>TR_WAL:</span>
+                <span style={{ color: "#34d399", fontWeight: "700" }}>
+                  {trWalTokenCount > 0 ? trWalTokenCount.toLocaleString() : "0"}
+                </span>
+              </div>
+            )}
           </div>
           {selectedCollectionType && (() => {
             const collection = getCollectionByType(selectedCollectionType);

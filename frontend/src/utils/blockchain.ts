@@ -1,4 +1,4 @@
-import { SuiClient } from "@mysten/sui/client";
+import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { SealClient } from "@mysten/seal";
 import { contractConfig } from "../config/contractConfig";
@@ -114,6 +114,7 @@ export async function getAllPolls(client: SuiClient): Promise<
       start_date: string;
       end_date: string;
       nft_collection_type: string;
+      is_private: boolean;
       options: Array<{ id: string; name: string; image_url: string }>;
     }> = [];
 
@@ -889,6 +890,244 @@ export async function getUserNftsByType(
     console.error("Error getting user NFTs:", error);
     return [];
   }
+}
+
+/**
+ * Kullanıcının sahip olduğu token balance'ını getirir (decimal'e göre düzeltilmiş)
+ * TR_WAL token mainnet'te olduğu için, TR_WAL için mainnet client kullanır
+ * Sui'de coin'ler en küçük birimde saklanır, bu yüzden decimal'e bölmemiz gerekir
+ */
+export async function getTokenBalance(
+  client: SuiClient,
+  ownerAddress: string,
+  tokenType: string
+): Promise<number> {
+  try {
+    console.log("Getting token balance for:", tokenType, "owner:", ownerAddress);
+    
+    // TR_WAL token mainnet'te, bu yüzden mainnet client kullan
+    const isTrWal = tokenType.includes("tr_wal::TR_WAL") || tokenType.includes("TR_WAL");
+    let clientToUse = client;
+    
+    // TR_WAL token decimal değeri (genellikle Sui coin'leri 9 decimal kullanır)
+    // 100 token = 100 * 10^9 = 100000000000
+    const TR_WAL_DECIMAL = 9;
+    
+    if (isTrWal) {
+      console.log("TR_WAL token detected, using mainnet client");
+      try {
+        // Mainnet SuiClient oluştur
+        clientToUse = new SuiClient({
+          url: getFullnodeUrl("mainnet"),
+        });
+        console.log("Mainnet client created for TR_WAL balance check");
+      } catch (mainnetError) {
+        console.error("Failed to create mainnet client, using default client:", mainnetError);
+        // Fallback to default client
+      }
+    }
+    
+    // Sui'de coin'ler Coin<Type> wrapper'ı kullanır
+    // Önce direkt coin type ile dene
+    try {
+      const balance = await clientToUse.getBalance({
+        owner: ownerAddress,
+        coinType: tokenType,
+      });
+      if (balance && balance.totalBalance) {
+        const totalBalance = BigInt(balance.totalBalance);
+        console.log("Token balance from getBalance (direct, raw):", totalBalance.toString());
+        // TR_WAL için decimal'e böl
+        if (isTrWal) {
+          const adjustedBalance = Number(totalBalance) / Math.pow(10, TR_WAL_DECIMAL);
+          console.log("Token balance (adjusted for decimal):", adjustedBalance);
+          return Math.floor(adjustedBalance);
+        }
+        return Number(totalBalance);
+      }
+    } catch (balanceError) {
+      console.log("getBalance (direct) failed:", balanceError);
+    }
+    
+    // Coin<Type> formatını dene
+    try {
+      const coinType = `0x2::coin::Coin<${tokenType}>`;
+      const balance = await clientToUse.getBalance({
+        owner: ownerAddress,
+        coinType: coinType,
+      });
+      if (balance && balance.totalBalance) {
+        const totalBalance = BigInt(balance.totalBalance);
+        console.log("Token balance from getBalance (Coin<>, raw):", totalBalance.toString());
+        // TR_WAL için decimal'e böl
+        if (isTrWal) {
+          const adjustedBalance = Number(totalBalance) / Math.pow(10, TR_WAL_DECIMAL);
+          console.log("Token balance (adjusted for decimal):", adjustedBalance);
+          return Math.floor(adjustedBalance);
+        }
+        return Number(totalBalance);
+      }
+    } catch (coinBalanceError) {
+      console.log("getBalance (Coin<>) failed:", coinBalanceError);
+    }
+    
+    // getAllBalances ile tüm coin balance'larını al ve filtrele
+    try {
+      const allBalances = await clientToUse.getAllBalances({
+        owner: ownerAddress,
+      });
+      
+      console.log("All balances count:", allBalances.length);
+      
+      // Token type'a göre filtrele (hem direkt hem Coin<> formatında)
+      for (const balance of allBalances) {
+        console.log("Checking balance type:", balance.coinType);
+        
+        // Direkt type match
+        if (balance.coinType === tokenType) {
+          const totalBalance = BigInt(balance.totalBalance);
+          console.log("Token balance from getAllBalances (direct, raw):", totalBalance.toString());
+          // TR_WAL için decimal'e böl
+          if (isTrWal) {
+            const adjustedBalance = Number(totalBalance) / Math.pow(10, TR_WAL_DECIMAL);
+            console.log("Token balance (adjusted for decimal):", adjustedBalance);
+            return Math.floor(adjustedBalance);
+          }
+          return Number(totalBalance);
+        }
+        
+        // Coin<Type> formatında match
+        const coinTypePattern = `0x2::coin::Coin<${tokenType}>`;
+        if (balance.coinType === coinTypePattern) {
+          const totalBalance = BigInt(balance.totalBalance);
+          console.log("Token balance from getAllBalances (Coin<>, raw):", totalBalance.toString());
+          // TR_WAL için decimal'e böl
+          if (isTrWal) {
+            const adjustedBalance = Number(totalBalance) / Math.pow(10, TR_WAL_DECIMAL);
+            console.log("Token balance (adjusted for decimal):", adjustedBalance);
+            return Math.floor(adjustedBalance);
+          }
+          return Number(totalBalance);
+        }
+        
+        // Type'ın son kısmını kontrol et (tr_wal::TR_WAL gibi)
+        const tokenTypeParts = tokenType.split("::");
+        if (tokenTypeParts.length >= 2) {
+          const tokenModule = tokenTypeParts[tokenTypeParts.length - 2];
+          const tokenName = tokenTypeParts[tokenTypeParts.length - 1];
+          if (balance.coinType.includes(tokenModule) && balance.coinType.includes(tokenName)) {
+            const totalBalance = BigInt(balance.totalBalance);
+            console.log("Token balance from getAllBalances (partial match, raw):", totalBalance.toString());
+            // TR_WAL için decimal'e böl
+            if (isTrWal) {
+              const adjustedBalance = Number(totalBalance) / Math.pow(10, TR_WAL_DECIMAL);
+              console.log("Token balance (adjusted for decimal):", adjustedBalance);
+              return Math.floor(adjustedBalance);
+            }
+            return Number(totalBalance);
+          }
+        }
+      }
+    } catch (allBalancesError) {
+      console.log("getAllBalances failed:", allBalancesError);
+    }
+
+    // Son çare: getOwnedObjects ile coin objects'leri getir
+    try {
+      // Önce Coin<Type> formatında dene
+      const coinType = `0x2::coin::Coin<${tokenType}>`;
+      const objects = await clientToUse.getOwnedObjects({
+        owner: ownerAddress,
+        filter: {
+          StructType: coinType,
+        },
+        options: {
+          showType: true,
+          showContent: true,
+          showOwner: false,
+          showDisplay: false,
+        },
+      });
+
+      console.log("Found Coin<> objects:", objects.data?.length || 0);
+
+      let totalBalance = 0;
+      
+      for (const obj of objects.data || []) {
+        if (obj.data?.content) {
+          let balance = 0;
+          
+          // Coin yapısına göre balance'ı oku
+          if ("fields" in obj.data.content) {
+            const fields = (obj.data.content as any).fields;
+            
+            // Sui Coin struct'ında balance field'ı var
+            if (fields.balance !== undefined) {
+              if (typeof fields.balance === "string") {
+                balance = parseInt(fields.balance, 10);
+              } else if (typeof fields.balance === "number") {
+                balance = fields.balance;
+              } else if (fields.balance && typeof fields.balance === "object") {
+                // Nested balance object
+                if (fields.balance.value !== undefined) {
+                  balance = typeof fields.balance.value === "string" 
+                    ? parseInt(fields.balance.value, 10) 
+                    : Number(fields.balance.value);
+                } else {
+                  balance = Number(fields.balance) || 0;
+                }
+              }
+            }
+          }
+          
+          console.log("Object balance:", balance, "Object ID:", obj.data?.objectId);
+          totalBalance += balance;
+        }
+      }
+
+      if (totalBalance > 0) {
+        console.log("Total token balance from getOwnedObjects (raw):", totalBalance);
+        // TR_WAL için decimal'e böl
+        if (isTrWal) {
+          const adjustedBalance = totalBalance / Math.pow(10, TR_WAL_DECIMAL);
+          console.log("Token balance (adjusted for decimal):", adjustedBalance);
+          return Math.floor(adjustedBalance);
+        }
+        return totalBalance;
+      }
+    } catch (objectsError) {
+      console.log("getOwnedObjects failed:", objectsError);
+    }
+
+    console.log("Could not find token balance, returning 0");
+    return 0;
+  } catch (error) {
+    console.error("Error getting token balance:", error);
+    return 0;
+  }
+}
+
+/**
+ * SUI TURKIYE poll'ları için token sayısına göre oy gücü hesaplar
+ * 1-10 token: oy gücü 1
+ * 11-30 token: oy gücü 2
+ * 31-50 token: oy gücü 3
+ * 51-100 token: oy gücü 4
+ * 100+ token: oy gücü 5
+ */
+export function calculateTrWalVotePower(tokenCount: number): number {
+  if (tokenCount > 100) {
+    return 5;
+  } else if (tokenCount >= 51 && tokenCount <= 100) {
+    return 4;
+  } else if (tokenCount >= 31 && tokenCount <= 50) {
+    return 3;
+  } else if (tokenCount >= 11 && tokenCount <= 30) {
+    return 2;
+  } else if (tokenCount >= 1 && tokenCount <= 10) {
+    return 1;
+  }
+  return 0;
 }
 
 /**
