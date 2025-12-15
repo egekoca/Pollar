@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { findVoteRegistryByPollId, getVoteRegistry, getPollById, getUserNftsByType, createSealedVoteTransaction, createSealedVoteWithNftTransaction, getTokenBalance, calculateTrWalVotePower } from "../utils/blockchain";
 import { VotePool, VoteOption } from "../types/poll";
@@ -596,6 +596,30 @@ const VotingPage = () => {
     backgroundGradient = theme.backgroundGradient;
   }
 
+  const chartData = useMemo(() => {
+    if (!localPool) return [];
+
+    const historyPoints = localPool.history.map((entry) => {
+      const dataPoint: Record<string, any> = {
+        date: new Date(entry.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      };
+      entry.options.forEach((opt) => {
+        const option = localPool.options.find((o) => o.id === opt.optionId);
+        if (option) {
+          dataPoint[option.name] = opt.percentage;
+        }
+      });
+      return dataPoint;
+    });
+
+    const currentDataPoint: Record<string, any> = { date: "Now" };
+    localPool.options.forEach((opt) => {
+      currentDataPoint[opt.name] = opt.percentage;
+    });
+
+    return [...historyPoints, currentDataPoint];
+  }, [localPool]);
+
   if (isLoading) {
     return (
       <div style={{ minHeight: "100vh", background: "#000000", padding: "2rem", position: "relative" }}>
@@ -659,29 +683,6 @@ const VotingPage = () => {
       </div>
     );
   }
-
-  // Prepare chart data from history
-  const chartData = localPool.history.map((entry) => {
-    const dataPoint: any = {
-      date: new Date(entry.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    };
-    entry.options.forEach((opt) => {
-      const option = localPool.options.find((o) => o.id === opt.optionId);
-      if (option) {
-        dataPoint[option.name] = opt.percentage;
-      }
-    });
-    return dataPoint;
-  });
-
-  // Add current state to chart data
-  const currentDataPoint: any = {
-    date: "Now",
-  };
-  localPool.options.forEach((opt) => {
-    currentDataPoint[opt.name] = opt.percentage;
-  });
-  chartData.push(currentDataPoint);
 
   const colors = ["#3b82f6", "#87ceeb", "#60a5fa", "#93c5fd"];
 
@@ -1602,6 +1603,7 @@ const VotingPage = () => {
                     dot={{ fill: colors[index % colors.length], r: 5, strokeWidth: 2, stroke: "rgba(0, 0, 0, 0.2)" }}
                     activeDot={{ r: 7, stroke: colors[index % colors.length], strokeWidth: 2, fill: "#fff" }}
                     strokeDasharray={index === 0 ? "0" : "5 5"}
+                    isAnimationActive={false}
                   />
                 ))}
               </LineChart>
