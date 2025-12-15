@@ -1058,17 +1058,13 @@ const VotingPage = () => {
               <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
                 <h2
                   style={{
-                    fontSize: "clamp(1.5rem, 3.5vw, 2.25rem)",
+                    fontSize: "clamp(1.4rem, 3.2vw, 2.4rem)",
                     fontWeight: "700",
                     margin: 0,
                     color: "var(--text-primary)",
                     flex: 1,
                     lineHeight: "1.2",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    wordBreak: "break-word",
                   }}
                 >
                   {localPool.name}
@@ -1228,7 +1224,7 @@ const VotingPage = () => {
               
               <div style={{ display: "flex", gap: "clamp(1rem, 3vw, 2rem)", flexWrap: "wrap" }}>
                 <div>
-                  <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.85rem)", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
+                  <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.85rem)", color: "#ffffff", marginBottom: "0.25rem" }}>
                     Total Votes
                   </div>
                   <div style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", fontWeight: "bold", color: "var(--color-light-blue)" }}>
@@ -1236,7 +1232,7 @@ const VotingPage = () => {
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.85rem)", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
+                  <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.85rem)", color: "#ffffff", marginBottom: "0.25rem" }}>
                     Starts
                   </div>
                   <div style={{ fontSize: "clamp(0.9rem, 1.8vw, 1rem)", color: "var(--text-secondary)" }}>
@@ -1244,7 +1240,7 @@ const VotingPage = () => {
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.85rem)", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
+                  <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.85rem)", color: "#ffffff", marginBottom: "0.25rem" }}>
                     Ends In
                   </div>
                   <div style={{ fontSize: "clamp(0.9rem, 1.8vw, 1rem)", color: "var(--text-secondary)", fontWeight: "600" }}>
