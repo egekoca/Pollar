@@ -301,6 +301,54 @@ const VotePoolPage = () => {
     backgroundGradient = "linear-gradient(90deg, rgba(1, 7, 19, 0.98) 0%, rgba(1, 7, 19, 0.97) 30%, rgba(8, 12, 25, 0.96) 40%, rgba(42, 5, 17, 0.95) 50%, rgba(96, 5, 18, 0.93) 60%, rgba(154, 2, 13, 0.92) 75%, rgba(211, 0, 12, 0.95) 100%)";
   }
 
+  const buyButton = selectedCollectionType ? (() => {
+    const collection = getCollectionByType(selectedCollectionType);
+    if (collection && collection.tradeportUrl) {
+      return (
+        <a
+          href={collection.tradeportUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "inline-block",
+            padding: "0.55rem 1.25rem",
+            background: collection.name === "Popkins" 
+              ? "linear-gradient(135deg, rgba(255, 165, 0, 0.8), rgba(50, 205, 50, 0.8))"
+              : collection.name === "Tallys"
+              ? "linear-gradient(135deg, rgba(255, 20, 147, 0.8), rgba(255, 99, 71, 0.8))"
+              : collection.name === "Pawtato Heroes"
+              ? "linear-gradient(135deg, rgba(132, 204, 22, 0.8), rgba(163, 230, 53, 0.8))"
+              : "var(--color-light-blue)",
+            color: "#000000",
+            border: "none",
+            borderRadius: "0.5rem",
+            fontWeight: "700",
+            fontSize: "clamp(0.85rem, 1.4vw, 1rem)",
+            cursor: "pointer",
+            textDecoration: "none",
+            transition: "all 0.3s ease",
+            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
+            minWidth: "150px",
+            textAlign: "center",
+            whiteSpace: "nowrap",
+            lineHeight: 1.1,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 4px 15px rgba(0, 0, 0, 0.3)";
+          }}
+        >
+          Buy {collection.name}
+        </a>
+      );
+    }
+    return null;
+  })() : null;
+
   return (
     <div 
       style={{ 
@@ -985,51 +1033,8 @@ const VotePoolPage = () => {
                 </a>
               </>
             )}
+              {buyButton}
           </div>
-          {selectedCollectionType && (() => {
-            const collection = getCollectionByType(selectedCollectionType);
-            if (collection && collection.tradeportUrl) {
-              return (
-                <a
-                  href={collection.tradeportUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "inline-block",
-                    padding: "0.75rem 1.5rem",
-                    background: collection.name === "Popkins" 
-                      ? "linear-gradient(135deg, rgba(255, 165, 0, 0.8), rgba(50, 205, 50, 0.8))"
-                      : collection.name === "Tallys"
-                      ? "linear-gradient(135deg, rgba(255, 20, 147, 0.8), rgba(255, 99, 71, 0.8))"
-                      : collection.name === "Pawtato Heroes"
-                      ? "linear-gradient(135deg, rgba(132, 204, 22, 0.8), rgba(163, 230, 53, 0.8))"
-                      : "var(--color-light-blue)",
-                    color: "#000000",
-                    border: "none",
-                    borderRadius: "0.5rem",
-                    fontWeight: "700",
-                    fontSize: "clamp(0.9rem, 2vw, 1.1rem)",
-                    cursor: "pointer",
-                    textDecoration: "none",
-                    transition: "all 0.3s ease",
-                    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
-                    marginTop: "0.5rem",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0, 0, 0, 0.4)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 4px 15px rgba(0, 0, 0, 0.3)";
-                  }}
-                >
-                  Buy {collection.name}
-                </a>
-              );
-            }
-            return null;
-          })()}
               </>
             );
           })()}
