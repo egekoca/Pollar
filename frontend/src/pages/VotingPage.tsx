@@ -2,7 +2,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { findVoteRegistryByPollId, getVoteRegistry, getPollById, getUserNftsByType, createSealedVoteTransaction, createSealedVoteWithNftTransaction, getTokenBalance, calculateTrWalVotePower } from "../utils/blockchain";
-import { VotePool, VoteOption } from "../data/mockData";
+import { VotePool, VoteOption } from "../types/poll";
 import { gsap } from "gsap";
 import PillNav from "../components/PillNav";
 import { getCollectionByType } from "../config/nftCollections";
@@ -1328,8 +1328,8 @@ const VotingPage = () => {
                   style={{
                     padding: "1.25rem",
                     background: isSelected 
-                      ? "linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%)"
-                      : "rgba(27, 27, 27, 0.6)",
+                      ? "linear-gradient(135deg, rgba(96, 165, 250, 0.28) 0%, rgba(59, 130, 246, 0.16) 100%)"
+                      : "rgba(15, 15, 15, 0.78)",
                     border: isSelected
                       ? "2px solid rgba(96, 165, 250, 0.6)"
                       : "1px solid rgba(255, 255, 255, 0.1)",
@@ -1529,9 +1529,10 @@ const VotingPage = () => {
 
         {/* Chart - Below Options */}
         <div className="card" style={{
-          background: "linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(27, 27, 27, 0.95) 100%)",
-          border: "1px solid rgba(96, 165, 250, 0.2)",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(96, 165, 250, 0.1)",
+          background: "rgba(10, 10, 10, 0.82)",
+          border: "1px solid rgba(96, 165, 250, 0.25)",
+          boxShadow: "0 12px 38px rgba(0, 0, 0, 0.45)",
+          backdropFilter: "blur(6px)",
         }}>
           <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
             <h3
@@ -1548,12 +1549,12 @@ const VotingPage = () => {
             >
               Voting Trends
             </h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "clamp(0.9rem, 1.5vw, 1rem)" }}>
+            <p style={{ color: "#ffffff", fontSize: "clamp(0.9rem, 1.5vw, 1rem)" }}>
               Track how votes have changed over time
             </p>
           </div>
           <div style={{
-            background: "rgba(0, 0, 0, 0.2)",
+            background: "rgba(0, 0, 0, 0.35)",
             borderRadius: "0.75rem",
             padding: "1rem",
             border: "1px solid rgba(255, 255, 255, 0.05)",

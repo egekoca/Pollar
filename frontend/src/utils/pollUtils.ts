@@ -2,7 +2,7 @@ import { getAllPolls, getPollById, findVoteRegistryByPollId, getVoteRegistry } f
 import { useSuiClient } from "@mysten/dapp-kit";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { VotePool, VoteOption } from "../data/mockData";
+import { VotePool, VoteOption } from "../types/poll";
 import { contractConfig } from "../config/contractConfig";
 
 /**
