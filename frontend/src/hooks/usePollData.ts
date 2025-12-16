@@ -30,7 +30,8 @@ export function usePollData(pollId: string | undefined): UsePollDataResult {
   const [hasVoted, setHasVoted] = useState<boolean>(false);
 
   useEffect(() => {
-    // Reset state when pollId changes
+    // Reset state when pollId changes - set loading immediately to prevent showing old data
+    setIsLoading(true);
     setPollData(null);
     setLocalPool(null);
     setVoteRegistryId(null);
@@ -43,7 +44,6 @@ export function usePollData(pollId: string | undefined): UsePollDataResult {
     }
 
     const loadData = async () => {
-      setIsLoading(true);
       setError("");
 
       try {

@@ -1,10 +1,11 @@
-import React from "react";
+import React, { memo } from "react";
 
 /**
  * BackgroundCharacters Component
  * Displays character images on left and right sides of the page (for "All Polls" view)
+ * Memoized to prevent unnecessary re-renders
  */
-const BackgroundCharacters: React.FC = () => {
+const BackgroundCharacters: React.FC = memo(() => {
   return (
     <>
       <div
@@ -36,6 +37,8 @@ const BackgroundCharacters: React.FC = () => {
             src="/pollarpng.png"
             alt="Pollar Character"
             className="character-card float-gentle-up"
+            loading="eager"
+            decoding="async"
             style={{
               width: "clamp(80px, 12vw, 200px)",
               height: "clamp(80px, 12vw, 200px)",
@@ -55,6 +58,8 @@ const BackgroundCharacters: React.FC = () => {
             src="/sealpng.png"
             alt="Seal Character"
             className="character-card float-gentle-down"
+            loading="eager"
+            decoding="async"
             style={{
               width: "clamp(80px, 12vw, 200px)",
               height: "clamp(80px, 12vw, 200px)",
@@ -89,6 +94,8 @@ const BackgroundCharacters: React.FC = () => {
             src="/walruspng.png"
             alt="Walrus Character"
             className="character-card float-gentle-up"
+            loading="eager"
+            decoding="async"
             style={{
               width: "clamp(80px, 12vw, 200px)",
               height: "clamp(80px, 12vw, 200px)",
@@ -108,6 +115,8 @@ const BackgroundCharacters: React.FC = () => {
             src="/friends.png"
             alt="Friends Character"
             className="character-card float-gentle-down"
+            loading="eager"
+            decoding="async"
             style={{
               width: "clamp(80px, 12vw, 200px)",
               height: "clamp(80px, 12vw, 200px)",
@@ -157,7 +166,9 @@ const BackgroundCharacters: React.FC = () => {
       `}</style>
     </>
   );
-};
+});
+
+BackgroundCharacters.displayName = "BackgroundCharacters";
 
 export default BackgroundCharacters;
 

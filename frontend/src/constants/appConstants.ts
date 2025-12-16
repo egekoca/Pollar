@@ -19,6 +19,12 @@ export const POLL_REFETCH_INTERVAL_MS = 20000; // 20 seconds
 /** Delay before refetching after event received in milliseconds */
 export const EVENT_REFETCH_DELAY_MS = 2000; // 2 seconds
 
+/** Transaction timeout for waiting for transaction completion in milliseconds */
+export const TRANSACTION_TIMEOUT_MS = 10000; // 10 seconds
+
+/** Delay between retry attempts in milliseconds */
+export const RETRY_DELAY_MS = 1000; // 1 second
+
 // ============================================================================
 // VOTE POWER CONSTANTS
 // ============================================================================

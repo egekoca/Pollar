@@ -1,16 +1,34 @@
-import React from "react";
+import React, { memo, useState, useEffect } from "react";
 import { NFTCollection } from "../config/nftCollections";
 
 interface BackgroundNFTsProps {
   theme: NFTCollection["theme"];
   collectionName?: string;
+  pollId?: string; // Add pollId to force remount when poll changes
 }
 
 /**
  * BackgroundNFTs Component
  * Displays NFT images on left and right sides of the page (for collection-specific views)
+ * Memoized to prevent unnecessary re-renders
  */
-const BackgroundNFTs: React.FC<BackgroundNFTsProps> = ({ theme, collectionName }) => {
+const BackgroundNFTs: React.FC<BackgroundNFTsProps> = memo(({ theme, collectionName, pollId }) => {
+  const [showImages, setShowImages] = useState(false);
+
+  // Reset and show images when pollId or theme changes
+  useEffect(() => {
+    // Hide images immediately when pollId or theme changes
+    setShowImages(false);
+    
+    if (theme?.backgroundImages && theme.backgroundImages.length > 0) {
+      // Small delay to ensure old images are cleared from DOM before showing new ones
+      const timer = setTimeout(() => {
+        setShowImages(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [pollId, theme?.backgroundImages]);
+
   if (!theme?.backgroundImages || theme.backgroundImages.length === 0) {
     return null;
   }
@@ -50,12 +68,14 @@ const BackgroundNFTs: React.FC<BackgroundNFTsProps> = ({ theme, collectionName }
             gap: "clamp(1rem, 2vw, 2rem)",
           }}
         >
-          {theme.backgroundImages.slice(0, leftCount).map((imageUrl, index) => (
+          {showImages && theme.backgroundImages.slice(0, leftCount).map((imageUrl, index) => (
             <img
-              key={`left-${index}`}
+              key={`left-${pollId || 'default'}-${index}-${imageUrl}`}
               src={imageUrl}
               alt={`NFT ${index + 1}`}
               className="nft-card"
+              loading="eager"
+              decoding="async"
               style={{
                 width: "clamp(80px, 12vw, 200px)",
                 height: "clamp(80px, 12vw, 200px)",
@@ -67,8 +87,27 @@ const BackgroundNFTs: React.FC<BackgroundNFTsProps> = ({ theme, collectionName }
                 transform: `rotate(${index * 3 - 3}deg)`,
                 background: "rgba(0, 0, 0, 0.2)",
               }}
+              onError={(e) => {
+                console.error(`Failed to load NFT image: ${imageUrl}`, e);
+              }}
             />
           ))}
+          {!showImages && (
+            // Show placeholder boxes while images are loading
+            Array.from({ length: leftCount }).map((_, index) => (
+              <div
+                key={`placeholder-left-${index}`}
+                style={{
+                  width: "clamp(80px, 12vw, 200px)",
+                  height: "clamp(80px, 12vw, 200px)",
+                  borderRadius: "16px",
+                  background: "rgba(0, 0, 0, 0.2)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  transform: `rotate(${index * 3 - 3}deg)`,
+                }}
+              />
+            ))
+          )}
         </div>
 
         {/* Right Side NFTs */}
@@ -84,12 +123,14 @@ const BackgroundNFTs: React.FC<BackgroundNFTsProps> = ({ theme, collectionName }
             gap: "clamp(1rem, 2vw, 2rem)",
           }}
         >
-          {theme.backgroundImages.slice(rightStart, rightEnd).map((imageUrl, index) => (
+          {showImages && theme.backgroundImages.slice(rightStart, rightEnd).map((imageUrl, index) => (
             <img
-              key={`right-${index}`}
+              key={`right-${pollId || 'default'}-${index}-${imageUrl}`}
               src={imageUrl}
               alt={`NFT ${rightStart + index + 1}`}
               className="nft-card"
+              loading="eager"
+              decoding="async"
               style={{
                 width: "clamp(80px, 12vw, 200px)",
                 height: "clamp(80px, 12vw, 200px)",
@@ -101,8 +142,27 @@ const BackgroundNFTs: React.FC<BackgroundNFTsProps> = ({ theme, collectionName }
                 transform: `rotate(${index * -3 + 3}deg)`,
                 background: "rgba(0, 0, 0, 0.2)",
               }}
+              onError={(e) => {
+                console.error(`Failed to load NFT image: ${imageUrl}`, e);
+              }}
             />
           ))}
+          {!showImages && (
+            // Show placeholder boxes while images are loading
+            Array.from({ length: rightEnd - rightStart }).map((_, index) => (
+              <div
+                key={`placeholder-right-${index}`}
+                style={{
+                  width: "clamp(80px, 12vw, 200px)",
+                  height: "clamp(80px, 12vw, 200px)",
+                  borderRadius: "16px",
+                  background: "rgba(0, 0, 0, 0.2)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  transform: `rotate(${index * -3 + 3}deg)`,
+                }}
+              />
+            ))
+          )}
         </div>
       </div>
       <style>{`
@@ -135,7 +195,9 @@ const BackgroundNFTs: React.FC<BackgroundNFTsProps> = ({ theme, collectionName }
       `}</style>
     </>
   );
-};
+});
+
+BackgroundNFTs.displayName = "BackgroundNFTs";
 
 export default BackgroundNFTs;
 

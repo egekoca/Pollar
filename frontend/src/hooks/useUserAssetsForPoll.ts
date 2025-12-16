@@ -26,11 +26,13 @@ export function useUserAssetsForPoll(pollCollectionType: string | null | undefin
   // Load user NFTs if poll requires NFT
   // Special case: SUI TURKIYE polls use TR_WAL token instead of NFT
   useEffect(() => {
+    // Reset state immediately when pollCollectionType changes to prevent showing old data
+    setUserNfts([]);
+    setTrWalTokenCount(0);
+    setSelectedNftId(null);
+    
     const loadUserAssets = async () => {
       if (!account?.address || !pollCollectionType || pollCollectionType.length === 0) {
-        setUserNfts([]);
-        setTrWalTokenCount(0);
-        setSelectedNftId(null);
         return;
       }
 

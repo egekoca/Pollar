@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { gsap } from "gsap";
 import { getCollectionByType } from "../config/nftCollections";
 import { SUI_TURKIYE_COLLECTION_TYPE, ANIMATION_DURATION } from "../constants/appConstants";
@@ -24,14 +24,30 @@ const VotingPage = () => {
   const logoRef = useRef<HTMLImageElement>(null);
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [updatedPool, setUpdatedPool] = useState<any>(null);
+  const [hasVotedLocal, setHasVotedLocal] = useState<boolean>(false);
 
   // Custom hooks
   const { pollData, localPool: pollLocalPool, voteRegistryId, hasVoted, isLoading, error: pollError } = usePollData(id);
 
-  // Reset updatedPool when pollId changes
+  // Reset updatedPool and hasVotedLocal when pollId changes
   useEffect(() => {
     setUpdatedPool(null);
+    setHasVotedLocal(false);
   }, [id]);
+  
+  // Clear updatedPool when pollLocalPool becomes null (new poll loading)
+  useEffect(() => {
+    if (!pollLocalPool && updatedPool) {
+      setUpdatedPool(null);
+    }
+  }, [pollLocalPool, updatedPool]);
+
+  // Update hasVotedLocal when hasVoted changes from hook
+  useEffect(() => {
+    if (hasVoted) {
+      setHasVotedLocal(true);
+    }
+  }, [hasVoted]);
   const { userNfts, selectedNftId, trWalTokenCount } = useUserAssetsForPoll(pollData?.nft_collection_type);
   const { formatCountdown } = useCountdown();
   
@@ -39,8 +55,15 @@ const VotingPage = () => {
   const localPool = updatedPool || pollLocalPool;
   const chartData = usePollChartData(localPool);
 
-  const pollRequiresNft = !!(pollData?.nft_collection_type && pollData.nft_collection_type.length > 0);
-  const isSuiTurkiyePoll = pollData?.nft_collection_type === SUI_TURKIYE_COLLECTION_TYPE;
+  // Memoize these calculations to prevent unnecessary recalculations
+  const pollRequiresNft = useMemo(() => 
+    !!(pollData?.nft_collection_type && pollData.nft_collection_type.length > 0),
+    [pollData?.nft_collection_type]
+  );
+  const isSuiTurkiyePoll = useMemo(() => 
+    pollData?.nft_collection_type === SUI_TURKIYE_COLLECTION_TYPE,
+    [pollData?.nft_collection_type]
+  );
 
   // Voting hook
   const { handleVote, isVoting, votingError, selectedOption } = useVoting({
@@ -52,10 +75,11 @@ const VotingPage = () => {
     userNfts,
     selectedNftId,
     trWalTokenCount,
-    hasVoted,
+    hasVoted: hasVoted || hasVotedLocal, // Use combined hasVoted
     localPool: pollLocalPool,
     onVoteSuccess: (updatedPool) => {
       setUpdatedPool(updatedPool);
+      setHasVotedLocal(true); // Update hasVoted state after successful vote
     },
     onError: () => {},
     onShowSuccessModal: () => setShowSuccessModal(true),
@@ -63,6 +87,9 @@ const VotingPage = () => {
 
   // Combine errors
   const error = pollError || votingError;
+
+  // Use combined hasVoted
+  const finalHasVoted = hasVoted || hasVotedLocal;
 
   const handleLogoHover = () => {
     if (logoRef.current) {
@@ -75,45 +102,21 @@ const VotingPage = () => {
   };
 
   // Get theme for poll's NFT collection - only when pollData is fully loaded
-  const pollCollection = (!isLoading && pollData?.nft_collection_type && pollData.nft_collection_type.length > 0)
-    ? getCollectionByType(pollData.nft_collection_type)
-    : null;
+  // Memoized to prevent unnecessary recalculations
+  const pollCollection = useMemo(() => {
+    if (isLoading || !pollData?.nft_collection_type || pollData.nft_collection_type.length === 0) {
+      return null;
+    }
+    return getCollectionByType(pollData.nft_collection_type);
+  }, [isLoading, pollData?.nft_collection_type]);
   
   const theme = pollCollection?.theme;
-  const backgroundGradient = getBackgroundGradient(pollData?.nft_collection_type || null);
+  const backgroundGradient = useMemo(() => 
+    getBackgroundGradient(pollData?.nft_collection_type || null),
+    [pollData?.nft_collection_type]
+  );
 
-  if (isLoading) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#000000", padding: "2rem", position: "relative" }}>
-        <div style={{ 
-          display: "flex", 
-          flexDirection: "column", 
-          alignItems: "center", 
-          justifyContent: "center", 
-          minHeight: "80vh",
-          gap: "1.5rem",
-          position: "relative",
-          zIndex: 1
-        }}>
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            style={{
-              width: "clamp(200px, 30vw, 400px)",
-              height: "auto",
-              maxWidth: "100%",
-            }}
-          >
-            <source src={pollarWalkVideo} type="video/mp4" />
-          </video>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !pollLocalPool) {
+  if (error && !pollLocalPool && !isLoading) {
     return (
       <div style={{ minHeight: "100vh", background: backgroundGradient, padding: "2rem", position: "relative" }}>
         <div className="container" style={{ textAlign: "center", position: "relative", zIndex: 1 }}>
@@ -129,7 +132,42 @@ const VotingPage = () => {
     );
   }
 
-  if (!pollLocalPool) {
+  // Show loading if still loading or if pool is not yet loaded
+  // Also check localPool to ensure we don't show old data
+  if (isLoading || !pollLocalPool || !localPool) {
+    // If we're loading, show loading screen
+    if (isLoading) {
+      return (
+        <div style={{ minHeight: "100vh", background: "#000000", padding: "2rem", position: "relative" }}>
+          <div style={{ 
+            display: "flex", 
+            flexDirection: "column", 
+            alignItems: "center", 
+            justifyContent: "center", 
+            minHeight: "80vh",
+            gap: "1.5rem",
+            position: "relative",
+            zIndex: 1
+          }}>
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{
+                width: "clamp(200px, 30vw, 400px)",
+                height: "auto",
+                maxWidth: "100%",
+              }}
+            >
+              <source src={pollarWalkVideo} type="video/mp4" />
+            </video>
+          </div>
+        </div>
+      );
+    }
+    
+    // If not loading but pool not found, show error
     return (
       <div style={{ minHeight: "100vh", background: backgroundGradient, padding: "2rem", position: "relative" }}>
         <div className="container" style={{ textAlign: "center", position: "relative", zIndex: 1 }}>
@@ -155,15 +193,16 @@ const VotingPage = () => {
       }}
     >
       {/* Background Character Images - Left and Right Sides (For Public polls) */}
-      {!isLoading && pollData && (!pollData.nft_collection_type || pollData.nft_collection_type.length === 0) && (
-        <BackgroundCharacters />
+      {/* Only render when pollData is loaded and no collection type */}
+      {pollData && !pollRequiresNft && (
+        <BackgroundCharacters key="characters" />
       )}
 
       {/* Background NFT Images - Left and Right Sides (For NFT collection polls) */}
-      {/* Only show when pollData is loaded and matches current pollId */}
+      {/* Only show when pollData is loaded, has collection type, and theme has images */}
       {/* Key prop ensures component remounts when pollId changes, clearing previous NFTs */}
-      {!isLoading && pollData && pollData.nft_collection_type && pollData.nft_collection_type.length > 0 && theme?.backgroundImages && theme.backgroundImages.length > 0 && (
-        <BackgroundNFTs key={`${id}-${pollData.nft_collection_type}`} theme={theme} collectionName={pollCollection?.name} />
+      {pollData && pollRequiresNft && theme?.backgroundImages && theme.backgroundImages.length > 0 && (
+        <BackgroundNFTs key={`${id}-${pollData.nft_collection_type}`} theme={theme} collectionName={pollCollection?.name} pollId={id} />
       )}
       
       <div style={{ position: "relative", zIndex: 1 }}>
@@ -191,8 +230,8 @@ const VotingPage = () => {
         >
           {/* Pool Header */}
           <VotingPoolHeader
-            localPool={pollLocalPool}
-            hasVoted={hasVoted}
+            localPool={localPool}
+            hasVoted={finalHasVoted}
             error={error}
             pollRequiresNft={pollRequiresNft}
             isSuiTurkiyePoll={isSuiTurkiyePoll}
@@ -203,10 +242,10 @@ const VotingPage = () => {
 
           {/* Voting Options */}
           <VotingOptions
-            localPool={pollLocalPool}
+            localPool={localPool}
             selectedOption={selectedOption}
             isVoting={isVoting}
-            hasVoted={hasVoted}
+            hasVoted={finalHasVoted}
             onVote={handleVote}
             onError={() => {
               // Error is handled by useVoting hook
@@ -216,7 +255,7 @@ const VotingPage = () => {
           {/* Chart */}
           <VotingChart
             chartData={chartData}
-            localPool={pollLocalPool}
+            localPool={localPool}
           />
         </main>
 
