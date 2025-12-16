@@ -3,6 +3,16 @@ import { Transaction } from "@mysten/sui/transactions";
 import { SealClient } from "@mysten/seal";
 import { contractConfig } from "../config/contractConfig";
 import { SEAL_KEY_SERVERS, SEAL_THRESHOLD } from "../config/sealConfig";
+import { 
+  EVENT_QUERY_LIMIT, 
+  USER_VOTE_QUERY_LIMIT, 
+  TR_WAL_TOKEN_TYPE, 
+  TR_WAL_DECIMAL, 
+  SUI_TURKIYE_COLLECTION_TYPE,
+  VOTE_POWER_THRESHOLDS,
+  VOTE_POWER_VALUES,
+  PERCENTAGE_MULTIPLIER
+} from "../constants/appConstants";
 
 /**
  * PollRegistry'yi bulmak için package'dan shared object'leri query eder
@@ -100,7 +110,7 @@ export async function getAllPolls(client: SuiClient): Promise<
       query: {
         MoveEventType: `${packageId}::${contractConfig.moduleName}::PollMinted`,
       },
-      limit: 100,
+      limit: EVENT_QUERY_LIMIT,
       order: "descending",
     });
 
@@ -911,7 +921,6 @@ export async function getTokenBalance(
     
     // TR_WAL token decimal değeri (genellikle Sui coin'leri 9 decimal kullanır)
     // 100 token = 100 * 10^9 = 100000000000
-    const TR_WAL_DECIMAL = 9;
     
     if (isTrWal) {
       console.log("TR_WAL token detected, using mainnet client");
@@ -1116,16 +1125,16 @@ export async function getTokenBalance(
  * 100+ token: oy gücü 5
  */
 export function calculateTrWalVotePower(tokenCount: number): number {
-  if (tokenCount > 100) {
-    return 5;
-  } else if (tokenCount >= 51 && tokenCount <= 100) {
-    return 4;
-  } else if (tokenCount >= 31 && tokenCount <= 50) {
-    return 3;
-  } else if (tokenCount >= 11 && tokenCount <= 30) {
-    return 2;
-  } else if (tokenCount >= 1 && tokenCount <= 10) {
-    return 1;
+  if (tokenCount > VOTE_POWER_THRESHOLDS.VERY_HIGH) {
+    return VOTE_POWER_VALUES.MAX;
+  } else if (tokenCount >= 51 && tokenCount <= VOTE_POWER_THRESHOLDS.VERY_HIGH) {
+    return VOTE_POWER_VALUES.HIGH;
+  } else if (tokenCount >= 31 && tokenCount <= VOTE_POWER_THRESHOLDS.HIGH) {
+    return VOTE_POWER_VALUES.MEDIUM;
+  } else if (tokenCount >= 11 && tokenCount <= VOTE_POWER_THRESHOLDS.MEDIUM) {
+    return VOTE_POWER_VALUES.LOW;
+  } else if (tokenCount >= VOTE_POWER_THRESHOLDS.MIN && tokenCount <= VOTE_POWER_THRESHOLDS.LOW) {
+    return VOTE_POWER_VALUES.MIN;
   }
   return 0;
 }
@@ -1296,7 +1305,7 @@ export async function getUserVotes(
         query: {
           MoveEventType: `${packageId}::${contractConfig.moduleName}::UserVoteMinted`,
         },
-        limit: 1000,
+        limit: USER_VOTE_QUERY_LIMIT,
         order: "descending",
       });
 

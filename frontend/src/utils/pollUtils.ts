@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { VotePool, VoteOption } from "../types/poll";
 import { contractConfig } from "../config/contractConfig";
+import { PERCENTAGE_MULTIPLIER, POLLING_INTERVAL_MS, EVENT_REFETCH_DELAY_MS, DYNAMIC_FIELD_QUERY_LIMIT, POLL_REFETCH_INTERVAL_MS } from "../constants/appConstants";
 
 /**
  * Blockchain'den okunan poll'u VotePool formatına dönüştürür
@@ -43,7 +44,7 @@ export async function convertBlockchainPollToVotePool(
   
   const options: VoteOption[] = blockchainPoll.options.map((opt, index) => {
     const voteCount = voteData?.option_votes[index] || 0;
-    const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
+    const percentage = totalVotes > 0 ? (voteCount / totalVotes) * PERCENTAGE_MULTIPLIER : 0;
     
     return {
       id: opt.id,
@@ -99,7 +100,7 @@ export function useBlockchainPolls() {
       );
       return pollsWithVotes;
     },
-    refetchInterval: 60000, // 60 saniyede bir fallback yenileme (daha az sıklıkla)
+    refetchInterval: POLLING_INTERVAL_MS, // 60 saniyede bir fallback yenileme (daha az sıklıkla)
     refetchOnWindowFocus: false, // Pencere focus olduğunda otomatik yenileme yapma
     refetchOnMount: true, // Sadece component mount olduğunda yenile
   });
@@ -139,7 +140,7 @@ export function useBlockchainPolls() {
                 setTimeout(() => {
                   query.refetch();
                   console.log("Poll data refetched after vote event");
-                }, 2000); // Wait 2 seconds for transaction to finalize
+                }, EVENT_REFETCH_DELAY_MS); // Wait 2 seconds for transaction to finalize
               },
             });
 
@@ -198,7 +199,7 @@ export const getVoteRegistryByPoll = async (client: any, pollId: string): Promis
       const response: any = await client.getDynamicFields({
         parentId: pollRegistryId,
         cursor: cursor,
-        limit: 50
+        limit: DYNAMIC_FIELD_QUERY_LIMIT
       });
 
       const found = response.data.find(
@@ -253,7 +254,7 @@ export function useBlockchainPoll(pollId: string | undefined) {
       return await convertBlockchainPollToVotePool(client, poll);
     },
     enabled: !!pollId,
-    refetchInterval: 20000, // 20 saniyede bir fallback yenileme
+    refetchInterval: POLL_REFETCH_INTERVAL_MS, // 20 saniyede bir fallback yenileme
   });
 }
 

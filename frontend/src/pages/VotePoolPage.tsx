@@ -1,35 +1,38 @@
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useState, useEffect, useRef, useMemo } from "react";
-import { useCurrentAccount, useDisconnectWallet, useSuiClient } from "@mysten/dapp-kit";
-import { gsap } from "gsap";
-import PillNav from "../components/PillNav";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
 import CreateVotePoolModal from "../components/CreateVotePoolModal";
-import UserProfileDropdown from "../components/UserProfileDropdown";
 import { getUserProfile, UserProfile } from "../utils/userProfile";
 import { useBlockchainPolls } from "../utils/pollUtils";
 import { NFT_COLLECTIONS, getUniqueCollectionTypes, getCollectionByType } from "../config/nftCollections";
-import { getUserNftsByType, getTokenBalance } from "../utils/blockchain";
-import pollarWalkVideo from "/pollar-walk.mp4";
+import { useUserAssets } from "../hooks/useUserAssets";
+import { usePollFiltering } from "../hooks/usePollFiltering";
+import { useCountdown } from "../hooks/useCountdown";
+import { PollStatus } from "../utils/pollHelpers";
+import { getBackgroundGradient } from "../utils/pollHelpers";
+import { COLLECTION_ORDER } from "../constants/appConstants";
+import VotePoolHeader from "../components/VotePoolHeader";
+import VotePoolFilters from "../components/VotePoolFilters";
+import VotePoolContent from "../components/VotePoolContent";
+import BackgroundCharacters from "../components/BackgroundCharacters";
+import BackgroundNFTs from "../components/BackgroundNFTs";
 import "../styles/theme.css";
 
 const VotePoolPage = () => {
   const navigate = useNavigate();
-  const logoRef = useRef<HTMLImageElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const account = useCurrentAccount();
-  const client = useSuiClient();
   const { mutate: disconnect } = useDisconnectWallet();
   const [searchParams] = useSearchParams();
-  const [selectedCollectionType, setSelectedCollectionType] = useState<string | null>(null); // null = all polls, string = specific collection
-  const [selectedFilter, setSelectedFilter] = useState<"active" | "upcoming" | "ended">("active"); // Filter: active, upcoming, ended
+  const [selectedCollectionType, setSelectedCollectionType] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<PollStatus>("active");
 
   // Check URL parameter for collection type on mount
   useEffect(() => {
     const collectionParam = searchParams.get("collection");
     if (collectionParam && collectionParam.trim() !== "") {
       setSelectedCollectionType(collectionParam);
-      // URL'den collection parametresini temizle (sayfa yenilendiğinde tüm poll'lar gösterilsin)
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete("collection");
       const newUrl = newSearchParams.toString() 
@@ -37,193 +40,43 @@ const VotePoolPage = () => {
         : window.location.pathname;
       window.history.replaceState({}, "", newUrl);
     } else {
-      // Eğer collection parametresi yoksa, selectedCollectionType'ı null yap (All Polls)
       setSelectedCollectionType(null);
     }
   }, [searchParams]);
 
-  const handleLogoHover = () => {
-    if (logoRef.current) {
-      gsap.to(logoRef.current, {
-        rotate: 360,
-        duration: 0.6,
-        ease: "power3.easeOut",
-      });
-    }
-  };
-  
   // Blockchain'den poll'ları oku
   const { data: allPools = [], isLoading: isLoadingPools, refetch } = useBlockchainPolls();
 
-  // Check if user owns NFT/token for a collection
-  const [userNftsByCollection, setUserNftsByCollection] = useState<Map<string, number>>(new Map());
-  const [trWalTokenCount, setTrWalTokenCount] = useState<number>(0);
-  
-  useEffect(() => {
-    const loadUserAssets = async () => {
-      if (!account?.address) {
-        setUserNftsByCollection(new Map());
-        setTrWalTokenCount(0);
-        return;
-      }
+  // Custom hooks
+  const { userNftsByCollection, trWalTokenCount } = useUserAssets();
+  const { formatCountdown } = useCountdown();
 
-      const nftMap = new Map<string, number>();
-      
-      // Load TR_WAL token count for SUI TURKIYE
-      const trWalTokenType = "0xa8ad8c2720f064676856f4999894974a129e3d15386b3d0a27f3a7f85811c64a::tr_wal::TR_WAL";
-      try {
-        const tokenCount = await getTokenBalance(client, account.address, trWalTokenType);
-        setTrWalTokenCount(tokenCount);
-        // SUI TURKIYE collection type için token count'u da ekle
-        const suiTurkiyeType = "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
-        nftMap.set(suiTurkiyeType, tokenCount > 0 ? 1 : 0); // Token varsa 1, yoksa 0 (görünürlük kontrolü için)
-      } catch (error) {
-        console.error("Error loading TR_WAL token:", error);
-        setTrWalTokenCount(0);
-      }
-      
-      // Load NFTs for other collections
-      for (const collection of NFT_COLLECTIONS) {
-        // SUI TURKIYE için token kontrolü yapıldı, atla
-        if (collection.name === "SUI TURKIYE") {
-          continue;
-        }
-        
-        try {
-          const nfts = await getUserNftsByType(client, account.address, collection.type);
-          nftMap.set(collection.type, nfts.length);
-        } catch (error) {
-          console.error(`Error loading NFTs for ${collection.name}:`, error);
-          nftMap.set(collection.type, 0);
-        }
-      }
-      setUserNftsByCollection(nftMap);
-    };
+  // Filter pools using custom hook
+  const pools = usePollFiltering({
+    allPools,
+    selectedCollectionType,
+    selectedFilter,
+    userNftsByCollection,
+    trWalTokenCount,
+  });
 
-    loadUserAssets();
-  }, [account?.address, client]);
-  
-  // Filter pools by selected collection and visibility
-  // null = "All Polls" (shows all polls including public and NFT-required)
-  // string = specific collection type (shows only polls for that collection)
-  let filteredPools = selectedCollectionType === null
-    ? allPools // Show all polls when "All Polls" is selected
-    : allPools.filter((pool) => pool.nft_collection_type === selectedCollectionType);
-  
-  // Filter by visibility (private polls only visible to NFT/token holders and poll creator)
-  // is_private is now stored on-chain in the Poll struct
-  filteredPools = filteredPools.filter((pool) => {
-    // Sadece gerçekten private olan poll'ları filtrele (is_private === true)
-    // is_private false, undefined veya null ise, poll public'tir ve herkese gösterilir
-    const isPrivate = pool.is_private === true;
-    const isSuiTurkiye = pool.nft_collection_type === "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye";
-    
-    if (isPrivate && pool.nft_collection_type && pool.nft_collection_type.length > 0) {
-      // Private poll: show if user owns NFT/token OR is the poll creator
-      const isCreator = account?.address && pool.creator?.toLowerCase() === account.address.toLowerCase();
-      if (isCreator) {
-        return true;
-      }
-      
-      if (isSuiTurkiye) {
-        // SUI TURKIYE private polls require TR_WAL token
-        return trWalTokenCount > 0;
-      } else {
-        // Other private polls require NFT
-        const nftCount = userNftsByCollection.get(pool.nft_collection_type) || 0;
-        return nftCount > 0;
-      }
-    }
-    
-    // Public poll (is_private === false, undefined, veya null) veya public NFT-gated poll: show to everyone
-    return true;
-  });
-  
-  // Filter by status (active, upcoming, ended)
-  const now = new Date();
-  const pools = filteredPools.filter((pool) => {
-    const startDate = new Date(pool.startTime);
-    const endDate = new Date(pool.endTime);
-    
-    if (selectedFilter === "active") {
-      return now >= startDate && now <= endDate;
-    } else if (selectedFilter === "upcoming") {
-      return now < startDate;
-    } else if (selectedFilter === "ended") {
-      return now > endDate;
-    }
-    return true;
-  });
-  
   // Get unique collection types from all polls
   const uniqueCollectionTypesFromPolls = getUniqueCollectionTypes(allPools);
-  
-  // Show all defined NFT collections, not just ones with existing polls
-  // This ensures all collection buttons are visible even if no polls exist yet
   const allCollectionTypes = NFT_COLLECTIONS.map(col => col.type);
   const uniqueCollectionTypesUnsorted = Array.from(new Set([...uniqueCollectionTypesFromPolls, ...allCollectionTypes]));
   const validCollectionTypesUnsorted = uniqueCollectionTypesUnsorted.filter((type) => !!getCollectionByType(type));
-  
-  // Sort collections in desired order: Sui Workshop, SUI TURKIYE, Popkins, Tallys, Pawtato Heroes
-  const collectionOrder = [
-    "0x22739e8c5f587927462590822f418a673e6435fe8a427f892132ab160a72fd83::simple_nft::SimpleNFT", // Sui Workshop
-    "0x0000000000000000000000000000000000000000000000000000000000000000::sui_turkiye::SuiTurkiye", // SUI TURKIYE
-    "0xb908f3c6fea6865d32e2048c520cdfe3b5c5bbcebb658117c41bad70f52b7ccc::popkins_nft::Popkins", // Popkins
-    "0x75888defd3f392d276643932ae204cd85337a5b8f04335f9f912b6291149f423::nft::Tally", // Tallys
-    "0x0000000000000000000000000000000000000000000000000000000000000000::pawtato_heroes::PawtatoHero", // Pawtato Heroes
-  ];
 
+  // Sort collections in desired order
   const uniqueCollectionTypes = validCollectionTypesUnsorted.sort((a, b) => {
-    const indexA = collectionOrder.indexOf(a);
-    const indexB = collectionOrder.indexOf(b);
-    // If both are in the order list, sort by their position
+    const indexA = COLLECTION_ORDER.indexOf(a as typeof COLLECTION_ORDER[number]);
+    const indexB = COLLECTION_ORDER.indexOf(b as typeof COLLECTION_ORDER[number]);
     if (indexA !== -1 && indexB !== -1) {
       return indexA - indexB;
     }
-    // If only one is in the order list, prioritize it
     if (indexA !== -1) return -1;
     if (indexB !== -1) return 1;
-    // If neither is in the order list, maintain original order
     return 0;
   });
-
-  // Countdown timer state
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  // Update current time every second for countdown
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // Format countdown: "X days, Y hours, Z minutes"
-  const formatCountdown = (endTime: string) => {
-    const endDate = new Date(endTime);
-    const now = currentTime;
-    const diff = endDate.getTime() - now.getTime();
-
-    if (diff <= 0) {
-      return "Ended";
-    }
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-    if (days > 0) {
-      return `${days}d ${hours}h ${minutes}m`;
-    } else if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    } else {
-      return `${seconds}s`;
-    }
-  };
 
   const handleCreateVotePool = () => {
     setIsModalOpen(true);
@@ -240,7 +93,6 @@ const VotePoolPage = () => {
         if (profile) {
           setUserProfile(profile);
         } else {
-          // No profile, redirect to create profile page
           navigate("/create-profile");
         }
       } else {
@@ -251,13 +103,10 @@ const VotePoolPage = () => {
   }, [account?.address, navigate]);
 
   const handlePollCreated = () => {
-    // Poll oluşturulduktan sonra blockchain'den yeniden yükle
     refetch();
   };
 
   const handlePollClick = (pollId: string) => {
-    // Kullanıcının seçtiği collection'ı URL parametresi olarak geçir
-    // Eğer selectedCollectionType null ise (All Polls), fromCollection parametresini gönderme
     if (selectedCollectionType) {
       navigate(`/voting/${pollId}?fromCollection=${encodeURIComponent(selectedCollectionType)}`);
     } else {
@@ -265,42 +114,19 @@ const VotePoolPage = () => {
     }
   };
 
-
   const handleLogout = () => {
     disconnect();
     setUserProfile(null);
   };
 
-  // Get theme for selected collection
+  // Get theme and background for selected collection
   const selectedCollection = selectedCollectionType 
     ? getCollectionByType(selectedCollectionType)
     : null;
-  
   const theme = selectedCollection?.theme;
-  // Always use dark background like other pages
-  const defaultBackground = "linear-gradient(180deg, #000000 0%, #0a1128 50%, #000000 100%)";
-  
-  let backgroundGradient = defaultBackground;
+  const backgroundGradient = getBackgroundGradient(selectedCollectionType);
 
-  // Custom background for Popkins
-  if (selectedCollection?.name === "Popkins") {
-    // Green (Left) -> Orange (Center) -> Pink (Right)
-    // Using darker shades to maintain readability while keeping the colors visible
-    backgroundGradient = "linear-gradient(90deg, rgba(16, 185, 129, 0.8) 0%, rgba(245, 158, 11, 0.8) 50%, rgba(236, 72, 153, 0.8) 100%), linear-gradient(180deg, #000000 0%, transparent 50%, #000000 100%)";
-  } else if (selectedCollection?.name === "Tallys") {
-    // Pink/Magenta (Left) -> Sea Green/Teal (Right)
-    backgroundGradient = "linear-gradient(90deg, rgba(219, 39, 119, 0.8) 0%, rgba(45, 212, 191, 0.8) 100%), linear-gradient(180deg, #000000 0%, transparent 50%, #000000 100%)";
-  } else if (selectedCollection?.name === "Pawtato Heroes") {
-    // Dark Green (Left) -> Yellowish Orange (Center) -> Dark Red (Right)
-    backgroundGradient = "linear-gradient(90deg, rgba(21, 128, 61, 0.9) 0%, rgba(234, 179, 8, 0.9) 50%, rgba(153, 27, 27, 0.9) 100%), linear-gradient(180deg, #000000 0%, transparent 50%, #000000 100%)";
-  } else if (selectedCollection?.name === "Sui Workshop") {
-    // Deep Navy -> Electric Blue Glow -> Dark Navy (Inspired by suiworkshop.png)
-    backgroundGradient = "radial-gradient(circle at 50% 30%, #1e40af 0%, #0f172a 60%, #020617 100%)";
-  } else if (selectedCollection?.name === "SUI TURKIYE") {
-    // Analiz edilmiş gradient: koyu lacivert %30-40'a kadar devam ediyor, sonra koyu bordo, sağda parlak kırmızı
-    backgroundGradient = "linear-gradient(90deg, rgba(1, 7, 19, 0.98) 0%, rgba(1, 7, 19, 0.97) 30%, rgba(8, 12, 25, 0.96) 40%, rgba(42, 5, 17, 0.95) 50%, rgba(96, 5, 18, 0.93) 60%, rgba(154, 2, 13, 0.92) 75%, rgba(211, 0, 12, 0.95) 100%)";
-  }
-
+  // Buy button for collection
   const buyButton = selectedCollectionType ? (() => {
     const collection = getCollectionByType(selectedCollectionType);
     if (collection && collection.tradeportUrl) {
@@ -359,1058 +185,68 @@ const VotePoolPage = () => {
       }}
     >
       {/* Background Character Images - Left and Right Sides (For All Polls) */}
-      {!selectedCollectionType && (
-        <>
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 0,
-            pointerEvents: "none",
-            overflow: "hidden",
-          }}
-        >
-          {/* Left Side Characters */}
-          <div
-            className="character-side-left"
-            style={{
-              position: "absolute",
-              left: "clamp(0.5rem, 2vw, 2rem)",
-              top: "50%",
-              transform: "translateY(-50%)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "clamp(1rem, 2vw, 2rem)",
-            }}
-          >
-            <img
-              src="/pollarpng.png"
-              alt="Pollar Character"
-              className="character-card float-gentle-up"
-              style={{
-                width: "clamp(80px, 12vw, 200px)",
-                height: "clamp(80px, 12vw, 200px)",
-                objectFit: "contain",
-                borderRadius: "16px",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                transform: "rotate(-3deg)",
-                background: "rgba(0, 0, 0, 0.2)",
-              }}
-            />
-            <img
-              src="/sealpng.png"
-              alt="Seal Character"
-              className="character-card float-gentle-down"
-              style={{
-                width: "clamp(80px, 12vw, 200px)",
-                height: "clamp(80px, 12vw, 200px)",
-                objectFit: "contain",
-                borderRadius: "16px",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                transform: "rotate(3deg)",
-                background: "rgba(0, 0, 0, 0.2)",
-              }}
-            />
-          </div>
+      {!selectedCollectionType && <BackgroundCharacters />}
 
-          {/* Right Side Characters */}
-          <div
-            className="character-side-right"
-            style={{
-              position: "absolute",
-              right: "clamp(0.5rem, 2vw, 2rem)",
-              top: "50%",
-              transform: "translateY(-50%)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "clamp(1rem, 2vw, 2rem)",
-            }}
-          >
-            <img
-              src="/walruspng.png"
-              alt="Walrus Character"
-              className="character-card float-gentle-up"
-              style={{
-                width: "clamp(80px, 12vw, 200px)",
-                height: "clamp(80px, 12vw, 200px)",
-                objectFit: "contain",
-                borderRadius: "16px",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                transform: "rotate(3deg)",
-                background: "rgba(0, 0, 0, 0.2)",
-              }}
-            />
-            <img
-              src="/friends.png"
-              alt="Friends Character"
-              className="character-card float-gentle-down"
-              style={{
-                width: "clamp(80px, 12vw, 200px)",
-                height: "clamp(80px, 12vw, 200px)",
-                objectFit: "contain",
-                borderRadius: "16px",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                transform: "rotate(-3deg)",
-                background: "rgba(0, 0, 0, 0.2)",
-              }}
-            />
-          </div>
-        </div>
-        <style>{`
-          @keyframes gentleFloatUp {
-            0% { transform: translateY(-50%) rotate(0deg); }
-            50% { transform: translateY(calc(-50% - 8px)) rotate(-1deg); }
-            100% { transform: translateY(-50%) rotate(0deg); }
-          }
-          @keyframes gentleFloatDown {
-            0% { transform: translateY(-50%) rotate(0deg); }
-            50% { transform: translateY(calc(-50% + 8px)) rotate(1deg); }
-            100% { transform: translateY(-50%) rotate(0deg); }
-          }
-          .float-gentle-up {
-            animation: gentleFloatUp 10s ease-in-out infinite;
-          }
-          .float-gentle-down {
-            animation: gentleFloatDown 11s ease-in-out infinite;
-          }
-        `}</style>
-        </>
-      )}
-
-      {/* Background NFT Images - Left and Right Sides (Only for Popkins and Tallys) */}
+      {/* Background NFT Images - Left and Right Sides (Only for collections with theme) */}
       {theme?.backgroundImages && theme.backgroundImages.length > 0 && (
-        <>
-          {(() => {
-            // Popkins, Tallys, Pawtato Heroes için 3'erli, diğerleri için 2'şerli
-            const isThreePerSide = selectedCollection?.name === "Popkins" || 
-                                   selectedCollection?.name === "Tallys" || 
-                                   selectedCollection?.name === "Pawtato Heroes";
-            const leftCount = isThreePerSide ? 3 : 2;
-            const rightStart = isThreePerSide ? 3 : 2;
-            const rightEnd = isThreePerSide ? 6 : 4;
-            
-            return (
-              <div
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  zIndex: 0,
-                  pointerEvents: "none",
-                  overflow: "hidden",
-                }}
-              >
-                {/* Left Side NFTs */}
-                <div
-                  className="nft-side-left"
-                  style={{
-                    position: "absolute",
-                    left: "clamp(0.5rem, 2vw, 2rem)",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "clamp(1rem, 2vw, 2rem)",
-                  }}
-                >
-                  {theme.backgroundImages.slice(0, leftCount).map((imageUrl, index) => (
-                    <div
-                      key={`left-${index}`}
-                      className="nft-card"
-                      style={{
-                        width: "clamp(80px, 12vw, 200px)",
-                        height: "clamp(80px, 12vw, 200px)",
-                        backgroundImage: `url(${imageUrl})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        borderRadius: "16px",
-                        filter: "blur(0.25px)",
-                        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-                        border: "1px solid rgba(255, 255, 255, 0.1)",
-                        transform: `rotate(${index * 3 - 3}deg)`,
-                      }}
-                    />
-                  ))}
-                </div>
-
-                {/* Right Side NFTs */}
-                <div
-                  className="nft-side-right"
-                  style={{
-                    position: "absolute",
-                    right: "clamp(0.5rem, 2vw, 2rem)",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "clamp(1rem, 2vw, 2rem)",
-                  }}
-                >
-                  {theme.backgroundImages.slice(rightStart, rightEnd).map((imageUrl, index) => (
-                    <div
-                      key={`right-${index}`}
-                      className="nft-card"
-                      style={{
-                        width: "clamp(80px, 12vw, 200px)",
-                        height: "clamp(80px, 12vw, 200px)",
-                        backgroundImage: `url(${imageUrl})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        borderRadius: "16px",
-                        filter: "blur(0.25px)",
-                        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-                        border: "1px solid rgba(255, 255, 255, 0.1)",
-                        transform: `rotate(${index * -3 + 3}deg)`,
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-          <style>{`
-            @media (max-width: 1024px) {
-              .nft-side-left,
-              .nft-side-right,
-              .character-side-left,
-              .character-side-right {
-                display: none !important;
-              }
-              .main-content-responsive {
-                padding-left: clamp(1rem, 3vw, 2rem) !important;
-                padding-right: clamp(1rem, 3vw, 2rem) !important;
-              }
-            }
-            @media (min-width: 1025px) and (max-width: 1400px) {
-              .nft-card,
-              .character-card {
-                width: clamp(100px, 10vw, 150px) !important;
-                height: clamp(100px, 10vw, 150px) !important;
-              }
-              .main-content-responsive {
-                padding-left: clamp(1rem, calc(10vw + 2rem), calc(150px + 3rem)) !important;
-                padding-right: clamp(1rem, calc(10vw + 2rem), calc(150px + 3rem)) !important;
-              }
-            }
-            @media (min-width: 1401px) {
-              .main-content-responsive {
-                padding-left: clamp(2rem, calc(12vw + 2rem), calc(200px + 4rem)) !important;
-                padding-right: clamp(2rem, calc(12vw + 2rem), calc(200px + 4rem)) !important;
-              }
-            }
-          `}</style>
-        </>
+        <BackgroundNFTs theme={theme} collectionName={selectedCollection?.name} />
       )}
       
       <div style={{ position: "relative", zIndex: 1 }}>
-      {/* Header */}
-      <header
-        style={{
-          padding: "clamp(0.35rem, 0.7vw, 0.5rem) clamp(1rem, 2.5vw, 1.5rem)",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "1rem",
-          position: "fixed",
-          width: "100%",
-          boxSizing: "border-box",
-          top: 0,
-          left: 0,
-          zIndex: 1000,
-          backdropFilter: "blur(10px)",
-          background: "rgba(0, 0, 0, 0.05)", // Çok hafif transparan
-        }}
-      >
-        {/* Sol Taraf - Logo + Proje İsmi */}
-        <Link to="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <img 
-            ref={logoRef}
-            src="/pollar-logo.png" 
-            alt="Pollar Logo" 
-            onMouseEnter={handleLogoHover}
-            style={{
-              width: "clamp(40px, 6vw, 50px)", 
-              height: "clamp(40px, 6vw, 50px)",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }} 
-          />
-          <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: "700", color: "var(--text-primary)", fontFamily: "'Bevellier', sans-serif" }}>
-            POLLAR
-          </h1>
-        </Link>
+        {/* Header */}
+        <VotePoolHeader
+          userProfile={userProfile}
+          onCreateVotePool={handleCreateVotePool}
+          onLogout={handleLogout}
+        />
 
-        {/* Orta - PillNav */}
-        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", zIndex: 100 }}>
-          <PillNav
-            logo="/pollar-logo.png"
-            logoAlt="Pollar Logo"
-            items={useMemo(() => [
-              { label: 'Home', href: '/' },
-              { label: 'Pools', href: '/vote-pools' },
-              { label: 'Pricing', href: '/#pricing' },
-            ], [])}
-            activeHref="/vote-pools"
-            baseColor="transparent"
-            pillColor="#ffffff"
-            hoveredPillTextColor="#ffffff"
-            pillTextColor="#000000"
-            hoverCircleColor="#000000"
-          />
-        </div>
-
-        {/* Sağ Taraf - Create Vote Pool Butonu ve Profil */}
-        <div style={{ display: "flex", alignItems: "center", gap: "clamp(0.5rem, 1.5vw, 1rem)", flexWrap: "wrap" }}>
-          {account && userProfile ? (
-            <>
-              <button 
-                onClick={handleCreateVotePool} 
-                className="create-vote-pool-neon-white"
-                style={{ 
-                  fontSize: "clamp(0.8rem, 1.4vw, 0.95rem)", 
-                  padding: "clamp(0.5rem, 1.2vw, 0.65rem) clamp(1rem, 2vw, 1.25rem)",
-                  background: "transparent",
-                  color: "#ffffff",
-                  border: "1.5px solid #ffffff",
-                  borderRadius: "0.5rem",
-                  fontWeight: "600",
-                  textDecoration: "none",
-                  display: "inline-block",
-                  transition: "all 0.3s ease",
-                  cursor: "pointer",
-                }}
-              >
-                Create Vote Pool
-              </button>
-              <UserProfileDropdown profile={userProfile} onLogout={handleLogout} />
-            </>
-          ) : (
-            <button onClick={() => navigate("/login")} className="button button-primary">
-              Connect Wallet
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main 
-        className="main-content-responsive"
+        {/* Main Content */}
+        <main 
+          className="main-content-responsive"
           style={{
-          padding: "clamp(1rem, 3vw, 2rem)",
-          paddingTop: "clamp(6rem, 10vw, 8rem)",
-          paddingLeft: "clamp(1rem, calc(12vw + 2rem), calc(200px + 4rem))",
-          paddingRight: "clamp(1rem, calc(12vw + 2rem), calc(200px + 4rem))",
-          maxWidth: "1400px", 
-          margin: "0 auto", 
-          position: "relative",
-          width: "100%",
-          boxSizing: "border-box",
-        }}
-      >
-
-        {/* İçerik - Mevcut yapı */}
-        <div style={{ position: "relative", zIndex: 2 }}>
-        
-        {/* NFT Collection Filter Bar */}
-        <div style={{ 
-          marginBottom: "clamp(1.5rem, 3vw, 2rem)",
-          display: "flex",
-          gap: "1rem",
-          flexWrap: "wrap",
-          justifyContent: "center",
-          alignItems: "center",
-        }}>
-          <button
-            onClick={() => setSelectedCollectionType(null)}
-            style={{
-              padding: "0.75rem 1.5rem",
-              background: selectedCollectionType === null ? "var(--color-light-blue)" : "transparent",
-              color: selectedCollectionType === null ? "#000000" : "var(--text-primary)",
-              border: "1.5px solid var(--color-light-blue)",
-              borderRadius: "0.5rem",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-            }}
-          >
-            All Polls
-          </button>
-          {uniqueCollectionTypes.map((collectionType) => {
-            const collection = getCollectionByType(collectionType);
-            const isPopkins = collection?.name === "Popkins";
-            const isTallys = collection?.name === "Tallys";
-            const isPawtatoHeroes = collection?.name === "Pawtato Heroes";
-            const isSuiWorkshop = collection?.name === "Sui Workshop";
-            const isSuiTurkiye = collection?.name === "SUI TURKIYE";
-            const hasImage = isPopkins || isTallys || isPawtatoHeroes || isSuiWorkshop || isSuiTurkiye;
-            const isSelected = selectedCollectionType === collectionType;
-            return (
-              <button
-                key={collectionType}
-                onClick={() => setSelectedCollectionType(collectionType)}
-          style={{
-                  padding: hasImage ? "0" : "0.75rem 1.5rem",
-                  background: hasImage ? "transparent" : (isSelected ? "var(--color-light-blue)" : "transparent"),
-                  color: hasImage ? "transparent" : (isSelected ? "#000000" : "var(--text-primary)"),
-                  border: hasImage ? "none" : "1.5px solid var(--color-light-blue)",
-                  borderRadius: hasImage ? "1rem" : "0.5rem",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: hasImage && isSelected ? 1 : (hasImage ? 0.7 : 1),
-                  transform: hasImage && isSelected ? "scale(1.05)" : "scale(1)",
-                  maxWidth: isSuiTurkiye ? "clamp(120px, 15vw, 180px)" : "none",
-                  boxShadow: hasImage && isSelected 
-                    ? (isPopkins 
-                        ? "0 0 15px rgba(255, 165, 0, 0.6), 0 0 30px rgba(255, 140, 0, 0.4)"
-                        : isTallys
-                        ? "0 0 15px rgba(255, 20, 147, 0.6), 0 0 30px rgba(255, 105, 180, 0.4)"
-                        : isPawtatoHeroes
-                        ? "0 0 15px rgba(132, 204, 22, 0.6), 0 0 30px rgba(163, 230, 53, 0.4)"
-                        : isSuiWorkshop
-                        ? "0 0 15px rgba(79, 195, 247, 0.6), 0 0 30px rgba(41, 182, 246, 0.4)"
-                        : isSuiTurkiye
-                        ? "0 0 15px rgba(220, 38, 38, 0.6), 0 0 30px rgba(30, 58, 138, 0.4)"
-                        : "none")
-                    : "none",
-                }}
-              >
-                {isPopkins ? (
-                  <img 
-                    src="/popkins.png" 
-                    alt="Popkins" 
-                    style={{
-                      height: "clamp(2rem, 4vw, 3rem)",
-                      width: "auto",
-                      objectFit: "contain",
-                      display: "block",
-                    }}
-                  />
-                ) : isTallys ? (
-                  <img 
-                    src="/tallys.png" 
-                    alt="Tallys" 
-                    style={{
-                      height: "clamp(2rem, 4vw, 3rem)",
-                      width: "auto",
-                      objectFit: "contain",
-                      display: "block",
-                    }}
-                  />
-                ) : isPawtatoHeroes ? (
-                  <img 
-                    src="/PawtatoHeroes.png" 
-                    alt="Pawtato Heroes" 
-                    style={{
-                      height: "clamp(2.5rem, 5vw, 3.5rem)",
-                      width: "auto",
-                      objectFit: "contain",
-                      display: "block",
-                    }}
-                  />
-                ) : isSuiWorkshop ? (
-                  <img 
-                    src="/suilogo.jpg" 
-                    alt="Sui Workshop" 
-                    style={{
-                      height: "clamp(2rem, 4vw, 3rem)",
-                      width: "auto",
-                      objectFit: "contain",
-                      display: "block",
-                      borderRadius: "1rem",
-                    }}
-                  />
-                ) : isSuiTurkiye ? (
-                  <img 
-                    src="/suitrbutton.png" 
-                    alt="SUI TURKIYE" 
-                    style={{
-                      height: "clamp(2rem, 4vw, 3rem)",
-                      width: "auto",
-                      objectFit: "contain",
-                      display: "block",
-                    }}
-                  />
-                ) : (
-                  collection?.name || collectionType.split("::").pop() || "Unknown"
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        <div style={{ marginBottom: "clamp(1.5rem, 3vw, 2rem)", textAlign: "center" }}>
-          {(() => {
-            // Determine title and gradient based on selected collection
-            let title = "ACTIVE VOTE POLLS";
-            let gradient = "linear-gradient(90deg, #1e3a8a 0%, #2563eb 15%, #3b82f6 30%, #60a5fa 45%, #87ceeb 60%, #bae6fd 75%, #ffffff 90%, #bae6fd 100%)";
-            
-            if (selectedCollectionType) {
-              const collection = getCollectionByType(selectedCollectionType);
-              if (collection) {
-                if (collection.name === "Popkins") {
-                  title = "POPKINS VOTE POLLS";
-                  // Gradient yerine stroke kullanacağız, o yüzden burada gradient'i boş geçebiliriz veya stil içinde override edebiliriz
-                  gradient = "none"; 
-                } else if (collection.name === "Tallys") {
-                  title = "TALLYS VOTE POLLS";
-                  gradient = "linear-gradient(90deg, #ec4899 0%, #f472b6 20%, #fb7185 40%, #ef4444 60%, #dc2626 80%, #991b1b 100%)"; // Pink to Red
-                } else if (collection.name === "Pawtato Heroes") {
-                  title = "PAWTATO HEROES VOTE POLLS";
-                  gradient = "linear-gradient(90deg, #10b981 0%, #22c55e 20%, #84cc16 40%, #f59e0b 60%, #f97316 80%, #dc2626 100%)"; // Green → Orange → Red (buton gradyanı gibi)
-                } else if (collection.name === "Sui Workshop") {
-                  title = "SUI WORKSHOP VOTE POLLS";
-                  gradient = "linear-gradient(90deg, #0277bd 0%, #0288d1 20%, #03a9f4 40%, #29b6f6 60%, #4fc3f7 80%, #81d4fa 100%)"; // Blue gradient
-                } else if (collection.name === "SUI TURKIYE") {
-                  title = "SUI TURKIYE VOTE POLLS";
-                  gradient = "linear-gradient(180deg, #ffffff 0%, #dc2626 100%)"; // Üstte beyaz, altta kırmızı
-                }
-              }
-            }
-            
-            const isPopkins = title === "POPKINS VOTE POLLS";
-            const isTallys = title === "TALLYS VOTE POLLS";
-            const isPawtatoHeroes = title === "PAWTATO HEROES VOTE POLLS";
-            const isSuiWorkshop = title === "SUI WORKSHOP VOTE POLLS";
-            const isSuiTurkiye = title === "SUI TURKIYE VOTE POLLS";
-            // Sui Workshop ve SUI TURKIYE'yi tekrar grafiti stiline dahil ediyoruz
-            const isGraffitiStyled = isPopkins || isTallys || isPawtatoHeroes || isSuiWorkshop || isSuiTurkiye;
-
-            return (
-              <>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", marginBottom: "0.5rem", flexWrap: "wrap" }}>
-                  <h2 
-                    className="active-pools-animated-text"
-                    style={{ 
-                      marginBottom: "0",
-                      fontWeight: "900",
-                    textTransform: "uppercase",
-                    // Popkins, Tallys, Pawtato Heroes ve Sui Workshop için Graffiti stili
-                    ...(isGraffitiStyled ? {
-                      fontFamily: '"Titan One", cursive',
-                      fontSize: "clamp(1.8rem, 5vw, 3.5rem)",
-                      letterSpacing: "0.02em",
-                      // İç Renk Gradyanı
-                      backgroundImage: isTallys 
-                        ? "linear-gradient(180deg, #fde047 20%, #fb923c 80%)"
-                        : isPawtatoHeroes
-                        ? "linear-gradient(180deg, #ef4444 20%, #f59e0b 80%)"
-                        : isSuiWorkshop
-                        ? "linear-gradient(180deg, #ffffff 20%, #3b82f6 80%)" // Sui: Beyaz -> Mavi
-                        : isSuiTurkiye
-                        ? "linear-gradient(180deg, #ffffff 0%, #dc2626 100%)" // SUI TURKIYE: Üstte beyaz, altta kırmızı
-                        : "linear-gradient(180deg, #4ade80 20%, #f97316 80%)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                      color: "transparent",
-                      // Kontur: Hepsi için siyah
-                      WebkitTextStroke: "clamp(1.5px, 0.4vw, 3px) #000000", 
-                      paintOrder: "stroke fill",
-                      filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.2))",
-                      animation: "none",
-                      lineHeight: "1.1",
-                      padding: "0.2em 0 0.3em 0"
-                    } : {
-                      // Default stil (Diğerleri)
-                      fontFamily: "'Bevellier', sans-serif",
-                      fontWeight: "700",
-                      letterSpacing: "0.1em",
-                      fontSize: "clamp(2.5rem, 6vw, 4.5rem)", 
-                      backgroundImage: gradient,
-                      backgroundSize: "300% auto",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                      color: "transparent",
-                      animation: "smoothFlowingGradient 5s ease-in-out infinite",
-                    }),
-                    display: "block",
-                    width: "100%",
-                    whiteSpace: "normal",
-                    wordBreak: "break-word",
-                    textAlign: "center",
-                  }}
-                >
-                  {title}
-                </h2>
-                </div>
-          {/* Status Filter - Select Box */}
-          <div style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: "1rem",
-            marginBottom: "1rem",
-            flexWrap: "wrap",
-          }}>
-            <select
-              value={selectedFilter}
-              onChange={(e) => setSelectedFilter(e.target.value as "active" | "upcoming" | "ended")}
-              style={{
-                padding: "0.5rem 1rem",
-                background: "transparent",
-                color: "var(--text-primary)",
-                border: "1.5px solid var(--color-light-blue)",
-                borderRadius: "0.5rem",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-                fontSize: "clamp(0.75rem, 1.2vw, 0.875rem)",
-                minWidth: "140px",
-              }}
-            >
-              <option value="active">ACTIVE POLLS</option>
-              <option value="upcoming">UPCOMING</option>
-              <option value="ended">ENDED</option>
-            </select>
-            {/* TR_WAL Balance Display and Get TRWAL Button for SUI TURKIYE */}
-            {isSuiTurkiye && account?.address && (
-              <>
-                <div
-                  style={{
-                    padding: "0.5rem 1rem",
-                    background: "rgba(255, 255, 255, 0.1)",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
-                    borderRadius: "0.5rem",
-                    color: "#ffffff",
-                    fontSize: "clamp(0.75rem, 1.2vw, 0.9rem)",
-                    fontWeight: "600",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <span>TR_WAL:</span>
-                  <span style={{ color: "#dc2626", fontWeight: "700" }}>
-                    {trWalTokenCount > 0 ? trWalTokenCount.toLocaleString() : "0"}
-                  </span>
-                </div>
-                <a
-                  href="https://www.winterwalrus.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "inline-block",
-                    padding: "0.5rem 1rem",
-                    background: "linear-gradient(135deg, rgba(220, 38, 38, 0.9), rgba(1, 7, 19, 0.9))",
-                    color: "#ffffff",
-                    border: "1px solid rgba(255, 255, 255, 0.3)",
-                    borderRadius: "0.5rem",
-                    fontSize: "clamp(0.75rem, 1.2vw, 0.9rem)",
-                    fontWeight: "700",
-                    textDecoration: "none",
-                    whiteSpace: "nowrap",
-                    transition: "all 0.3s ease",
-                    boxShadow: "0 2px 8px rgba(220, 38, 38, 0.4)",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "linear-gradient(135deg, rgba(220, 38, 38, 1), rgba(1, 7, 19, 1))";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(220, 38, 38, 0.6)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "linear-gradient(135deg, rgba(220, 38, 38, 0.9), rgba(1, 7, 19, 0.9))";
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(220, 38, 38, 0.4)";
-                  }}
-                >
-                  Get TRWAL
-                </a>
-              </>
-            )}
-              {buyButton}
-          </div>
-              </>
-            );
-          })()}
-        </div>
-
-        {/* Loading State */}
-        {isLoadingPools && (
-          <div style={{ 
-            display: "flex", 
-            flexDirection: "column", 
-            alignItems: "center", 
-            justifyContent: "center", 
-            minHeight: "60vh",
-            gap: "1.5rem"
-          }}>
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{
-                width: "clamp(200px, 30vw, 400px)",
-                height: "auto",
-                maxWidth: "100%",
-              }}
-            >
-              <source src={pollarWalkVideo} type="video/mp4" />
-            </video>
-            <p style={{ 
-              color: "var(--text-muted)", 
-              fontSize: "clamp(1rem, 2vw, 1.2rem)",
-              fontWeight: "500"
-            }}>
-            Loading polls...
-            </p>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoadingPools && pools.length === 0 && (
-          <div style={{ textAlign: "center", padding: "2rem" }}>
-            <p style={{ 
-              // SUI TURKIYE için beyaz renk
-              color: selectedCollection?.name === "SUI TURKIYE" ? "#ffffff" : ((selectedCollection?.name === "Popkins" || selectedCollection?.name === "Tallys" || selectedCollection?.name === "Pawtato Heroes") ? "rgba(0, 0, 0, 0.85)" : "var(--text-muted)"), 
-              fontSize: "1.1rem", 
-              marginBottom: "1rem",
-              fontWeight: (selectedCollection?.name === "Popkins" || selectedCollection?.name === "Tallys" || selectedCollection?.name === "Pawtato Heroes" || selectedCollection?.name === "SUI TURKIYE") ? "600" : "normal"
-            }}>
-              No polls found. Create the first poll!
-            </p>
-            {account && userProfile && (
-              <button 
-                onClick={handleCreateVotePool} 
-                className="button button-primary"
-                style={(selectedCollection?.name === "Popkins" || selectedCollection?.name === "Tallys" || selectedCollection?.name === "Pawtato Heroes" || selectedCollection?.name === "SUI TURKIYE") ? {
-                  backgroundColor: "#000000",
-                  color: "#ffffff",
-                  fontWeight: "700",
-                  boxShadow: "0 4px 14px rgba(0,0,0,0.3)"
-                } : undefined}
-              >
-                Create First Poll
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Vote Pool Grid */}
-        {!isLoadingPools && pools.length > 0 && (
-        <div
-          className="poll-grid-responsive"
-          style={{
-            display: "grid",
-            gap: "clamp(1rem, 2vw, 1.5rem)",
-            maxWidth: "100%",
+            padding: "clamp(1rem, 3vw, 2rem)",
+            paddingTop: "clamp(6rem, 10vw, 8rem)",
+            paddingLeft: "clamp(1rem, calc(12vw + 2rem), calc(200px + 4rem))",
+            paddingRight: "clamp(1rem, calc(12vw + 2rem), calc(200px + 4rem))",
+            maxWidth: "1400px", 
+            margin: "0 auto", 
+            position: "relative",
             width: "100%",
+            boxSizing: "border-box",
           }}
         >
-          {pools.map((pool) => {
-            // Check if pool belongs to Popkins or Tallys
-            const poolCollection = pool.nft_collection_type 
-              ? getCollectionByType(pool.nft_collection_type)
-              : null;
-            const isPopkins = poolCollection?.name === "Popkins";
-            const isTallys = poolCollection?.name === "Tallys";
-            const isPawtatoHeroes = poolCollection?.name === "Pawtato Heroes";
-            const isSuiWorkshop = poolCollection?.name === "Sui Workshop";
-            const isSuiTurkiye = poolCollection?.name === "SUI TURKIYE";
-            
-            // Check if poll is active
-            const now = new Date();
-            const startDate = new Date(pool.startTime);
-            const endDate = new Date(pool.endTime);
-            const isActive = now >= startDate && now <= endDate;
-            
-            // Glow colors based on collection
-            const glowColor = isPopkins 
-              ? "rgba(255, 165, 0, 0.3), rgba(50, 205, 50, 0.3)" // Orange-Green for Popkins
-              : isTallys
-              ? "rgba(255, 20, 147, 0.3), rgba(255, 99, 71, 0.3)" // Pink-Red for Tallys
-              : isPawtatoHeroes
-              ? "rgba(132, 204, 22, 0.3), rgba(163, 230, 53, 0.3)" // Lime green for Pawtato Heroes
-              : isSuiWorkshop
-              ? "rgba(79, 195, 247, 0.3), rgba(41, 182, 246, 0.3)" // Blue for Sui Workshop
-              : isSuiTurkiye
-              ? "rgba(220, 38, 38, 0.3), rgba(30, 58, 138, 0.3)" // Red-Navy for SUI TURKIYE
-              : "transparent";
-            
-            return (
-            <div
-              key={pool.id}
-              onClick={() => handlePollClick(pool.id)}
-              style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}
-            >
-              <div 
-                className="vote-pool-card" 
-                style={{ 
-                  cursor: "pointer", 
-                  height: "100%",
-                  minHeight: "420px", // Minimum yükseklik artırıldı
-                  display: "flex", 
-                  flexDirection: "column",
-                  position: "relative",
-                  boxShadow: glowColor !== "transparent" 
-                    ? `0 0 20px ${isPopkins ? "rgba(255, 165, 0, 0.4)" : isTallys ? "rgba(255, 20, 147, 0.4)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.4)" : isSuiWorkshop ? "rgba(79, 195, 247, 0.4)" : isSuiTurkiye ? "rgba(220, 38, 38, 0.4)" : "rgba(139, 92, 246, 0.4)"}, 0 0 40px ${isPopkins ? "rgba(50, 205, 50, 0.3)" : isTallys ? "rgba(255, 99, 71, 0.3)" : isPawtatoHeroes ? "rgba(163, 230, 53, 0.3)" : isSuiWorkshop ? "rgba(41, 182, 246, 0.3)" : isSuiTurkiye ? "rgba(30, 58, 138, 0.3)" : "rgba(167, 139, 250, 0.3)"}`
-                    : undefined,
-                  border: glowColor !== "transparent"
-                    ? `1px solid ${isPopkins ? "rgba(255, 165, 0, 0.5)" : isTallys ? "rgba(255, 20, 147, 0.5)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.5)" : isSuiWorkshop ? "rgba(79, 195, 247, 0.5)" : isSuiTurkiye ? "rgba(220, 38, 38, 0.5)" : "rgba(139, 92, 246, 0.5)"}`
-                    : undefined,
-                }}
-              >
-                {/* Active/Inactive Status Badge - Top Left (Just Dot) */}
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "0.5rem",
-                    left: "0.5rem",
-                    zIndex: 10,
-                    width: "10px",
-                    height: "10px",
-                    borderRadius: "50%",
-                    background: isActive ? "#22c55e" : "#ef4444",
-                    boxShadow: `0 0 8px ${isActive ? "#22c55e" : "#ef4444"}, 0 0 16px ${isActive ? "rgba(34, 197, 94, 0.8)" : "rgba(239, 68, 68, 0.8)"}`,
-                    animation: isActive ? "pulse 2s ease-in-out infinite" : "none",
-                    border: `2px solid ${isActive ? "#16a34a" : "#dc2626"}`,
-                  }}
-                />
+          {/* Filters */}
+          <VotePoolFilters
+            selectedCollectionType={selectedCollectionType}
+            uniqueCollectionTypes={uniqueCollectionTypes}
+            selectedFilter={selectedFilter}
+            trWalTokenCount={trWalTokenCount}
+            onCollectionChange={setSelectedCollectionType}
+            onFilterChange={setSelectedFilter}
+            buyButton={buyButton}
+          />
 
-                {/* NFT Collection Badge - Ribbon Style Top Right */}
-                {(isPopkins || isTallys || isPawtatoHeroes || isSuiWorkshop || isSuiTurkiye) && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "0",
-                      right: "0",
-                      zIndex: 10,
-                      width: "clamp(55px, 7.5vw, 75px)",
-                      height: "clamp(55px, 7.5vw, 75px)",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {/* Ribbon Corner Triangle */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "0",
-                        right: "0",
-                        width: "0",
-                        height: "0",
-                        borderStyle: "solid",
-                        borderWidth: `0 clamp(55px, 7.5vw, 75px) clamp(55px, 7.5vw, 75px) 0`,
-                        borderColor: `transparent ${isPopkins ? "rgba(255, 165, 0, 0.95)" : isTallys ? "rgba(255, 20, 147, 0.95)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.95)" : isSuiWorkshop ? "rgba(33, 150, 243, 0.95)" : isSuiTurkiye ? "rgba(220, 38, 38, 0.95)" : "rgba(139, 92, 246, 0.95)"} transparent transparent`,
-                        filter: `drop-shadow(0 2px 8px ${isPopkins ? "rgba(255, 165, 0, 0.7)" : isTallys ? "rgba(255, 20, 147, 0.7)" : isPawtatoHeroes ? "rgba(132, 204, 22, 0.7)" : isSuiWorkshop ? "rgba(33, 150, 243, 0.7)" : isSuiTurkiye ? "rgba(220, 38, 38, 0.7)" : "rgba(139, 92, 246, 0.7)"})`,
-                      }}
-                    />
-                    {/* Ribbon Fold Shadow */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "0",
-                        right: "0",
-                        width: "0",
-                        height: "0",
-                        borderStyle: "solid",
-                        borderWidth: `0 clamp(40px, 5.5vw, 55px) clamp(40px, 5.5vw, 55px) 0`,
-                        borderColor: `transparent ${isPopkins ? "rgba(255, 140, 0, 0.8)" : isTallys ? "rgba(255, 0, 100, 0.8)" : isPawtatoHeroes ? "rgba(101, 163, 13, 0.8)" : isSuiWorkshop ? "rgba(25, 118, 210, 0.8)" : isSuiTurkiye ? "rgba(153, 27, 27, 0.8)" : "rgba(124, 58, 237, 0.8)"} transparent transparent`,
-                        transform: "translate(4px, 4px)",
-                      }}
-                    />
-                    {/* Image Container - Centered on Ribbon, Larger and More to Top Right */}
-                    {/* Logoları kaldırdık, sadece renkli ribbon badge gösteriliyor */}
-                    {/* Tallys ve Pawtato Heroes için de logo kaldırıldı, sadece renkli badge gösteriliyor */}
-                  </div>
-                )}
+          {/* Content */}
+          <VotePoolContent
+            selectedCollectionType={selectedCollectionType}
+            isLoading={isLoadingPools}
+            pools={pools}
+            formatCountdown={formatCountdown}
+            onPollClick={handlePollClick}
+            onCreateVotePool={handleCreateVotePool}
+            userProfile={userProfile}
+          />
+        </main>
 
-                {/* Pool Image - Full Width at Top */}
-                <div
-                  style={{
-                    width: "100%",
-                    height: "140px",
-                    borderRadius: "0.5rem 0.5rem 0 0",
-                    overflow: "hidden",
-                    background: "var(--bg-secondary)",
-                    flexShrink: 0,
-                  }}
-                >
-                  <img
-                    src={pool.image}
-                    alt={pool.name}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                </div>
-
-                {/* Content */}
-                <div style={{ padding: "1rem", flex: "1", display: "flex", flexDirection: "column" }}>
-                  {/* Title and Description */}
-                  <div style={{ marginBottom: pool.options && pool.options.length > 2 ? "0.75rem" : "1rem" }}>
-                  <h3
-                    style={{
-                        fontSize: "clamp(1rem, 1.8vw, 1.25rem)",
-                      fontWeight: "700",
-                        marginBottom: "0.3rem",
-                      color: "#ffffff",
-                        lineHeight: "1.3",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                    }}
-                  >
-                    {pool.name}
-                  </h3>
-                  <p
-                    style={{
-                        color: "rgba(255, 255, 255, 0.7)",
-                        lineHeight: "1.4",
-                        fontSize: "clamp(0.8rem, 1.2vw, 0.9rem)",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                    }}
-                  >
-                    {pool.description}
-                  </p>
-                  </div>
-
-                {/* Options with Progress Bars */}
-                {pool.options && pool.options.length >= 2 && (
-                  <div style={{ marginBottom: "1rem", flex: "1" }}>
-                    {pool.options.map((option, index) => {
-                      // En yüksek yüzdeyi bul
-                      const maxPercentage = Math.max(...pool.options.map(opt => opt.percentage));
-                      const isHighest = option.percentage === maxPercentage;
-                      
-                      // 3+ seçenek varsa daha kompakt spacing, ama yine de okunabilir boyutlarda
-                      const isCompact = pool.options.length > 2;
-                      const optionMarginBottom = isCompact ? "0.6rem" : "0.75rem";
-                      const fontSize = isCompact ? "0.85rem" : "0.95rem";
-                      const progressBarHeight = isCompact ? "6px" : "8px";
-                      const labelMarginBottom = isCompact ? "0.35rem" : "0.4rem";
-                      
-                      return (
-                        <div key={index} style={{ marginBottom: index < pool.options.length - 1 ? optionMarginBottom : "0" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: labelMarginBottom }}>
-                            <span style={{ fontSize: fontSize, fontWeight: "500", color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1", marginRight: "0.5rem", lineHeight: "1.3" }}>
-                              {option.name}
-                            </span>
-                            <span style={{ fontSize: fontSize, color: isHighest ? "#60a5fa" : "#ef4444", fontWeight: "bold", flexShrink: 0, lineHeight: "1.3" }}>
-                              {option.percentage.toFixed(1)}%
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              height: progressBarHeight,
-                              background: "rgba(255, 255, 255, 0.1)",
-                              borderRadius: "3px",
-                              overflow: "hidden",
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: `${option.percentage}%`,
-                                height: "100%",
-                                background: isHighest 
-                                  ? "linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)"
-                                  : "linear-gradient(90deg, #dc2626 0%, #ef4444 100%)",
-                                transition: "width 0.3s ease",
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Single Option Fallback */}
-                {pool.options && pool.options.length === 1 && (
-                  <div style={{ marginBottom: "1rem", flex: "1" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
-                      <span style={{ fontSize: "0.875rem", fontWeight: "500", color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1", marginRight: "0.5rem" }}>
-                      {pool.options[0].name}
-                    </span>
-                      <span style={{ fontSize: "0.875rem", color: "#60a5fa", fontWeight: "bold", flexShrink: 0 }}>
-                      {pool.options[0].percentage.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                        height: "8px",
-                      background: "rgba(255, 255, 255, 0.1)",
-                        borderRadius: "4px",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${pool.options[0].percentage}%`,
-                        height: "100%",
-                        background: "linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)",
-                        transition: "width 0.3s ease",
-                      }}
-                    />
-                  </div>
-                </div>
-                )}
-
-                {/* Vote Statistics */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      paddingTop: "0.75rem",
-                      borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-                      marginTop: "auto",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.6)", marginBottom: "0.25rem" }}>Total Votes</div>
-                      <div style={{ fontSize: "1rem", fontWeight: "bold", color: "#60a5fa" }}>
-                        {pool.totalVotes.toLocaleString()}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.6)", marginBottom: "0.25rem" }}>Ends In</div>
-                      <div style={{ fontSize: "0.85rem", color: "#ffffff", fontWeight: "600" }}>
-                        {formatCountdown(pool.endTime)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            );
-          })}
-        </div>
-        )}
-        </div>
-      </main>
-
-      {/* Create Vote Pool Modal */}
-      <CreateVotePoolModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSuccess={handlePollCreated}
-      />
+        {/* Create Vote Pool Modal */}
+        <CreateVotePoolModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onSuccess={handlePollCreated}
+        />
       </div>
     </div>
   );
 };
 
 export default VotePoolPage;
-
-
