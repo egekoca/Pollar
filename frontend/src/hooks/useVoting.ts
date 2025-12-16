@@ -4,6 +4,7 @@ import { createSealedVoteTransaction, createSealedVoteWithNftTransaction, getPol
 import { saveUserVote } from "../utils/supabase";
 import { VotePool, VoteOption } from "../types/poll";
 import { SUI_TURKIYE_COLLECTION_TYPE, PERCENTAGE_MULTIPLIER, TRANSACTION_TIMEOUT_MS, RETRY_DELAY_MS } from "../constants/appConstants";
+import { getPollStatus } from "../utils/pollHelpers";
 
 interface UseVotingOptions {
   pollId: string | undefined;
@@ -86,6 +87,18 @@ export function useVoting({
       setVotingError(errorMsg);
       onError(errorMsg);
       return;
+    }
+
+    // Check if poll has ended
+    if (localPool) {
+      const pollStatus = getPollStatus(localPool);
+      if (pollStatus === "ended") {
+        const errorMsg = "This poll has ended. Voting is no longer available.";
+        setVotingError(errorMsg);
+        onError(errorMsg);
+        setSelectedOption(null);
+        return;
+      }
     }
 
     setVotingError("");

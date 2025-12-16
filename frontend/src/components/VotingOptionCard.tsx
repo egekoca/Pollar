@@ -52,12 +52,14 @@ const VotingOptionCard: React.FC<VotingOptionCardProps> = ({
   }
 
   const handleClick = () => {
-    if (!account?.address) {
-      onError("Please connect your wallet to vote");
-      return;
-    }
-    if (isDisabled && !isVoting) {
-      onError("You have already voted in this poll.");
+    if (isDisabled) {
+      if (!account?.address) {
+        onError("Please connect your wallet to vote");
+      } else if (isVoting) {
+        // Voting in progress, do nothing
+      } else {
+        onError("Voting is not available. The poll may have ended or you have already voted.");
+      }
       return;
     }
     if (!isVoting) {

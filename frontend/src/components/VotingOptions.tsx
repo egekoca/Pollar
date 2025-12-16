@@ -8,6 +8,7 @@ interface VotingOptionsProps {
   selectedOption: number | null;
   isVoting: boolean;
   hasVoted: boolean;
+  isPollEnded?: boolean;
   onVote: (index: number) => void;
   onError: (error: string) => void;
 }
@@ -21,6 +22,7 @@ const VotingOptions: React.FC<VotingOptionsProps> = ({
   selectedOption,
   isVoting,
   hasVoted,
+  isPollEnded = false,
   onVote,
   onError,
 }) => {
@@ -57,9 +59,30 @@ const VotingOptions: React.FC<VotingOptionsProps> = ({
             Please connect your wallet to vote. You can view details and results.
           </div>
         )}
+        {isPollEnded && (
+          <div
+            style={{
+              padding: "1rem",
+              background: "rgba(239, 68, 68, 0.1)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              borderRadius: "0.5rem",
+              color: "#ef4444",
+              fontSize: "0.9rem",
+              width: "100%",
+              marginBottom: "1rem",
+              textAlign: "center",
+              fontWeight: "600",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            This poll has ended. Voting is no longer available.
+          </div>
+        )}
         {localPool.options.map((option, index) => {
           const isSelected = selectedOption === index;
-          const isDisabled = !account?.address || isVoting || hasVoted;
+          const isDisabled = !account?.address || isVoting || hasVoted || isPollEnded;
 
           return (
             <VotingOptionCard

@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { gsap } from "gsap";
 import { getCollectionByType } from "../config/nftCollections";
 import { SUI_TURKIYE_COLLECTION_TYPE, ANIMATION_DURATION } from "../constants/appConstants";
-import { getBackgroundGradient } from "../utils/pollHelpers";
+import { getBackgroundGradient, getPollStatus } from "../utils/pollHelpers";
 import { usePollData } from "../hooks/usePollData";
 import { useUserAssetsForPoll } from "../hooks/useUserAssetsForPoll";
 import { useVoting } from "../hooks/useVoting";
@@ -90,6 +90,10 @@ const VotingPage = () => {
 
   // Use combined hasVoted
   const finalHasVoted = hasVoted || hasVotedLocal;
+
+  // Check if poll has ended
+  const pollStatus = localPool ? getPollStatus(localPool) : null;
+  const isPollEnded = pollStatus === "ended";
 
   const handleLogoHover = () => {
     if (logoRef.current) {
@@ -246,6 +250,7 @@ const VotingPage = () => {
             selectedOption={selectedOption}
             isVoting={isVoting}
             hasVoted={finalHasVoted}
+            isPollEnded={isPollEnded}
             onVote={handleVote}
             onError={() => {
               // Error is handled by useVoting hook

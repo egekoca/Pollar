@@ -1,7 +1,7 @@
 import React from "react";
 import { VotePool } from "../types/poll";
 import { getCollectionByType } from "../config/nftCollections";
-import { isPollActive } from "../utils/pollHelpers";
+import { isPollActive, getPollStatus } from "../utils/pollHelpers";
 
 interface PollCardProps {
   pool: VotePool;
@@ -26,6 +26,8 @@ const PollCard: React.FC<PollCardProps> = ({ pool, formatCountdown, onClick }) =
   
   // Check if poll is active
   const isActive = isPollActive(pool);
+  const pollStatus = getPollStatus(pool);
+  const isEnded = pollStatus === "ended";
   
   // Get collection badge color
   const getBadgeColor = () => {
@@ -313,9 +315,15 @@ const PollCard: React.FC<PollCardProps> = ({ pool, formatCountdown, onClick }) =
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.6)", marginBottom: "0.25rem" }}>Ends In</div>
-              <div style={{ fontSize: "0.85rem", color: "#ffffff", fontWeight: "600" }}>
-                {formatCountdown(pool.endTime)}
+              <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.6)", marginBottom: "0.25rem" }}>
+                {isEnded ? "Status" : "Ends In"}
+              </div>
+              <div style={{ 
+                fontSize: "0.85rem", 
+                color: isEnded ? "#ef4444" : "#ffffff", 
+                fontWeight: "600" 
+              }}>
+                {isEnded ? "Ended" : formatCountdown(pool.endTime)}
               </div>
             </div>
           </div>
