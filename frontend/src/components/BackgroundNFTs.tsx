@@ -14,20 +14,31 @@ interface BackgroundNFTsProps {
  */
 const BackgroundNFTs: React.FC<BackgroundNFTsProps> = memo(({ theme, collectionName, pollId }) => {
   const [showImages, setShowImages] = useState(false);
+  const [lastPollId, setLastPollId] = useState<string | undefined>(pollId);
 
-  // Reset and show images when pollId or theme changes
+  // Reset and show images only when pollId actually changes (not when returning to same page)
   useEffect(() => {
-    // Hide images immediately when pollId or theme changes
-    setShowImages(false);
+    const pollIdChanged = lastPollId !== pollId;
     
-    if (theme?.backgroundImages && theme.backgroundImages.length > 0) {
-      // Small delay to ensure old images are cleared from DOM before showing new ones
-      const timer = setTimeout(() => {
+    if (pollIdChanged) {
+      // Only hide images if pollId actually changed
+      setShowImages(false);
+      setLastPollId(pollId);
+      
+      if (theme?.backgroundImages && theme.backgroundImages.length > 0) {
+        // Small delay to ensure old images are cleared from DOM before showing new ones
+        const timer = setTimeout(() => {
+          setShowImages(true);
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      // Same pollId - show images immediately (they're already cached)
+      if (theme?.backgroundImages && theme.backgroundImages.length > 0) {
         setShowImages(true);
-      }, 100);
-      return () => clearTimeout(timer);
+      }
     }
-  }, [pollId, theme?.backgroundImages]);
+  }, [pollId, theme?.backgroundImages, lastPollId]);
 
   if (!theme?.backgroundImages || theme.backgroundImages.length === 0) {
     return null;
