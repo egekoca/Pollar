@@ -6,12 +6,9 @@ import { SEAL_KEY_SERVERS, SEAL_THRESHOLD } from "../config/sealConfig";
 import { 
   EVENT_QUERY_LIMIT, 
   USER_VOTE_QUERY_LIMIT, 
-  TR_WAL_TOKEN_TYPE, 
   TR_WAL_DECIMAL, 
-  SUI_TURKIYE_COLLECTION_TYPE,
   VOTE_POWER_THRESHOLDS,
   VOTE_POWER_VALUES,
-  PERCENTAGE_MULTIPLIER
 } from "../constants/appConstants";
 
 /**

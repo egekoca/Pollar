@@ -3,7 +3,7 @@ import { useSuiClient, useCurrentAccount, useSignAndExecuteTransaction } from "@
 import { createSealedVoteTransaction, createSealedVoteWithNftTransaction, getPollById, getVoteRegistry, calculateTrWalVotePower } from "../utils/blockchain";
 import { saveUserVote } from "../utils/supabase";
 import { VotePool, VoteOption } from "../types/poll";
-import { SUI_TURKIYE_COLLECTION_TYPE, PERCENTAGE_MULTIPLIER, TRANSACTION_TIMEOUT_MS, RETRY_DELAY_MS } from "../constants/appConstants";
+import { PERCENTAGE_MULTIPLIER, TRANSACTION_TIMEOUT_MS, RETRY_DELAY_MS } from "../constants/appConstants";
 import { getPollStatus } from "../utils/pollHelpers";
 
 interface UseVotingOptions {
