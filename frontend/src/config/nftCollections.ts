@@ -54,7 +54,7 @@ export const NFT_COLLECTIONS: NFTCollection[] = [
       backgroundImages: [
         "/suiworkshop.png",
         "https://cdn.prod.website-files.com/6683c774a6e7a5003c5889c3/6763f7b7b0899fd3cffe2b3d_6763f572866fbd04f1767cbb_sui_banner_backpack_exchange.jpeg",
-        "https://uzmancoin.com/wp-content/uploads/2023/05/sui-coin-nedir-nasil-alinir-1120x670.jpg",
+        "https://cryptopotato.com/tr/wp-content/uploads/2025/05/Sui_Header_1717037160BNVlLeLycn.jpg",
         "https://99bitcoins.com/tr/wp-content/uploads/sites/7/2025/05/kapak-resmi-2-15.png",
       ],
       primaryColor: "#4fc3f7",
